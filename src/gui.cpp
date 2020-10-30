@@ -17,16 +17,15 @@ Created by Lewis he on October 10, 2019.
 #include <Ticker.h>
 #include "FS.h"
 #include "SD.h"
+#include "hardware/Wifi.h"
 
-#define RTC_TIME_ZONE   "CST-8"
+#define RTC_TIME_ZONE   "CET-1CEST,M3.5.0,M10.5.0/3"
 
 
 LV_FONT_DECLARE(Geometr);
 LV_FONT_DECLARE(Ubuntu);
-LV_IMG_DECLARE(bg);
-LV_IMG_DECLARE(bg1);
-LV_IMG_DECLARE(bg2);
-LV_IMG_DECLARE(bg3);
+LV_FONT_DECLARE(roboto80);
+LV_IMG_DECLARE(bg_default);
 LV_IMG_DECLARE(WALLPAPER_1_IMG);
 LV_IMG_DECLARE(WALLPAPER_2_IMG);
 LV_IMG_DECLARE(WALLPAPER_3_IMG);
@@ -56,6 +55,8 @@ static lv_obj_t *timeLabel = nullptr;
 static lv_obj_t *menuBtn = nullptr;
 
 static uint8_t globalIndex = 0;
+
+static WifiManager*wifiManager;
 
 static void lv_update_task(struct _lv_task_t *);
 static void lv_battery_task(struct _lv_task_t *);
@@ -333,8 +334,9 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
 }
 
 
-void setupGui()
+void setupGui(WifiManager*wifi)
 {
+    wifiManager = wifi;
     lv_style_init(&settingStyle);
     lv_style_set_radius(&settingStyle, LV_OBJ_PART_MAIN, 0);
     lv_style_set_bg_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
@@ -345,12 +347,10 @@ void setupGui()
 
 
     //Create wallpaper
-    void *images[] = {(void *) &bg, (void *) &bg1, (void *) &bg2, (void *) &bg3 };
     lv_obj_t *scr = lv_scr_act();
     lv_obj_t *img_bin = lv_img_create(scr, NULL);  /*Create an image object*/
-    srand((int)time(0));
     int r = rand() % 4;
-    lv_img_set_src(img_bin, images[r]);
+    lv_img_set_src(img_bin, &bg_default);
     lv_obj_align(img_bin, NULL, LV_ALIGN_CENTER, 0, 0);
 
     //! bar
@@ -384,7 +384,7 @@ void setupGui()
     //! Time
     static lv_style_t timeStyle;
     lv_style_copy(&timeStyle, &mainStyle);
-    lv_style_set_text_font(&timeStyle, LV_STATE_DEFAULT, &Ubuntu);
+    lv_style_set_text_font(&timeStyle, LV_STATE_DEFAULT, &roboto80);
 
     timeLabel = lv_label_create(mainBar, NULL);
     lv_obj_add_style(timeLabel, LV_OBJ_PART_MAIN, &timeStyle);

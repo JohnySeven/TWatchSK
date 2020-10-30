@@ -19,6 +19,8 @@
 #include "esp_sleep.h"
 #include <WiFi.h>
 #include "gui.h"
+#include "SPIFFS.h"
+#include "hardware/Wifi.h"
 
 #define G_EVENT_VBUS_PLUGIN         _BV(0)
 #define G_EVENT_VBUS_REMOVE         _BV(1)
@@ -44,21 +46,16 @@ enum {
 #define WATCH_FLAG_BMA_IRQ      _BV(3)
 #define WATCH_FLAG_AXP_IRQ      _BV(4)
 
+const char* TAG = "APP";
+
 QueueHandle_t g_event_queue_handle = NULL;
 EventGroupHandle_t g_event_group = NULL;
 EventGroupHandle_t isr_group = NULL;
 bool lenergy = false;
 TTGOClass *ttgo;
-/* Can run 'make menuconfig' to choose the GPIO to blink,
-   or you can edit the following line and set a number here.
-*/
-#define BLINK_GPIO (gpio_num_t)CONFIG_BLINK_GPIO
+WifiManager *wifi;
 
-#ifndef LED_BUILTIN
-#define LED_BUILTIN 4
-#endif
-
-void setupNetwork()
+/*void setupNetwork()
 {
     WiFi.mode(WIFI_STA);
     WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
@@ -77,7 +74,7 @@ void setupNetwork()
     WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
         wifi_connect_status(true);
     }, WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP);
-}
+}*/
 
 
 
@@ -89,17 +86,19 @@ void low_energy()
         ttgo->stopLvglTick();
         ttgo->bma->enableStepCountInterrupt(false);
         ttgo->displaySleep();
-        if (!WiFi.isConnected()) {
+        if (!wifi->is_enabled()) {
             lenergy = true;
             WiFi.mode(WIFI_OFF);
-            // rtc_clk_cpu_freq_set(RTC_CPU_FREQ_2M);
-            setCpuFrequencyMhz(20);
-
-            Serial.println("ENTER IN LIGHT SLEEEP MODE");
+            setCpuFrequencyMhz(10);
+            ESP_LOGI(TAG, "ENTER IN LIGHT SLEEEP MODE");
             gpio_wakeup_enable ((gpio_num_t)AXP202_INT, GPIO_INTR_LOW_LEVEL);
             gpio_wakeup_enable ((gpio_num_t)BMA423_INT1, GPIO_INTR_HIGH_LEVEL);
             esp_sleep_enable_gpio_wakeup ();
             esp_light_sleep_start();
+        }
+        else
+        {
+            ESP_LOGI(TAG, "WiFi is enabled, no DEEP sleep is enabled.");
         }
     } else {
         ttgo->startLvglTick();
@@ -110,58 +109,23 @@ void low_energy()
         updateBatteryIcon(LV_ICON_CALCULATION);
         lv_disp_trig_activity(NULL);
         ttgo->openBL();
+        ttgo->bl->adjust(150);
         ttgo->bma->enableStepCountInterrupt();
     }
 }
 
-void blink_task(void *pvParameter)
-{
-    /* Configure the IOMUX register for pad BLINK_GPIO (some pads are
-       muxed to GPIO on reset already, but some default to other
-       functions and need to be switched to GPIO. Consult the
-       Technical Reference for a list of pads and their default
-       functions.)
-    */
-    gpio_pad_select_gpio(BLINK_GPIO);
-    /* Set the GPIO as a push/pull output */
-    gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
-    while(1) {
-        /* Blink off (output low) */
-        gpio_set_level(BLINK_GPIO, 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        /* Blink on (output high) */
-        gpio_set_level(BLINK_GPIO, 1);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-}
-
-#if !CONFIG_AUTOSTART_ARDUINO
-void arduinoTask(void *pvParameter) {
-    pinMode(LED_BUILTIN, OUTPUT);
-    while(1) {
-        digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-        delay(1000);
-    }
-}
-
-void app_main()
-{
-    // initialize arduino library before we start the tasks
-    initArduino();
-
-    xTaskCreate(&blink_task, "blink_task", configMINIMAL_STACK_SIZE, NULL, 5, NULL);
-    xTaskCreate(&arduinoTask, "arduino_task", configMINIMAL_STACK_SIZE, NULL, 5, NULL);
-}
-#else
 void setup() {
     Serial.begin(115200);
     //Create a program that allows the required message objects and group flags
     g_event_queue_handle = xQueueCreate(20, sizeof(uint8_t));
     g_event_group = xEventGroupCreate();
     isr_group = xEventGroupCreate();
-
-
+    setCpuFrequencyMhz(80);
     ttgo = TTGOClass::getWatch();
+    if(!SPIFFS.begin(true))
+    {
+        ESP_LOGE(TAG, "Failed to initialize SPIFFS!");
+    }
 
     //Initialize TWatch
     ttgo->begin();
@@ -176,6 +140,8 @@ void setup() {
     ttgo->power->setPowerOutPut(AXP202_DCDC2, AXP202_OFF);
     ttgo->power->setPowerOutPut(AXP202_LDO3, AXP202_OFF);
     ttgo->power->setPowerOutPut(AXP202_LDO4, AXP202_OFF);
+
+    ESP_LOGI(TAG, "Watch power initialized!");
 
     //Initialize lvgl
     ttgo->lvgl_begin();
@@ -226,44 +192,21 @@ void setup() {
         }
     }, FALLING);
 
+    ESP_LOGI(TAG, "Sensors initialized!");
+
     //Check if the RTC clock matches, if not, use compile time
-    ttgo->rtc->check();
+    //ttgo->rtc->check();
 
     //Synchronize time to system time
     ttgo->rtc->syncToSystem();
-
-#ifdef LILYGO_WATCH_HAS_BUTTON
-
-    /*
-        ttgo->button->setClickHandler([]() {
-            Serial.println("Button2 Pressed");
-        });
-    */
-
-    //Set the user button long press to restart
-    ttgo->button->setLongClickHandler([]() {
-        Serial.println("Pressed Restart Button,Restart now ...");
-        delay(1000);
-        esp_restart();
-    });
-#endif
-
     //Setting up the network
-    setupNetwork();
+    wifi = new WifiManager();
 
     //Execute your own GUI interface
-    setupGui();
+    setupGui(wifi);
 
     //Clear lvgl counter
     lv_disp_trig_activity(NULL);
-
-#ifdef LILYGO_WATCH_HAS_BUTTON
-    //In lvgl we call the button processing regularly
-    lv_task_create([](lv_task_t *args) {
-        ttgo->button->loop();
-    }, 30, 1, nullptr);
-#endif
-
     //When the initialization is complete, turn on the backlight
     ttgo->openBL();
 }
@@ -276,7 +219,7 @@ void loop() {
         if (lenergy) {
             lenergy = false;
             // rtc_clk_cpu_freq_set(RTC_CPU_FREQ_160M);
-            setCpuFrequencyMhz(160);
+            setCpuFrequencyMhz(80);
         }
 
         low_energy();
@@ -350,4 +293,17 @@ void loop() {
         low_energy();
     }
 }
-#endif 
+
+void arduinoTask(void *pvParameter) {
+    while(1) {
+        loop();
+    }
+}
+
+void app_main()
+{
+    // initialize arduino library before we start the tasks
+    initArduino();
+    setup();
+    xTaskCreate(&arduinoTask, "arduino_task", configMINIMAL_STACK_SIZE, NULL, 5, NULL);
+}

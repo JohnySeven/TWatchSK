@@ -8,6 +8,7 @@
             "includePath": [
                 "c:/Users/info/source/repos/TWatchSK/include",
                 "c:/Users/info/source/repos/TWatchSK/src",
+                "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/ArduinoJson/src",
                 "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/TTGO TWatch Library/src",
                 "C:/Users/info/.platformio/packages/framework-espidf/components/esp_ringbuf/include",
                 "C:/Users/info/source/repos/TWatchSK/.pio/build/ttgo-t-watch/config",
@@ -126,6 +127,7 @@
                 "path": [
                     "c:/Users/info/source/repos/TWatchSK/include",
                     "c:/Users/info/source/repos/TWatchSK/src",
+                    "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/ArduinoJson/src",
                     "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/TTGO TWatch Library/src",
                     "C:/Users/info/.platformio/packages/framework-espidf/components/esp_ringbuf/include",
                     "C:/Users/info/source/repos/TWatchSK/.pio/build/ttgo-t-watch/config",
@@ -248,7 +250,6 @@
                 "PLATFORMIO=50001",
                 "ARDUINO_T-Watch",
                 "BOARD_HAS_PSRAM",
-                "CONFIG_BLINK_GPIO=22",
                 "ARDUINO=165",
                 "ESP32=1",
                 ""

@@ -6,6 +6,7 @@ The off-screen standby (not deep sleep) current is about 4mA.
 Select standard motherboard and standard backplane for testing.
 Created by Lewis he on October 10, 2019.
 */
+#include "hardware/Wifi.h"
 
 #ifndef __GUI_H
 #define __GUI_H
@@ -28,7 +29,7 @@ typedef enum {
     LV_STATUS_BAR_BLUETOOTH = 3,
 } lv_icon_status_bar_t;
 
-void setupGui();
+void setupGui(WifiManager*wifi);
 void updateStepCounter(uint32_t counter);
 void updateBatteryIcon(lv_icon_battery_t index);
 void wifi_list_add(const char *ssid);
