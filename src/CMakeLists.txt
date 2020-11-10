@@ -1,1 +1,1 @@
-idf_component_register(SRCS "main.cpp" "config\\configurable.cpp" "gui.cpp" "fonts\\roboto80.c" "imgs\\bg_default.c" "hardware\\Wifi.cpp")
+idf_component_register(SRCS "main.cpp" "system\\configurable.cpp" "system\\observableobject.cpp" "gui.cpp" "fonts\\roboto80.c" "imgs\\bg_default.c" "hardware\\Wifi.cpp" "networking\\signalk_socket.cpp")

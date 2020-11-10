@@ -21,39 +21,45 @@
 #include "gui.h"
 #include "SPIFFS.h"
 #include "hardware/Wifi.h"
+#include "networking/signalk_socket.h"
+#include "esp_int_wdt.h"
+#include "esp_pm.h"
 
-#define G_EVENT_VBUS_PLUGIN         _BV(0)
-#define G_EVENT_VBUS_REMOVE         _BV(1)
-#define G_EVENT_CHARGE_DONE         _BV(2)
+#define G_EVENT_VBUS_PLUGIN _BV(0)
+#define G_EVENT_VBUS_REMOVE _BV(1)
+#define G_EVENT_CHARGE_DONE _BV(2)
 
-#define G_EVENT_WIFI_SCAN_START     _BV(3)
-#define G_EVENT_WIFI_SCAN_DONE      _BV(4)
-#define G_EVENT_WIFI_CONNECTED      _BV(5)
-#define G_EVENT_WIFI_BEGIN          _BV(6)
-#define G_EVENT_WIFI_OFF            _BV(7)
+#define G_EVENT_WIFI_SCAN_START _BV(3)
+#define G_EVENT_WIFI_SCAN_DONE _BV(4)
+#define G_EVENT_WIFI_CONNECTED _BV(5)
+#define G_EVENT_WIFI_BEGIN _BV(6)
+#define G_EVENT_WIFI_OFF _BV(7)
 
-enum {
+enum
+{
     Q_EVENT_WIFI_SCAN_DONE,
     Q_EVENT_WIFI_CONNECT,
     Q_EVENT_BMA_INT,
     Q_EVENT_AXP_INT,
-} ;
+};
 
-#define DEFAULT_SCREEN_TIMEOUT  30*1000
+#define DEFAULT_SCREEN_TIMEOUT 30 * 1000
 
-#define WATCH_FLAG_SLEEP_MODE   _BV(1)
-#define WATCH_FLAG_SLEEP_EXIT   _BV(2)
-#define WATCH_FLAG_BMA_IRQ      _BV(3)
-#define WATCH_FLAG_AXP_IRQ      _BV(4)
+#define WATCH_FLAG_SLEEP_MODE _BV(1)
+#define WATCH_FLAG_SLEEP_EXIT _BV(2)
+#define WATCH_FLAG_BMA_IRQ _BV(3)
+#define WATCH_FLAG_AXP_IRQ _BV(4)
 
-const char* TAG = "APP";
+const char *TAG = "APP";
 
 QueueHandle_t g_event_queue_handle = NULL;
 EventGroupHandle_t g_event_group = NULL;
 EventGroupHandle_t isr_group = NULL;
 bool lenergy = false;
+bool light_sleep = false;
 TTGOClass *ttgo;
 WifiManager *wifi;
+SignalKSocket*sk_socket;
 
 /*void setupNetwork()
 {
@@ -76,31 +82,44 @@ WifiManager *wifi;
     }, WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP);
 }*/
 
-
-
 void low_energy()
 {
-    if (ttgo->bl->isOn()) {
+    if (!lenergy)
+    {
         xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_MODE);
         ttgo->closeBL();
         ttgo->stopLvglTick();
         ttgo->bma->enableStepCountInterrupt(false);
         ttgo->displaySleep();
-        if (!wifi->is_enabled()) {
-            lenergy = true;
+        lenergy = true;
+
+        if (!wifi->get_enabled())
+        {
+            light_sleep = true;
             WiFi.mode(WIFI_OFF);
             setCpuFrequencyMhz(10);
-            ESP_LOGI(TAG, "ENTER IN LIGHT SLEEEP MODE");
-            gpio_wakeup_enable ((gpio_num_t)AXP202_INT, GPIO_INTR_LOW_LEVEL);
-            gpio_wakeup_enable ((gpio_num_t)BMA423_INT1, GPIO_INTR_HIGH_LEVEL);
-            esp_sleep_enable_gpio_wakeup ();
+            ESP_LOGI(TAG, "Entering light sleep mode");
+            gpio_wakeup_enable((gpio_num_t)AXP202_INT, GPIO_INTR_LOW_LEVEL);
+            gpio_wakeup_enable((gpio_num_t)BMA423_INT1, GPIO_INTR_HIGH_LEVEL);
+            esp_sleep_enable_gpio_wakeup();
             esp_light_sleep_start();
         }
         else
         {
-            ESP_LOGI(TAG, "WiFi is enabled, no DEEP sleep is enabled.");
+            light_sleep = false;
+            ESP_LOGI(TAG, "WiFi is enabled, no LIGHT sleep is enabled.");
         }
-    } else {
+    }
+    else
+    {
+        if(light_sleep)
+        {
+            setCpuFrequencyMhz(80);
+            light_sleep = false;
+            ESP_LOGI(TAG, "Left light sleep with MCU freq=%d Mhz", getCpuFrequencyMhz());
+        }
+
+        lenergy = false;
         ttgo->startLvglTick();
         ttgo->displayWakeup();
         ttgo->rtc->syncToSystem();
@@ -114,15 +133,15 @@ void low_energy()
     }
 }
 
-void setup() {
-    Serial.begin(115200);
+void setup()
+{
     //Create a program that allows the required message objects and group flags
     g_event_queue_handle = xQueueCreate(20, sizeof(uint8_t));
     g_event_group = xEventGroupCreate();
     isr_group = xEventGroupCreate();
     setCpuFrequencyMhz(80);
     ttgo = TTGOClass::getWatch();
-    if(!SPIFFS.begin(true))
+    if (!SPIFFS.begin(true))
     {
         ESP_LOGE(TAG, "Failed to initialize SPIFFS!");
     }
@@ -153,46 +172,54 @@ void setup() {
 
     //Connection interrupted to the specified pin
     pinMode(BMA423_INT1, INPUT);
-    attachInterrupt(BMA423_INT1, [] {
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-        EventBits_t  bits = xEventGroupGetBitsFromISR(isr_group);
-        if (bits & WATCH_FLAG_SLEEP_MODE)
-        {
-            //! For quick wake up, use the group flag
-            xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAG_BMA_IRQ, &xHigherPriorityTaskWoken);
-        } else
-        {
-            uint8_t data = Q_EVENT_BMA_INT;
-            xQueueSendFromISR(g_event_queue_handle, &data, &xHigherPriorityTaskWoken);
-        }
+    attachInterrupt(
+        BMA423_INT1, [] {
+            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+            EventBits_t bits = xEventGroupGetBitsFromISR(isr_group);
+            if (bits & WATCH_FLAG_SLEEP_MODE)
+            {
+                //! For quick wake up, use the group flag
+                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAG_BMA_IRQ, &xHigherPriorityTaskWoken);
+            }
+            else
+            {
+                uint8_t data = Q_EVENT_BMA_INT;
+                xQueueSendFromISR(g_event_queue_handle, &data, &xHigherPriorityTaskWoken);
+            }
 
-        if (xHigherPriorityTaskWoken)
-        {
-            portYIELD_FROM_ISR ();
-        }
-    }, RISING);
+            if (xHigherPriorityTaskWoken)
+            {
+                portYIELD_FROM_ISR();
+            }
+        },
+        RISING);
 
     // Connection interrupted to the specified pin
     pinMode(AXP202_INT, INPUT);
-    attachInterrupt(AXP202_INT, [] {
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-        EventBits_t  bits = xEventGroupGetBitsFromISR(isr_group);
-        if (bits & WATCH_FLAG_SLEEP_MODE)
-        {
-            //! For quick wake up, use the group flag
-            xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAG_AXP_IRQ, &xHigherPriorityTaskWoken);
-        } else
-        {
-            uint8_t data = Q_EVENT_AXP_INT;
-            xQueueSendFromISR(g_event_queue_handle, &data, &xHigherPriorityTaskWoken);
-        }
-        if (xHigherPriorityTaskWoken)
-        {
-            portYIELD_FROM_ISR ();
-        }
-    }, FALLING);
+    attachInterrupt(
+        AXP202_INT, [] {
+            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+            EventBits_t bits = xEventGroupGetBitsFromISR(isr_group);
+            if (bits & WATCH_FLAG_SLEEP_MODE)
+            {
+                //! For quick wake up, use the group flag
+                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAG_AXP_IRQ, &xHigherPriorityTaskWoken);
+            }
+            else
+            {
+                uint8_t data = Q_EVENT_AXP_INT;
+                xQueueSendFromISR(g_event_queue_handle, &data, &xHigherPriorityTaskWoken);
+            }
+            if (xHigherPriorityTaskWoken)
+            {
+                portYIELD_FROM_ISR();
+            }
+        },
+        FALLING);
 
     ESP_LOGI(TAG, "Sensors initialized!");
+
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     //Check if the RTC clock matches, if not, use compile time
     //ttgo->rtc->check();
@@ -205,32 +232,47 @@ void setup() {
     //Execute your own GUI interface
     setupGui(wifi);
 
+    sk_socket = new SignalKSocket();
+
     //Clear lvgl counter
     lv_disp_trig_activity(NULL);
     //When the initialization is complete, turn on the backlight
     ttgo->openBL();
+
+#if CONFIG_PM_ENABLE
+    // Configure dynamic frequency scaling:
+    // maximum and minimum frequencies are set in sdkconfig,
+    // automatic light sleep is enabled if tickless idle support is enabled.
+    esp_pm_config_esp32_t pm_config = {
+        .max_freq_mhz = 80,
+        .min_freq_mhz = 10,
+#if CONFIG_FREERTOS_USE_TICKLESS_IDLE
+        .light_sleep_enable = true
+#endif
+    };
+    ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
+#endif // CONFIG_PM_ENABLE
 }
-void loop() {
-    bool  rlst;
+void loop()
+{
+    bool rlst;
     uint8_t data;
     //! Fast response wake-up interrupt
-    EventBits_t  bits = xEventGroupGetBits(isr_group);
-    if (bits & WATCH_FLAG_SLEEP_EXIT) {
-        if (lenergy) {
-            lenergy = false;
-            // rtc_clk_cpu_freq_set(RTC_CPU_FREQ_160M);
-            setCpuFrequencyMhz(80);
-        }
-
+    EventBits_t bits = xEventGroupGetBits(isr_group);
+    if (bits & WATCH_FLAG_SLEEP_EXIT)
+    {
         low_energy();
 
-        if (bits & WATCH_FLAG_BMA_IRQ) {
-            do {
-                rlst =  ttgo->bma->readInterrupt();
+        if (bits & WATCH_FLAG_BMA_IRQ)
+        {
+            do
+            {
+                rlst = ttgo->bma->readInterrupt();
             } while (!rlst);
             xEventGroupClearBits(isr_group, WATCH_FLAG_BMA_IRQ);
         }
-        if (bits & WATCH_FLAG_AXP_IRQ) {
+        if (bits & WATCH_FLAG_AXP_IRQ)
+        {
             ttgo->power->readIRQ();
             ttgo->power->clearIRQ();
             //TODO: Only accept axp power pek key short press
@@ -239,45 +281,56 @@ void loop() {
         xEventGroupClearBits(isr_group, WATCH_FLAG_SLEEP_EXIT);
         xEventGroupClearBits(isr_group, WATCH_FLAG_SLEEP_MODE);
     }
-    if ((bits & WATCH_FLAG_SLEEP_MODE)) {
+    if ((bits & WATCH_FLAG_SLEEP_MODE))
+    {
         //! No event processing after entering the information screen
         return;
     }
 
     //! Normal polling
-    if (xQueueReceive(g_event_queue_handle, &data, 5 / portTICK_RATE_MS) == pdPASS) {
-        switch (data) {
+    if (xQueueReceive(g_event_queue_handle, &data, 5 / portTICK_RATE_MS) == pdPASS)
+    {
+        switch (data)
+        {
         case Q_EVENT_BMA_INT:
-            do {
-                rlst =  ttgo->bma->readInterrupt();
+            do
+            {
+                rlst = ttgo->bma->readInterrupt();
             } while (!rlst);
 
             //! setp counter
-            if (ttgo->bma->isStepCounter()) {
+            if (ttgo->bma->isStepCounter())
+            {
                 updateStepCounter(ttgo->bma->getCounter());
             }
             break;
         case Q_EVENT_AXP_INT:
             ttgo->power->readIRQ();
-            if (ttgo->power->isVbusPlugInIRQ()) {
+            if (ttgo->power->isVbusPlugInIRQ())
+            {
                 updateBatteryIcon(LV_ICON_CHARGE);
             }
-            if (ttgo->power->isVbusRemoveIRQ()) {
+            if (ttgo->power->isVbusRemoveIRQ())
+            {
                 updateBatteryIcon(LV_ICON_CALCULATION);
             }
-            if (ttgo->power->isChargingDoneIRQ()) {
+            if (ttgo->power->isChargingDoneIRQ())
+            {
                 updateBatteryIcon(LV_ICON_CALCULATION);
             }
-            if (ttgo->power->isPEKShortPressIRQ()) {
+            if (ttgo->power->isPEKShortPressIRQ())
+            {
                 ttgo->power->clearIRQ();
                 low_energy();
                 return;
             }
             ttgo->power->clearIRQ();
             break;
-        case Q_EVENT_WIFI_SCAN_DONE: {
-            int16_t len =  WiFi.scanComplete();
-            for (int i = 0; i < len; ++i) {
+        case Q_EVENT_WIFI_SCAN_DONE:
+        {
+            int16_t len = WiFi.scanComplete();
+            for (int i = 0; i < len; ++i)
+            {
                 wifi_list_add(WiFi.SSID(i).c_str());
             }
             break;
@@ -285,17 +338,30 @@ void loop() {
         default:
             break;
         }
-
     }
-    if (lv_disp_get_inactive_time(NULL) < DEFAULT_SCREEN_TIMEOUT) {
-        lv_task_handler();
-    } else {
-        low_energy();
+
+    if (!lenergy)
+    {
+        if (lv_disp_get_inactive_time(NULL) < DEFAULT_SCREEN_TIMEOUT)
+        {
+            lv_task_handler();
+        }
+        else
+        {
+            low_energy();
+        }
+    }
+    else
+    {
+        ESP_LOGI(TAG, "Low power");
+        delay(250);
     }
 }
 
-void arduinoTask(void *pvParameter) {
-    while(1) {
+void arduinoTask(void *pvParameter)
+{
+    while (1)
+    {
         loop();
     }
 }
@@ -305,5 +371,5 @@ void app_main()
     // initialize arduino library before we start the tasks
     initArduino();
     setup();
-    xTaskCreate(&arduinoTask, "arduino_task", configMINIMAL_STACK_SIZE, NULL, 5, NULL);
+    xTaskCreate(&arduinoTask, "app_task", configMINIMAL_STACK_SIZE, NULL, 5, NULL);
 }

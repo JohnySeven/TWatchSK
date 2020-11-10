@@ -247,7 +247,7 @@
                 "IDF_VER=\"HEAD-HASH-NOTFOUND\"",
                 "GCC_NOT_5_2_0",
                 "ESP_PLATFORM",
-                "PLATFORMIO=50001",
+                "PLATFORMIO=50002",
                 "ARDUINO_T-Watch",
                 "BOARD_HAS_PSRAM",
                 "ARDUINO=165",

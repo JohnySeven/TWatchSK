@@ -12,7 +12,7 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-const char*TAG = "WIFI";
+const char*WIFI_TAG = "WIFI";
 
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data)
@@ -25,22 +25,26 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-        if(manager->is_enabled())
+        if(manager->get_enabled())
         {
             esp_wifi_connect();
-        }        
+        }
+        manager->set_connected(false);
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(TAG, "got ip: " IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI(WIFI_TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
+        char buff[24];
+        sprintf(buff, IPSTR, IP2STR(&event->ip_info.ip));
+        manager->set_ip(String(buff));
+        manager->set_connected(true);
     }
 }
 
 static void wifi_enable(const char *ssid, const char *password, WifiManager*arg)
 {
     tcpip_adapter_init();
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -52,13 +56,15 @@ static void wifi_enable(const char *ssid, const char *password, WifiManager*arg)
     memset(&wifi_config, 0, sizeof(wifi_config_t));
     strcpy(reinterpret_cast<char*>(wifi_config.sta.ssid), ssid);
     strcpy(reinterpret_cast<char*>(wifi_config.sta.password), password);
+    wifi_config.sta.listen_interval = 9;
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(TAG, "esp_wifi_set_ps().");
-    esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
+    ESP_LOGI(WIFI_TAG, "esp_wifi_set_ps().");
+    esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
+
 }
 
 static void disable_wifi()
@@ -75,19 +81,23 @@ void WifiManager::on()
         enabled = true;
         wifi_enable(ssid.c_str(), password.c_str(), this);
     }
+    ESP_LOGI(WIFI_TAG, "WiFi has been enabled.");
+
+    notify("enabled", &enabled);
 }
 
 void WifiManager::off()
 {
     enabled = false;
     disable_wifi();
+    ESP_LOGI(WIFI_TAG, "WiFi has been disabled.");
+    notify("enabled", &enabled);
 }
 
 void WifiManager::get_config(const JsonObject&json)
 {
     enabled = json["enabled"].as<bool>();
-    ssid = json["ssid"].as<String>();
-    password = json["password"].as<String>();
+    this->setup(json["ssid"].as<String>(), json["password"].as<String>());
 }
 
 void WifiManager::set_config(const JsonObject&json)
