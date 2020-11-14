@@ -43,7 +43,7 @@ enum
     Q_EVENT_AXP_INT,
 };
 
-#define DEFAULT_SCREEN_TIMEOUT 30 * 1000
+#define DEFAULT_SCREEN_TIMEOUT 10 * 1000
 
 #define WATCH_FLAG_SLEEP_MODE _BV(1)
 #define WATCH_FLAG_SLEEP_EXIT _BV(2)
@@ -58,7 +58,7 @@ EventGroupHandle_t isr_group = NULL;
 bool lenergy = false;
 bool light_sleep = false;
 TTGOClass *ttgo;
-WifiManager *wifi;
+WifiManager *wifiManager;
 SignalKSocket*sk_socket;
 
 /*void setupNetwork()
@@ -93,7 +93,7 @@ void low_energy()
         ttgo->displaySleep();
         lenergy = true;
 
-        if (!wifi->get_enabled())
+        if (wifiManager->get_status() == Wifi_Off)
         {
             light_sleep = true;
             WiFi.mode(WIFI_OFF);
@@ -108,6 +108,16 @@ void low_energy()
         {
             light_sleep = false;
             ESP_LOGI(TAG, "WiFi is enabled, no LIGHT sleep is enabled.");
+
+            EventBits_t bits = xEventGroupGetBits(isr_group);
+            while (!(bits & WATCH_FLAG_SLEEP_EXIT))
+            {
+                delay(250);
+                ESP_LOGI(TAG, "Sleeping at %d MHz...", getCpuFrequencyMhz());
+                bits = xEventGroupGetBits(isr_group);
+            }
+
+            ESP_LOGI(TAG,"Wakeup request from sleep %d", bits);
         }
     }
     else
@@ -135,6 +145,12 @@ void low_energy()
 
 void setup()
 {
+#if !CONFIG_PM_ENABLE
+#error "CONFIG_PM_ENABLE missing"
+#endif
+#if !CONFIG_FREERTOS_USE_TICKLESS_IDLE
+#error "CONFIG_FREERTOS_USE_TICKLESS_IDLE missing"
+#endif
     //Create a program that allows the required message objects and group flags
     g_event_queue_handle = xQueueCreate(20, sizeof(uint8_t));
     g_event_group = xEventGroupCreate();
@@ -153,6 +169,7 @@ void setup()
     ttgo->power->adc1Enable(AXP202_BATT_VOL_ADC1 | AXP202_BATT_CUR_ADC1 | AXP202_VBUS_VOL_ADC1 | AXP202_VBUS_CUR_ADC1, AXP202_ON);
     ttgo->power->enableIRQ(AXP202_VBUS_REMOVED_IRQ | AXP202_VBUS_CONNECT_IRQ | AXP202_CHARGING_FINISHED_IRQ, AXP202_ON);
     ttgo->power->clearIRQ();
+    ttgo->power->setChgLEDMode(axp_chgled_mode_t::AXP20X_LED_OFF);
 
     // Turn off unused power
     ttgo->power->setPowerOutPut(AXP202_EXTEN, AXP202_OFF);
@@ -227,12 +244,13 @@ void setup()
     //Synchronize time to system time
     ttgo->rtc->syncToSystem();
     //Setting up the network
-    wifi = new WifiManager();
-
-    //Execute your own GUI interface
-    setupGui(wifi);
-
+    wifiManager = new WifiManager();
+    //Setting up websocket
     sk_socket = new SignalKSocket();
+    //Execute your own GUI interface
+    setupGui(wifiManager);
+
+    ESP_LOGI(TAG, "Wifi states (%d,%d,%d, %d)", (int)WifiState_t::Wifi_Off, (int)WifiState_t::Wifi_Connecting, (int)WifiState_t::Wifi_Connected, (int)WifiState_t::Wifi_Disconnected);
 
     //Clear lvgl counter
     lv_disp_trig_activity(NULL);

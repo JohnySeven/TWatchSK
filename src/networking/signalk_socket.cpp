@@ -14,14 +14,14 @@ static void ws_event_handler(void *arg, esp_event_base_t event_base,
     {
         ESP_LOGI(WS_TAG, "Web socket connected to server!");
         ESP_LOGI(WS_TAG, "Sending subscription message...");
-        socket->update_connected(true);
+        socket->update_status(WS_Connected);
 
         //esp_websocket_client_send_text(socket->get_ws(), subscriptionMessage, sizeof(subscriptionMessage)-1, portMAX_DELAY);
     }
     else if (event_id == WEBSOCKET_EVENT_DISCONNECTED)
     {
         ESP_LOGI(WS_TAG, "Web socket disconnected from server!");
-        socket->update_connected(false);
+        socket->update_status(WS_Offline);
     }
     else if (event_id == WEBSOCKET_EVENT_DATA)
     {
@@ -40,49 +40,31 @@ static void ws_event_handler(void *arg, esp_event_base_t event_base,
     }
 }
 
-SignalKSocket::SignalKSocket() : Configurable("/config/websocket"), ObservableObject("websocket")
+SignalKSocket::SignalKSocket() : Configurable("/config/websocket"), SystemObject("websocket"), Observable(WS_Offline)
 {
-    wifi = get_object("wifi");
+    auto wifi = (Observable<WifiState_t> *)get_object("wifi");
+
+    wifi->attach(this);
+
     if (wifi != NULL)
     {
-        wifi->subscribe([this](ObservableObject *wifi, String& property, void *value) {
-            if(property=="connected")
-            {
-                bool connected = *reinterpret_cast<bool*>(value);
-                ESP_LOGI(WS_TAG, "Detected Wifi=%d", connected);
-                if(connected)
-                {
-                    if(this->connect())
-                    {
-                        ESP_LOGI(WS_TAG, "Auto connect OK!");
-                    }
-                    else
-                    {
-                        ESP_LOGW(WS_TAG, "Auto connect ERROR!");
-                    }
-                    
-                }           
-            }
-        });
-
         ESP_LOGI(WS_TAG, "SignalK socket initialized.");
     }
     else
     {
         ESP_LOGE(WS_TAG, "Wifi object not found!!!");
-    }    
+    }
 }
 
 bool SignalKSocket::connect()
 {
     bool ret = false;
-    if (!connected)
+    if (value == WS_Offline)
     {
         esp_websocket_client_config_t ws_cfg = {
-            .host = "pi.boat",
-            .path = "/signalk/v1/stream?subscribe=none"
-        };
-        ws_cfg.port = 3000;
+            .host = server.c_str(),
+            .path = "/signalk/v1/stream?subscribe=none"};
+        ws_cfg.port = port;
 
         ESP_LOGI(WS_TAG, "Initializing websocket %s:%d...", ws_cfg.host, ws_cfg.port);
 
@@ -97,13 +79,13 @@ bool SignalKSocket::connect()
             }
         }
     }
- 
+
     return ret;
 }
 
 bool SignalKSocket::disconnect()
 {
-    if (connected)
+    if (value != WS_Offline)
     {
         ESP_LOGI(WS_TAG, "Disconnecting websocket...");
 
@@ -123,8 +105,6 @@ void SignalKSocket::get_config(const JsonObject &json)
     //port = json["port"].as<int>();
     server = "pi.boat";
     port = 3000;
-    notify("server", &server);
-    notify("port", &port);
 }
 
 void SignalKSocket::set_config(const JsonObject &json)
@@ -137,5 +117,30 @@ void SignalKSocket::parse_data(int length, const char *data)
 {
     DynamicJsonDocument doc(1024);
 
-    deserializeJson(doc, data, length);
+    auto result = deserializeJson(doc, data, length);
+    if(result.code() == DeserializationError::Ok)
+    {
+        ESP_LOGI(WS_TAG, "Got message from websocket with len=%d", length);
+    }
+    else
+    {
+        ESP_LOGE(WS_TAG, "Websocket json deserialization failed=%d", result.code());
+    }
+    
+}
+
+void SignalKSocket::notify_change(const WifiState_t &wifiState)
+{
+    ESP_LOGI(WS_TAG, "Detected Wifi=%d", (int)wifiState);
+    if (wifiState == Wifi_Connected)
+    {
+        if (this->connect())
+        {
+            ESP_LOGI(WS_TAG, "Auto connect OK!");
+        }
+        else
+        {
+            ESP_LOGW(WS_TAG, "Auto connect ERROR!");
+        }
+    }
 }

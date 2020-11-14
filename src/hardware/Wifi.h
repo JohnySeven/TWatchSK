@@ -1,40 +1,33 @@
 #pragma once
 #include "system/configurable.h"
 #include "FreeRTOS.h"
-#include "system/ObservableObject.h"
+#include "system/systemobject.h"
+#include "system/observable.h"
 
-class WifiManager : public Configurable, public ObservableObject
+enum WifiState_t
+{
+    Wifi_Off = 0,
+    Wifi_Disconnected = 1,
+    Wifi_Connecting = 2,
+    Wifi_Connected = 3
+};
+
+class WifiManager : public Configurable, public SystemObject, public Observable<WifiState_t>
 {
 public:
-    WifiManager() : Configurable("/config/wifi"), ObservableObject("wifi")
-    {
-        if (enabled)
-        {
-            on();
-        }
-    }
+    WifiManager();
     void on();
     void off();
-    bool get_enabled() { return enabled; }
-    bool get_connected() { return connected; }
     String get_ip() { return ip; }
-    void set_ip(String ip)
-    {
-        this->ip = ip;
-        notify("ip", &ip);
-    }
-    void set_connected(bool value)
-    {
-        this->connected = value;
-        notify("connected", &connected);
-    }
+    WifiState_t get_status() { return value; }
+    void set_ip(String ip) { this->ip = ip; }
+    void update_status(WifiState_t value) { Observable<WifiState_t>::emit(value); }
     void setup(String ssid, String password)
     {
         this->ssid = ssid;
         this->password = password;
-        notify("ssid", &ssid);
-        notify("password", &password);
     }
+
 private:
     void get_config(const JsonObject &json) override;
     void set_config(const JsonObject &json) override;

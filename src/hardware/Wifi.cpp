@@ -12,12 +12,12 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
-const char*WIFI_TAG = "WIFI";
+const char *WIFI_TAG = "WIFI";
 
 static void event_handler(void *arg, esp_event_base_t event_base,
                           int32_t event_id, void *event_data)
 {
-    auto manager = (WifiManager*)arg;
+    auto manager = (WifiManager *)arg;
 
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
     {
@@ -25,11 +25,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-        if(manager->get_enabled())
-        {
-            esp_wifi_connect();
-        }
-        manager->set_connected(false);
+        manager->update_status(Wifi_Disconnected);
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
@@ -38,11 +34,11 @@ static void event_handler(void *arg, esp_event_base_t event_base,
         char buff[24];
         sprintf(buff, IPSTR, IP2STR(&event->ip_info.ip));
         manager->set_ip(String(buff));
-        manager->set_connected(true);
+        manager->update_status(Wifi_Connected);
     }
 }
 
-static void wifi_enable(const char *ssid, const char *password, WifiManager*arg)
+static void wifi_enable(const char *ssid, const char *password, WifiManager *arg)
 {
     tcpip_adapter_init();
 
@@ -54,9 +50,9 @@ static void wifi_enable(const char *ssid, const char *password, WifiManager*arg)
 
     wifi_config_t wifi_config;
     memset(&wifi_config, 0, sizeof(wifi_config_t));
-    strcpy(reinterpret_cast<char*>(wifi_config.sta.ssid), ssid);
-    strcpy(reinterpret_cast<char*>(wifi_config.sta.password), password);
-    wifi_config.sta.listen_interval = 9;
+    strcpy(reinterpret_cast<char *>(wifi_config.sta.ssid), ssid);
+    strcpy(reinterpret_cast<char *>(wifi_config.sta.password), password);
+    wifi_config.sta.listen_interval = 25;
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
@@ -64,7 +60,7 @@ static void wifi_enable(const char *ssid, const char *password, WifiManager*arg)
 
     ESP_LOGI(WIFI_TAG, "esp_wifi_set_ps().");
     esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
-
+    arg->update_status(Wifi_Connecting);
 }
 
 static void disable_wifi()
@@ -74,6 +70,16 @@ static void disable_wifi()
     esp_wifi_deinit();
 }
 
+WifiManager::WifiManager() : Configurable("/config/wifi"), SystemObject("wifi"), Observable(Wifi_Off)
+{
+    enabled=true;
+    setup("DryII", "wifi4boat");
+    if (enabled)
+    {
+        on();
+    }
+}
+
 void WifiManager::on()
 {
     if (!ssid.isEmpty())
@@ -81,9 +87,8 @@ void WifiManager::on()
         enabled = true;
         wifi_enable(ssid.c_str(), password.c_str(), this);
     }
-    ESP_LOGI(WIFI_TAG, "WiFi has been enabled.");
-
-    notify("enabled", &enabled);
+    ESP_LOGI(WIFI_TAG, "WiFi has been enabled, SSID=%s.", ssid.c_str());
+    update_status(Wifi_Connecting);
 }
 
 void WifiManager::off()
@@ -91,16 +96,18 @@ void WifiManager::off()
     enabled = false;
     disable_wifi();
     ESP_LOGI(WIFI_TAG, "WiFi has been disabled.");
-    notify("enabled", &enabled);
+    update_status(Wifi_Off);
 }
 
-void WifiManager::get_config(const JsonObject&json)
+void WifiManager::get_config(const JsonObject &json)
 {
-    enabled = json["enabled"].as<bool>();
-    this->setup(json["ssid"].as<String>(), json["password"].as<String>());
+    enabled = true;
+    this->setup("DryII", "wifi4boat");
+    //enabled = json["enabled"].as<bool>();
+    //this->setup(json["ssid"].as<String>(), json["password"].as<String>());
 }
 
-void WifiManager::set_config(const JsonObject&json)
+void WifiManager::set_config(const JsonObject &json)
 {
     json["enabled"] = enabled;
     json["ssid"] = ssid;
