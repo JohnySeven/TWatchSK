@@ -20,7 +20,7 @@ enum WebsocketState_t
 class SignalKSocket : public Configurable, public SystemObject, public Observable<WebsocketState_t>, public Observer<WifiState_t>
 {
     public:
-        SignalKSocket();
+        SignalKSocket(WifiManager*wifi);
         bool connect();
         bool disconnect();
         void subscribe(std::function<void(String, JsonObject)> receiver) {

@@ -33,17 +33,20 @@ static void ws_event_handler(void *arg, esp_event_base_t event_base,
         }
         else
         {
-            socket->parse_data(data->data_len, data->data_ptr);
-            ESP_LOGW(WS_TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
+            if (data->data_len > 0)
+            {
+                socket->parse_data(data->data_len, data->data_ptr);
+                ESP_LOGW(WS_TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
+            }
         }
         ESP_LOGW(WS_TAG, "Total payload length=%d, data_len=%d, current payload offset=%d\r\n", data->payload_len, data->data_len, data->payload_offset);
     }
 }
 
-SignalKSocket::SignalKSocket() : Configurable("/config/websocket"), SystemObject("websocket"), Observable(WS_Offline)
+SignalKSocket::SignalKSocket(WifiManager *wifi) : Configurable("/config/websocket"), SystemObject("websocket"), Observable(WS_Offline)
 {
-    auto wifi = (Observable<WifiState_t> *)get_object("wifi");
-
+    server = "pi.boat";
+    port = 3000;
     wifi->attach(this);
 
     if (wifi != NULL)
@@ -101,10 +104,8 @@ bool SignalKSocket::disconnect()
 
 void SignalKSocket::get_config(const JsonObject &json)
 {
-    //server = json["server"].as<String>();
-    //port = json["port"].as<int>();
-    server = "pi.boat";
-    port = 3000;
+    server = json["server"].as<String>();
+    port = json["port"].as<int>();
 }
 
 void SignalKSocket::set_config(const JsonObject &json)
@@ -118,7 +119,7 @@ void SignalKSocket::parse_data(int length, const char *data)
     DynamicJsonDocument doc(1024);
 
     auto result = deserializeJson(doc, data, length);
-    if(result.code() == DeserializationError::Ok)
+    if (result.code() == DeserializationError::Ok)
     {
         ESP_LOGI(WS_TAG, "Got message from websocket with len=%d", length);
     }
@@ -126,7 +127,6 @@ void SignalKSocket::parse_data(int length, const char *data)
     {
         ESP_LOGE(WS_TAG, "Websocket json deserialization failed=%d", result.code());
     }
-    
 }
 
 void SignalKSocket::notify_change(const WifiState_t &wifiState)

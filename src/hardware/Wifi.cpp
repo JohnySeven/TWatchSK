@@ -52,7 +52,7 @@ static void wifi_enable(const char *ssid, const char *password, WifiManager *arg
     memset(&wifi_config, 0, sizeof(wifi_config_t));
     strcpy(reinterpret_cast<char *>(wifi_config.sta.ssid), ssid);
     strcpy(reinterpret_cast<char *>(wifi_config.sta.password), password);
-    wifi_config.sta.listen_interval = 25;
+    wifi_config.sta.listen_interval = 9;
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));

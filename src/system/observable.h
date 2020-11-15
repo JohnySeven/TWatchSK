@@ -10,24 +10,25 @@ class Observable
         Observable(T initialValue)
         {
              value = initialValue; 
-             ESP_LOGI("OBSERVABLE", "Init %d", (int)value);
+             ESP_LOGI("OBSERVABLE-CTOR", "Init %d", (int)value);
         }
         T get();
         void attach(Observer<T>* observer)
         {
             observers.push_front(observer);
-            ESP_LOGI("OBSERVABLE", "Emit %d", (int)value);
+            ESP_LOGI("OBSERVABLE-ATTACH", "Emit %d", (int)value);
             observer->notify_change(value);
         }
     protected:
         void emit(T value)
         {
             this->value = value;
-            ESP_LOGI("OBSERVABLE", "Emit %d", (int)value);
-
+            int index = 0;
             for(auto observer : observers)
             {
                 observer->notify_change(value);
+                ESP_LOGI("OBSERVABLE", "Emit %d (i=%d)", (int)value, index);
+                index++;
             }
         }
         T value;

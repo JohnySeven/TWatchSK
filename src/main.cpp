@@ -112,8 +112,9 @@ void low_energy()
             EventBits_t bits = xEventGroupGetBits(isr_group);
             while (!(bits & WATCH_FLAG_SLEEP_EXIT))
             {
-                delay(250);
-                ESP_LOGI(TAG, "Sleeping at %d MHz...", getCpuFrequencyMhz());
+                delay(500);
+                //ESP_LOGI(TAG, "Sleeping at %d MHz...", getCpuFrequencyMhz());
+                //esp_pm_dump_locks(stdout);
                 bits = xEventGroupGetBits(isr_group);
             }
 
@@ -155,7 +156,7 @@ void setup()
     g_event_queue_handle = xQueueCreate(20, sizeof(uint8_t));
     g_event_group = xEventGroupCreate();
     isr_group = xEventGroupCreate();
-    setCpuFrequencyMhz(80);
+    //setCpuFrequencyMhz(80);
     ttgo = TTGOClass::getWatch();
     if (!SPIFFS.begin(true))
     {
@@ -246,7 +247,7 @@ void setup()
     //Setting up the network
     wifiManager = new WifiManager();
     //Setting up websocket
-    sk_socket = new SignalKSocket();
+    sk_socket = new SignalKSocket(wifiManager);
     //Execute your own GUI interface
     setupGui(wifiManager);
 
