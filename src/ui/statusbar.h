@@ -23,7 +23,7 @@ public:
         memset(_icons, 0, sizeof(_icons));
     }
 
-    void createIcons(lv_obj_t *par)
+    void createIcons(lv_obj_t *par, WifiManager*wifi, SignalKSocket*socket)
     {
         _par = par;
 
@@ -70,7 +70,7 @@ public:
         lv_obj_align(_icons[6].icon, _bar, LV_ALIGN_IN_LEFT_MID, 50, 0);
 
         refresh();
-        attach();
+        attach(wifi, socket);
     }
 
     void setStepCounter(uint32_t counter)
@@ -125,20 +125,15 @@ public:
         lv_obj_set_hidden(_icons[6].icon, value == WS_Offline);
     }
 
-    void attach()
+    void attach(WifiManager*wifi, SignalKSocket*socket)
     {
-        auto wifi = SystemObject::get_object("wifi");
-        auto websocket = SystemObject::get_object("websocket");
+        wifi->attach(this);
+        socket->attach(this);
+    }
 
-        if(wifi != NULL && websocket != NULL)
-        {
-            ((Observable<WifiState_t>*)wifi)->attach(this);
-            ((Observable<WebsocketState_t>*)websocket)->attach(this);
-        }
-        else
-        {
-            ESP_LOGE(SB_TAG, "Failed to attach to wifi or websocket status!");
-        }        
+    void set_hidden(bool hidden)
+    {
+        lv_obj_set_hidden(_bar, hidden);
     }
 private:
     void refresh()

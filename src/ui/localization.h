@@ -1,0 +1,12 @@
+#pragma once
+#define LOC_LANGUAGE "English"
+#define LOC_WIFI "WiFi"
+#define LOC_WIFI_SETTINGS "WiFi settings"
+#define LOC_WIFI_ENABLE "Enabled"
+#define LOC_WIFI_CONNECTED "Connected"
+#define LOC_WIFI_CONNECTED_STATUS_FMT "Connected, IP: %s"
+#define LOC_WIFI_CONNECTING "Connected"
+#define LOC_WIFI_DISCONNECTED "Disconnected"
+#define LOC_WIFI_OFF "Offline"
+#define LOC_WIFI_SCAN_LABEL "Scan"
+#define LOC_WIFI_SCANING_PROGRESS "Scanning..."

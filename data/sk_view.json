@@ -1,0 +1,51 @@
+{
+    "Name": "Test view",
+    "Screens": [
+        {
+            "Name": "Boat overview",
+            "Layout": "Row",
+            "Controls": [
+                {
+                    "Type": "Label",
+                    "Text": "Speed",
+                    "Font": "Small"
+                },
+                {
+                    "Type": "Label",
+                    "Text": "@navigation.speedOverGround",
+                    "Format": "? Km/h",
+                    "Font": "Big"
+                }
+            ]
+        },
+        {
+            "Name": "Light controls",
+            "Layout": "Row",
+            "Controls": [
+                {
+                    "Type": "Switch",
+                    "Path": "navigation.lights",
+                    "States": [
+                        {
+                            "name": "on",
+                            "value": "1"
+                        },
+                        {
+                            "name": "off",
+                            "value": "0"
+                        }
+                    ]
+                },
+                {
+                    "Type": "Button",
+                    "Text": "Horn",
+                    "Action": "Put",
+                    "Put": {
+                        "path": "electrical.horn",
+                        "value": "1sec"
+                    }
+                }
+            ]
+        }
+    ]
+}

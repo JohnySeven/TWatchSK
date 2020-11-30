@@ -1,8 +1,11 @@
 #pragma once
+#include <vector>
 #include "system/configurable.h"
 #include "FreeRTOS.h"
 #include "system/systemobject.h"
 #include "system/observable.h"
+#include "esp_wifi.h"
+#define WIFI_AP_LIST_MAX_SIZE 32
 
 enum WifiState_t
 {
@@ -20,6 +23,7 @@ public:
     void off();
     String get_ip() { return ip; }
     WifiState_t get_status() { return value; }
+    bool is_configured() { return this->ssid != ""; }
     void set_ip(String ip) { this->ip = ip; }
     void update_status(WifiState_t value) { Observable<WifiState_t>::emit(value); }
     void setup(String ssid, String password)
@@ -28,7 +32,24 @@ public:
         this->password = password;
     }
 
+    bool scan_wifi();
+    bool is_scan_complete();
+    int found_wifi_count() { return ap_count; }
+    const wifi_ap_record_t get_found_wifi(int index)
+    {
+        if(index > 0 && index < ap_count)
+        {
+            return ap_info[index];
+        }
+        else
+        {
+            static wifi_ap_record_t invalid;
+            strcpy((char*)invalid.ssid, "invalid");
+            return invalid;
+        }
+     }
 private:
+    void initialize();
     void get_config(const JsonObject &json) override;
     void set_config(const JsonObject &json) override;
     String ssid;
@@ -36,4 +57,14 @@ private:
     String ip = "";
     bool enabled;
     bool connected;
+    bool initialized;
+    wifi_ap_record_t ap_info[WIFI_AP_LIST_MAX_SIZE];
+    uint16_t ap_count = 0;
+
+    static void wifi_event_handler(void *arg, esp_event_base_t event_base,
+                                   int32_t event_id, void *event_data);
+    void clear_wifi_list()
+    {
+         ap_count = 0;
+    }
 };

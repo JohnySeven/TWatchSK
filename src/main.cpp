@@ -24,6 +24,7 @@
 #include "networking/signalk_socket.h"
 #include "esp_int_wdt.h"
 #include "esp_pm.h"
+#include "nvs_flash.h"
 
 #define G_EVENT_VBUS_PLUGIN _BV(0)
 #define G_EVENT_VBUS_REMOVE _BV(1)
@@ -133,13 +134,14 @@ void low_energy()
         lenergy = false;
         ttgo->startLvglTick();
         ttgo->displayWakeup();
+        ttgo->touch->enterMonitorMode();
         ttgo->rtc->syncToSystem();
         updateStepCounter(ttgo->bma->getCounter());
         updateBatteryLevel();
         updateBatteryIcon(LV_ICON_CALCULATION);
         lv_disp_trig_activity(NULL);
         ttgo->openBL();
-        ttgo->bl->adjust(150);
+        ttgo->bl->adjust(125);
         ttgo->bma->enableStepCountInterrupt();
     }
 }
@@ -236,9 +238,6 @@ void setup()
         FALLING);
 
     ESP_LOGI(TAG, "Sensors initialized!");
-
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
     //Check if the RTC clock matches, if not, use compile time
     //ttgo->rtc->check();
 
@@ -249,10 +248,7 @@ void setup()
     //Setting up websocket
     sk_socket = new SignalKSocket(wifiManager);
     //Execute your own GUI interface
-    setupGui(wifiManager);
-
-    ESP_LOGI(TAG, "Wifi states (%d,%d,%d, %d)", (int)WifiState_t::Wifi_Off, (int)WifiState_t::Wifi_Connecting, (int)WifiState_t::Wifi_Connected, (int)WifiState_t::Wifi_Disconnected);
-
+    setupGui(wifiManager, sk_socket);
     //Clear lvgl counter
     lv_disp_trig_activity(NULL);
     //When the initialization is complete, turn on the backlight
@@ -363,7 +359,13 @@ void loop()
     {
         if (lv_disp_get_inactive_time(NULL) < DEFAULT_SCREEN_TIMEOUT)
         {
-            lv_task_handler();
+            auto sleep = lv_task_handler();
+            if(sleep > 250)
+            {
+                sleep = 250;
+            }
+
+            delay(sleep);
         }
         else
         {
@@ -387,6 +389,13 @@ void arduinoTask(void *pvParameter)
 
 void app_main()
 {
+    // Initialize NVS
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK( ret );
     // initialize arduino library before we start the tasks
     initArduino();
     setup();

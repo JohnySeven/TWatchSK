@@ -19,5 +19,5 @@ SystemObject* SystemObject::get_object(String name)
     else
     {
         return iterator->second;
-    }    
+    }
 }

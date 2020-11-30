@@ -16,6 +16,8 @@ Created by Lewis he on October 10, 2019.
 #include "ui/menubar.h"
 #include "ui/keyboard.h"
 #include "ui/message.h"
+#include "ui/loader.h"
+#include "ui/wifilist.h"
 #include <WiFi.h>
 #include "string.h"
 #include <Ticker.h>
@@ -24,6 +26,8 @@ Created by Lewis he on October 10, 2019.
 #include "hardware/Wifi.h"
 #include "system/systemobject.h"
 #include "system/observable.h"
+#include "ui/settings_view.h"
+#include "ui/wifisettings.h"
 
 #define RTC_TIME_ZONE "CET-1CEST,M3.5.0,M10.5.0/3"
 
@@ -69,15 +73,13 @@ static void updateTime();
 static void view_event_handler(lv_obj_t *obj, lv_event_t event);
 
 static void wifi_settings_event_cb();
-static void sd_event_cb();
 static void setting_event_cb();
-static void light_event_cb();
-static void modules_event_cb();
-static void camera_event_cb();
 static void wifi_destory();
 
 MenuBar menuBars;
 StatusBar bar;
+SettingsView* testView;
+WifiSettings*wifi_Settings;
 
 #define SETTINGS_MENU_ITEMS_COUNT 2
 // Settings menu config
@@ -86,7 +88,7 @@ MenuBar::lv_menu_config_t settings_menu_cfg[SETTINGS_MENU_ITEMS_COUNT] = {
     //{.name = "Bluetooth",  .img = (void *) &bluetooth, /*.event_cb = bluetooth_event_cb*/},
     //{.name = "SD Card",  .img = (void *) &sd,  /*.event_cb =sd_event_cb*/},
     //{.name = "Light",  .img = (void *) &light, /*.event_cb = light_event_cb*/},
-    {.name = "Setting", .img = (void *)&setting, /*.event_cb = setting_event_cb */},
+    {.name = "Setting", .img = (void *)&setting, .event_cb = setting_event_cb },
     //{.name = "Modules",  .img = (void *) &modules, /*.event_cb = modules_event_cb */},
     //{.name = "Camera",  .img = (void *) &CAMERA_PNG, /*.event_cb = camera_event_cb*/ }
 };
@@ -111,7 +113,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
     }
 }
 
-void setupGui(WifiManager *wifi)
+void setupGui(WifiManager *wifi, SignalKSocket*socket)
 {
     wifiManager = wifi;
     lv_style_init(&settingStyle);
@@ -129,7 +131,7 @@ void setupGui(WifiManager *wifi)
     lv_obj_align(img_bin, NULL, LV_ALIGN_CENTER, 0, 0);
 
     //! bar
-    bar.createIcons(scr);
+    bar.createIcons(scr, wifi, socket);
     //battery
     updateBatteryLevel();
     lv_icon_battery_t icon = LV_ICON_CALCULATION;
@@ -141,22 +143,6 @@ void setupGui(WifiManager *wifi)
         icon = LV_ICON_CHARGE;
     }
     updateBatteryIcon(icon);
-    //wifi indicator
-    /*wifiManager->subscribe([](ObservableObject *obj, String& property, void *value) {
-        if (property == "enabled")
-        {
-            bool enabled = *reinterpret_cast<bool*>(value);
-            if (enabled == true)
-            {
-                bar.show(LV_STATUS_BAR_WIFI);
-            }
-            else
-            {
-                bar.hidden(LV_STATUS_BAR_WIFI);
-            }
-        }
-    });*/
-
     //! main
     static lv_style_t mainStyle;
     lv_style_init(&mainStyle);
@@ -446,161 +432,7 @@ private:
 
 Switch *Switch::_switch = nullptr;
 
-/*****************************************************************
- *
- *          ! Preload Class
- *
- */
-class Preload
-{
-public:
-    Preload()
-    {
-        _preloadCont = nullptr;
-    }
-    ~Preload()
-    {
-        if (_preloadCont == nullptr)
-            return;
-        lv_obj_del(_preloadCont);
-        _preloadCont = nullptr;
-    }
-    void create(lv_obj_t *parent = nullptr)
-    {
-        if (parent == nullptr)
-        {
-            parent = lv_scr_act();
-        }
-        if (_preloadCont == nullptr)
-        {
-            static lv_style_t plStyle;
-            lv_style_init(&plStyle);
-            lv_style_set_radius(&plStyle, LV_OBJ_PART_MAIN, 0);
-            lv_style_set_bg_color(&plStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-            lv_style_set_bg_opa(&plStyle, LV_OBJ_PART_MAIN, LV_OPA_0);
-            lv_style_set_border_width(&plStyle, LV_OBJ_PART_MAIN, 0);
-            lv_style_set_text_color(&plStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-            lv_style_set_image_recolor(&plStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-
-            static lv_style_t style;
-            lv_style_init(&style);
-            lv_style_set_radius(&style, LV_OBJ_PART_MAIN, 0);
-            lv_style_set_bg_color(&style, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-            lv_style_set_bg_opa(&style, LV_OBJ_PART_MAIN, LV_OPA_0);
-            lv_style_set_border_width(&style, LV_OBJ_PART_MAIN, 0);
-            lv_style_set_text_color(&style, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-            lv_style_set_image_recolor(&style, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-
-            _preloadCont = lv_cont_create(parent, NULL);
-            lv_obj_set_size(_preloadCont, LV_HOR_RES, LV_VER_RES - 30);
-            lv_obj_align(_preloadCont, NULL, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
-            lv_obj_add_style(_preloadCont, LV_OBJ_PART_MAIN, &plStyle);
-
-            lv_obj_t *preload = lv_spinner_create(_preloadCont, NULL);
-            lv_obj_set_size(preload, lv_obj_get_width(_preloadCont) / 2, lv_obj_get_height(_preloadCont) / 2);
-            lv_obj_add_style(preload, LV_OBJ_PART_MAIN, &style);
-            lv_obj_align(preload, _preloadCont, LV_ALIGN_CENTER, 0, 0);
-        }
-    }
-    void align(const lv_obj_t *base, lv_align_t align, lv_coord_t x = 0, lv_coord_t y = 0)
-    {
-        lv_obj_align(_preloadCont, base, align, x, y);
-    }
-
-    void hidden(bool en = true)
-    {
-        lv_obj_set_hidden(_preloadCont, en);
-    }
-
-private:
-    lv_obj_t *_preloadCont = nullptr;
-};
-
-/*****************************************************************
- *
- *          ! List Class
- *
- */
-
-class List
-{
-public:
-    typedef void (*list_event_cb)(const char *);
-    List()
-    {
-    }
-    ~List()
-    {
-        if (_listCont == nullptr)
-            return;
-        lv_obj_del(_listCont);
-        _listCont = nullptr;
-    }
-    void create(lv_obj_t *parent = nullptr)
-    {
-        if (parent == nullptr)
-        {
-            parent = lv_scr_act();
-        }
-        if (_listCont == nullptr)
-        {
-            static lv_style_t listStyle;
-            lv_style_init(&listStyle);
-            lv_style_set_radius(&listStyle, LV_OBJ_PART_MAIN, 0);
-            lv_style_set_bg_color(&listStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-            lv_style_set_bg_opa(&listStyle, LV_OBJ_PART_MAIN, LV_OPA_0);
-            lv_style_set_border_width(&listStyle, LV_OBJ_PART_MAIN, 0);
-            lv_style_set_text_color(&listStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-            lv_style_set_image_recolor(&listStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-
-            _listCont = lv_list_create(lv_scr_act(), NULL);
-            lv_list_set_scrollbar_mode(_listCont, LV_SCROLLBAR_MODE_OFF);
-            lv_obj_set_size(_listCont, LV_HOR_RES, LV_VER_RES - 30);
-
-            lv_obj_add_style(_listCont, LV_OBJ_PART_MAIN, &listStyle);
-            lv_obj_align(_listCont, NULL, LV_ALIGN_CENTER, 0, 0);
-        }
-        _list = this;
-    }
-
-    void add(const char *txt, void *imgsrc = (void *)LV_SYMBOL_WIFI)
-    {
-        lv_obj_t *btn = lv_list_add_btn(_listCont, imgsrc, txt);
-        lv_obj_set_event_cb(btn, __list_event_cb);
-    }
-
-    void align(const lv_obj_t *base, lv_align_t align, lv_coord_t x = 0, lv_coord_t y = 0)
-    {
-        lv_obj_align(_listCont, base, align, x, y);
-    }
-
-    void hidden(bool en = true)
-    {
-        lv_obj_set_hidden(_listCont, en);
-    }
-
-    static void __list_event_cb(lv_obj_t *obj, lv_event_t event)
-    {
-        if (event == LV_EVENT_SHORT_CLICKED)
-        {
-            const char *txt = lv_list_get_btn_text(obj);
-            if (_list->_cb != nullptr)
-            {
-                _list->_cb(txt);
-            }
-        }
-    }
-    void setListCb(list_event_cb cb)
-    {
-        _cb = cb;
-    }
-
-private:
-    lv_obj_t *_listCont = nullptr;
-    static List *_list;
-    list_event_cb _cb = nullptr;
-};
-List *List::_list = nullptr;
+WifiList *WifiList::_list = nullptr;
 
 /*****************************************************************
  *
@@ -641,9 +473,8 @@ private:
  *
  */
 static Keyboard *kb = nullptr;
-static Switch *sw = nullptr;
-static Preload *pl = nullptr;
-static List *list = nullptr;
+static Loader *pl = nullptr;
+static WifiList *list = nullptr;
 static Task *task = nullptr;
 static Ticker *gTicker = nullptr;
 static MBox *mbox = nullptr;
@@ -667,11 +498,6 @@ void wifi_connect_status(bool result)
         delete kb;
         kb = nullptr;
     }
-    if (sw != nullptr)
-    {
-        delete sw;
-        sw = nullptr;
-    }
     if (pl != nullptr)
     {
         delete pl;
@@ -692,7 +518,6 @@ void wifi_kb_event_cb(Keyboard::kb_event_t event)
         kb->hidden();
         Serial.println(kb->getText());
         strlcpy(password, kb->getText(), sizeof(password));
-        pl->hidden(false);
         wifiManager->setup(String(ssid), String(password));
         wifiManager->on();
         gTicker = new Ticker;
@@ -703,11 +528,9 @@ void wifi_kb_event_cb(Keyboard::kb_event_t event)
     else if (event == 1)
     {
         delete kb;
-        delete sw;
         delete pl;
         pl = nullptr;
         kb = nullptr;
-        sw = nullptr;
         menuBars.hidden(false);
     }
 }
@@ -727,12 +550,7 @@ void wifi_sw_event_cb(uint8_t index, bool en)
         }
         break;
     case 1:
-        sw->hidden();
-        pl = new Preload;
-        pl->create();
-        pl->align(bar.self(), LV_ALIGN_OUT_BOTTOM_MID);
-        WiFi.disconnect();
-        WiFi.scanNetworks(true);
+        
         break;
     case 2:
         if (!WiFi.isConnected())
@@ -744,7 +562,6 @@ void wifi_sw_event_cb(uint8_t index, bool en)
         else
         {
             configTzTime(RTC_TIME_ZONE, "pool.ntp.org");
-            sw->hidden(false);
         }
         break;
     default:
@@ -767,8 +584,7 @@ void wifi_list_add(const char *ssid)
 {
     if (list == nullptr)
     {
-        pl->hidden();
-        list = new List;
+        list = new WifiList();
         list->create();
         list->align(bar.self(), LV_ALIGN_OUT_BOTTOM_MID);
         list->setListCb(wifi_list_cb);
@@ -778,15 +594,13 @@ void wifi_list_add(const char *ssid)
 
 static void wifi_settings_event_cb()
 {
-    Switch::switch_cfg_t cfg[] = {{"WiFi", wifi_sw_event_cb}, /*{"Scan", wifi_sw_event_cb},*/ {"NTP Sync", wifi_sw_event_cb}};
-    sw = new Switch;
-    sw->create(cfg, 2, []() {
-        delete sw;
-        sw = nullptr;
+    wifi_Settings = new WifiSettings(wifiManager, []()
+    {
         menuBars.hidden(false);
+        delete wifi_Settings;
+        wifi_Settings = NULL;
     });
-    sw->align(bar.self(), LV_ALIGN_OUT_BOTTOM_MID);
-    sw->setStatus(0, wifiManager->get_status() == Wifi_Connected);
+    wifi_Settings->show(lv_scr_act());
 }
 
 static void wifi_destory()
@@ -797,8 +611,6 @@ static void wifi_destory()
     //! wifi management main
     case 0:
         menuBars.hidden(false);
-        delete sw;
-        sw = nullptr;
         break;
     //! wifi ap list
     case 1:
@@ -822,7 +634,6 @@ static void wifi_destory()
             delete pl;
             pl = nullptr;
         }
-        sw->hidden(false);
         break;
     //! wifi keyboard
     case 2:
@@ -841,7 +652,6 @@ static void wifi_destory()
             delete pl;
             pl = nullptr;
         }
-        sw->hidden(false);
         break;
     case 3:
         break;
@@ -858,6 +668,13 @@ static void wifi_destory()
  */
 static void setting_event_cb()
 {
+    
+    testView = new SettingsView("Test view", []() {
+        delete testView;
+        testView = nullptr;
+        menuBars.hidden(false);
+    });
+    testView->show(lv_scr_act());
 }
 
 /*****************************************************************
@@ -907,6 +724,11 @@ static void destory_mbox()
         lv_obj_del(mbox1);
         mbox1 = nullptr;
     }
+}
+
+void toggleStatusBar(bool hidden)
+{
+    bar.set_hidden(hidden);
 }
 
 /*****************************************************************
