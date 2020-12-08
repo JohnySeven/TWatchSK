@@ -8,8 +8,6 @@
 #include "system/observable.h"
 #include "hardware/Wifi.h"
 
-static const char *WS_TAG = "WS";
-
 enum WebsocketState_t
 {
     WS_Offline = 0,

@@ -35,13 +35,14 @@
 #define G_EVENT_WIFI_CONNECTED _BV(5)
 #define G_EVENT_WIFI_BEGIN _BV(6)
 #define G_EVENT_WIFI_OFF _BV(7)
+#define G_EVENT_TOUCH _BV(8)
 
 enum
 {
     Q_EVENT_WIFI_SCAN_DONE,
     Q_EVENT_WIFI_CONNECT,
     Q_EVENT_BMA_INT,
-    Q_EVENT_AXP_INT,
+    Q_EVENT_AXP_INT
 };
 
 #define DEFAULT_SCREEN_TIMEOUT 10 * 1000
@@ -50,6 +51,7 @@ enum
 #define WATCH_FLAG_SLEEP_EXIT _BV(2)
 #define WATCH_FLAG_BMA_IRQ _BV(3)
 #define WATCH_FLAG_AXP_IRQ _BV(4)
+#define WATCH_FLAT_TOUCH_IRQ _BV(5)
 
 const char *TAG = "APP";
 
@@ -102,20 +104,19 @@ void low_energy()
             ESP_LOGI(TAG, "Entering light sleep mode");
             gpio_wakeup_enable((gpio_num_t)AXP202_INT, GPIO_INTR_LOW_LEVEL);
             gpio_wakeup_enable((gpio_num_t)BMA423_INT1, GPIO_INTR_HIGH_LEVEL);
+            gpio_wakeup_enable((gpio_num_t)TOUCH_INT, GPIO_INTR_HIGH_LEVEL);
             esp_sleep_enable_gpio_wakeup();
             esp_light_sleep_start();
         }
         else
         {
             light_sleep = false;
-            ESP_LOGI(TAG, "WiFi is enabled, no LIGHT sleep is enabled.");
+            ESP_LOGI(TAG, "WiFi is enabled, will not enter light sleep.");
 
             EventBits_t bits = xEventGroupGetBits(isr_group);
             while (!(bits & WATCH_FLAG_SLEEP_EXIT))
             {
                 delay(500);
-                //ESP_LOGI(TAG, "Sleeping at %d MHz...", getCpuFrequencyMhz());
-                //esp_pm_dump_locks(stdout);
                 bits = xEventGroupGetBits(isr_group);
             }
 
@@ -189,7 +190,23 @@ void setup()
     // The default interrupt configuration,
     // you need to set the acceleration parameters, please refer to the BMA423_Accel example
     ttgo->bma->attachInterrupt();
+    pinMode(TOUCH_INT, INPUT);
+    attachInterrupt(
+        TOUCH_INT, [] {
+            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+            EventBits_t bits = xEventGroupGetBitsFromISR(isr_group);
+            if (bits & WATCH_FLAG_SLEEP_MODE)
+            {
+                //! For quick wake up, use the group flag
+                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAT_TOUCH_IRQ, &xHigherPriorityTaskWoken);
+            }
 
+            if (xHigherPriorityTaskWoken)
+            {
+                portYIELD_FROM_ISR();
+            }
+        },
+        RISING);
     //Connection interrupted to the specified pin
     pinMode(BMA423_INT1, INPUT);
     attachInterrupt(
@@ -213,7 +230,6 @@ void setup()
             }
         },
         RISING);
-
     // Connection interrupted to the specified pin
     pinMode(AXP202_INT, INPUT);
     attachInterrupt(
@@ -290,9 +306,15 @@ void loop()
         {
             ttgo->power->readIRQ();
             ttgo->power->clearIRQ();
-            //TODO: Only accept axp power pek key short press
+
             xEventGroupClearBits(isr_group, WATCH_FLAG_AXP_IRQ);
         }
+        if (bits & WATCH_FLAT_TOUCH_IRQ)
+        {
+            xEventGroupClearBits(isr_group, WATCH_FLAT_TOUCH_IRQ);
+            ESP_LOGD(TAG, "Touch interupt!");
+        }
+
         xEventGroupClearBits(isr_group, WATCH_FLAG_SLEEP_EXIT);
         xEventGroupClearBits(isr_group, WATCH_FLAG_SLEEP_MODE);
     }
@@ -389,13 +411,6 @@ void arduinoTask(void *pvParameter)
 
 void app_main()
 {
-    // Initialize NVS
-    esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ret = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK( ret );
     // initialize arduino library before we start the tasks
     initArduino();
     setup();

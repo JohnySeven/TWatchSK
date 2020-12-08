@@ -14,6 +14,8 @@
 const char *WIFI_TAG = "WIFI";
 static bool scan_done = false;
 static bool scan_running = false;
+static wifi_ap_record_t ap_info[WIFI_AP_LIST_MAX_SIZE];
+static uint16_t ap_count = 0;
 
 void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
                                      int32_t event_id, void *event_data)
@@ -39,33 +41,39 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_SCAN_DONE)
     {
-        WifiManager *manager = (WifiManager *)event_data;
-        uint16_t number = WIFI_AP_LIST_MAX_SIZE;
-        wifi_ap_record_t ap_info[WIFI_AP_LIST_MAX_SIZE];
-        ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&manager->ap_count));
-        ESP_LOGI(WIFI_TAG, "Total APs found = %u", manager->ap_count);
-        ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&number, ap_info));
-        for (int i = 0; (i < number) && (i < manager->ap_count); i++)
-        {
-            ESP_LOGI(WIFI_TAG, "SSID \t%s\tRSSI %d", ap_info[i].ssid, ap_info[i].rssi);
-        }
-
-        memcpy(manager->ap_info, ap_info, WIFI_AP_LIST_MAX_SIZE * sizeof(wifi_ap_record_t));
-
+        ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
+        ESP_LOGI(WIFI_TAG, "Scan complete. Total APs found = %u", ap_count);
+        ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&ap_count, ap_info));
         scan_running = false;
         scan_done = true;
     }
 }
 
+int WifiManager::found_wifi_count()
+{
+    return ap_count;
+}
+
+bool WifiManager::is_scan_complete()
+{
+    return scan_done;
+}
+
 void WifiManager::initialize()
 {
-    ESP_LOGI(WIFI_TAG, "Initializing wifi...");
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WifiManager::wifi_event_handler, this));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &WifiManager::wifi_event_handler, this));
-    initialized = true;
+    if (!initialized)
+    {
+        ESP_LOGI(WIFI_TAG, "Initializing wifi...");
+        tcpip_adapter_init();
+        ESP_ERROR_CHECK(esp_event_loop_create_default());
+        wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+        cfg.nvs_enable = false;
+        ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+        ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WifiManager::wifi_event_handler, this));
+        ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &WifiManager::wifi_event_handler, this));
+        ESP_LOGI(WIFI_TAG, "Wifi is initialized!");
+        initialized = true;
+    }
 }
 
 static void wifi_enable(const char *ssid, const char *password)
@@ -88,12 +96,16 @@ static void disable_wifi()
 {
     esp_wifi_disconnect();
     esp_wifi_stop();
-    esp_wifi_deinit();
+    //esp_wifi_deinit();
+}
+
+void WifiManager::clear_wifi_list()
+{
+    ap_count = 0;
 }
 
 WifiManager::WifiManager() : Configurable("/config/wifi"), SystemObject("wifi"), Observable(Wifi_Off)
 {
-    tcpip_adapter_init();
     initialize();
 
     if (enabled)
@@ -126,15 +138,13 @@ void WifiManager::off()
         ESP_LOGI(WIFI_TAG, "WiFi has been disabled.");
         update_status(Wifi_Off);
         enabled = false;
-        initialized = false;
     }
 }
 
 void WifiManager::get_config(const JsonObject &json)
 {
-    this->setup("DryII", "wifi4boat");
-    //enabled = json["enabled"].as<bool>();
-    //this->setup(json["ssid"].as<String>(), json["password"].as<String>());
+    enabled = json["enabled"].as<bool>();
+    setup(json["ssid"].as<String>(), json["password"].as<String>());
 }
 
 void WifiManager::set_config(const JsonObject &json)
@@ -149,29 +159,25 @@ bool WifiManager::scan_wifi()
     bool ret = false;
     if (!scan_running)
     {
-        if(!initialized)
-        {
-            this->initialize();
-        }
-        this->clear_wifi_list();
-        if (!scan_running)
-        {
-            scan_running = true;
-            scan_done = false;
-            ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-            ESP_ERROR_CHECK(esp_wifi_start());
-            ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, false));
-        }
-        else
-        {
-            ESP_LOGE(WIFI_TAG, "Scan is already in progress!");
-        }
+        scan_running = true;
+        initialize();
+        clear_wifi_list();
+        scan_done = false;
+        ESP_LOGI(WIFI_TAG, "Scanning nearby wifi...");
+        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+        ESP_ERROR_CHECK(esp_wifi_start());
+        ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, false));
+        ret = true;
+    }
+    else
+    {
+        ESP_LOGE(WIFI_TAG, "Scan is already in progress!");
     }
 
     return ret;
 }
 
-bool WifiManager::is_scan_complete()
+const wifi_ap_record_t WifiManager::get_found_wifi(int index)
 {
-    return scan_done;
+    return ap_info[index];
 }

@@ -79,7 +79,6 @@ static void wifi_destory();
 MenuBar menuBars;
 StatusBar bar;
 SettingsView* testView;
-WifiSettings*wifi_Settings;
 
 #define SETTINGS_MENU_ITEMS_COUNT 2
 // Settings menu config
@@ -432,8 +431,6 @@ private:
 
 Switch *Switch::_switch = nullptr;
 
-WifiList *WifiList::_list = nullptr;
-
 /*****************************************************************
  *
  *          ! Task Class
@@ -582,25 +579,18 @@ void wifi_list_cb(const char *txt)
 
 void wifi_list_add(const char *ssid)
 {
-    if (list == nullptr)
-    {
-        list = new WifiList();
-        list->create();
-        list->align(bar.self(), LV_ALIGN_OUT_BOTTOM_MID);
-        list->setListCb(wifi_list_cb);
-    }
-    list->add(ssid);
+    
 }
 
 static void wifi_settings_event_cb()
 {
-    wifi_Settings = new WifiSettings(wifiManager, []()
+    auto wifiSettings = new WifiSettings(wifiManager);
+    wifiSettings->on_close([wifiSettings]()
     {
         menuBars.hidden(false);
-        delete wifi_Settings;
-        wifi_Settings = NULL;
+        delete wifiSettings;
     });
-    wifi_Settings->show(lv_scr_act());
+    wifiSettings->show(lv_scr_act());
 }
 
 static void wifi_destory()
@@ -669,7 +659,8 @@ static void wifi_destory()
 static void setting_event_cb()
 {
     
-    testView = new SettingsView("Test view", []() {
+    testView = new SettingsView("Test view");
+    testView->on_close([]() {
         delete testView;
         testView = nullptr;
         menuBars.hidden(false);

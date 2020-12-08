@@ -3,13 +3,18 @@
 #include "functional"
 #define SETTINGS_TOP_BAR_HEIGHT 42
 LV_IMG_DECLARE(exit_32px);
+const char * SETTINGS_TAG = "SETTINGS";
 
 class SettingsView : View
 {
 public:
-    SettingsView(char *title, std::function<void()> closeCallback)
+    SettingsView(char *title)
     {
         this->titleText = title;
+    }
+
+    void on_close(std::function<void()> closeCallback)
+    {
         this->callback = closeCallback;
     }
 

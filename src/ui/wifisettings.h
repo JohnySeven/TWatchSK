@@ -3,11 +3,12 @@
 #include "localization.h"
 #include "hardware/Wifi.h"
 #include "loader.h"
+#include "wifilist.h"
 
 class WifiSettings : public SettingsView
 {
 public:
-    WifiSettings(WifiManager *wifi, std::function<void()> close_call_back) : SettingsView(LOC_WIFI_SETTINGS, close_call_back)
+    WifiSettings(WifiManager *wifi) : SettingsView(LOC_WIFI_SETTINGS)
     {
         wifi_manager = wifi;
     }
@@ -60,8 +61,8 @@ private:
     lv_obj_t *scanButtonLabel;
     Loader *wifiScanLoader;
     Ticker *statusUpdateTicker;
+    const char*selectedAp;
     bool scanningWifi = false;
-    int dummyCounter = 0;
 
     static void __update_ticker(WifiSettings *settings)
     {
@@ -77,37 +78,53 @@ private:
 
     static void __enable_switch_event(lv_obj_t *obj, lv_event_t event)
     {
+
     }
 
     static void __scan_event(lv_obj_t *obj, lv_event_t event)
     {
         if (event == LV_EVENT_CLICKED)
         {
-            ESP_LOGI("WIFI", "Scan event clicked.");
             ((WifiSettings *)obj->user_data)->scan_wifi_list();
         }
     }
 
     void scan_wifi_list()
     {
-        //if (wifi_manager->scan_wifi())
-        //{
+        if (wifi_manager->scan_wifi())
+        {
             wifiScanLoader = new Loader(LOC_WIFI_SCANING_PROGRESS);
-            dummyCounter = 3;
             scanningWifi = true;
-        //}
+        }
     }
 
     void scan_wifi_check()
     {
-        if (dummyCounter < 0)//wifi_manager->is_scan_complete())
+        if (wifi_manager->is_scan_complete())
         {
             delete wifiScanLoader;
             wifiScanLoader = NULL;
             scanningWifi = false;
-            ESP_LOGI("WIFI", "Scan completed with %d found wifi APs", wifi_manager->found_wifi_count());
+            ESP_LOGI(SETTINGS_TAG, "Scan completed with %d found wifi APs", wifi_manager->found_wifi_count());
+
+            auto wifiList = new WifiList();
+            wifiList->show(lv_scr_act());
+            
+            for (int i = 0; i < wifi_manager->found_wifi_count(); i++)
+            {
+                auto ap = wifi_manager->get_found_wifi(i);
+                wifiList->add_ssid((char*)ap.ssid);
+            }
+            
+            wifiList->on_close([this,wifiList](){
+                auto ssid = wifiList->selected_ssid();
+
+                if(ssid != nullptr)
+                {
+                    ESP_LOGI(SETTINGS_TAG, "User has selected %s SSID", ssid);
+                }
+            });          
         }
-        dummyCounter--;
     }
 
     void update_wifi_info()

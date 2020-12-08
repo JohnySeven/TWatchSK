@@ -1,4 +1,5 @@
 #include "signalk_socket.h"
+static const char *WS_TAG = "WS";
 
 static void ws_event_handler(void *arg, esp_event_base_t event_base,
                              int32_t event_id, void *event_data)
@@ -13,7 +14,6 @@ static void ws_event_handler(void *arg, esp_event_base_t event_base,
     else if (event_id == WEBSOCKET_EVENT_CONNECTED)
     {
         ESP_LOGI(WS_TAG, "Web socket connected to server!");
-        ESP_LOGI(WS_TAG, "Sending subscription message...");
         socket->update_status(WS_Connected);
 
         //esp_websocket_client_send_text(socket->get_ws(), subscriptionMessage, sizeof(subscriptionMessage)-1, portMAX_DELAY);

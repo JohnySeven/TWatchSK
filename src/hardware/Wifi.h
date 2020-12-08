@@ -34,20 +34,8 @@ public:
 
     bool scan_wifi();
     bool is_scan_complete();
-    int found_wifi_count() { return ap_count; }
-    const wifi_ap_record_t get_found_wifi(int index)
-    {
-        if(index > 0 && index < ap_count)
-        {
-            return ap_info[index];
-        }
-        else
-        {
-            static wifi_ap_record_t invalid;
-            strcpy((char*)invalid.ssid, "invalid");
-            return invalid;
-        }
-     }
+    int found_wifi_count();
+    const wifi_ap_record_t get_found_wifi(int index);
 private:
     void initialize();
     void get_config(const JsonObject &json) override;
@@ -55,16 +43,10 @@ private:
     String ssid;
     String password;
     String ip = "";
-    bool enabled;
-    bool connected;
-    bool initialized;
-    wifi_ap_record_t ap_info[WIFI_AP_LIST_MAX_SIZE];
-    uint16_t ap_count = 0;
-
+    bool enabled = false;
+    bool connected = false;
+    bool initialized = false;
     static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                    int32_t event_id, void *event_data);
-    void clear_wifi_list()
-    {
-         ap_count = 0;
-    }
+    void clear_wifi_list();
 };

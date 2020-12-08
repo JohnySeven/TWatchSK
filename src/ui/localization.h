@@ -10,3 +10,4 @@
 #define LOC_WIFI_OFF "Offline"
 #define LOC_WIFI_SCAN_LABEL "Scan"
 #define LOC_WIFI_SCANING_PROGRESS "Scanning..."
+#define LOC_WIFI_SELECT "Select Wifi"
