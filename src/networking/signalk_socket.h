@@ -32,11 +32,19 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
         }
         void notify_change(const WifiState_t &wifi) override;
     private:
+        static void ws_event_handler(void *arg, esp_event_base_t event_base,
+                             int32_t event_id, void *event_data);
         String server = "";
         int port = 0;
+        String token = "";
+        String clientId = "";
+        String serverName = "";
+        String serverVersion = "";
         esp_websocket_client_handle_t websocket;
         std::vector<std::function<void(String, JsonObject)>> receivers;
         SystemObject*wifi;
-        void get_config(const JsonObject &json) override;
-        void set_config(const JsonObject &json) override;
+        void load_config_from_file(const JsonObject &json) override;
+        void save_config_to_file(JsonObject &json) override;
+        void send_token_permission();
+        void send_json(const JsonObject &json);
 };

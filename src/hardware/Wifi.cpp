@@ -106,6 +106,7 @@ void WifiManager::clear_wifi_list()
 
 WifiManager::WifiManager() : Configurable("/config/wifi"), SystemObject("wifi"), Observable(Wifi_Off)
 {
+    load();
     initialize();
 
     if (enabled)
@@ -141,17 +142,25 @@ void WifiManager::off()
     }
 }
 
-void WifiManager::get_config(const JsonObject &json)
+void WifiManager::save_config_to_file(JsonObject &json)
 {
+    ESP_LOGI(WIFI_TAG, "Storing SSID %s to JSON.", ssid.c_str());
+    json["enabled"] = enabled;
+    json["ssid"] = ssid;
+    json["password"] = password;
+}
+
+void WifiManager::load_config_from_file(const JsonObject &json)
+{    
     enabled = json["enabled"].as<bool>();
     setup(json["ssid"].as<String>(), json["password"].as<String>());
 }
 
-void WifiManager::set_config(const JsonObject &json)
+void WifiManager::setup(String ssid, String password)
 {
-    json["enabled"] = enabled;
-    json["ssid"] = ssid;
-    json["password"] = password;
+        this->ssid = ssid;
+        this->password = password;
+        ESP_LOGI(WIFI_TAG, "SSID has been updated to %s with password ******.", ssid.c_str());
 }
 
 bool WifiManager::scan_wifi()

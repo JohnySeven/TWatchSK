@@ -476,8 +476,6 @@ static Task *task = nullptr;
 static Ticker *gTicker = nullptr;
 static MBox *mbox = nullptr;
 
-static char ssid[64], password[64];
-
 /*****************************************************************
  *
  *          !WIFI EVENT
@@ -506,30 +504,6 @@ void wifi_connect_status(bool result)
         bar.hidden(LV_STATUS_BAR_WIFI);
     }*/
     menuBars.hidden(false);
-}
-
-void wifi_kb_event_cb(Keyboard::kb_event_t event)
-{
-    if (event == 0)
-    {
-        kb->hidden();
-        Serial.println(kb->getText());
-        strlcpy(password, kb->getText(), sizeof(password));
-        wifiManager->setup(String(ssid), String(password));
-        wifiManager->on();
-        gTicker = new Ticker;
-        gTicker->once_ms(5 * 1000, []() {
-            wifi_connect_status(false);
-        });
-    }
-    else if (event == 1)
-    {
-        delete kb;
-        delete pl;
-        pl = nullptr;
-        kb = nullptr;
-        menuBars.hidden(false);
-    }
 }
 
 void wifi_sw_event_cb(uint8_t index, bool en)
@@ -568,18 +542,13 @@ void wifi_sw_event_cb(uint8_t index, bool en)
 
 void wifi_list_cb(const char *txt)
 {
-    strlcpy(ssid, txt, sizeof(ssid));
+    /*strlcpy(ssid, txt, sizeof(ssid));
     delete list;
     list = nullptr;
     kb = new Keyboard;
     kb->create();
     kb->align(bar.self(), LV_ALIGN_OUT_BOTTOM_MID);
-    kb->setKeyboardEvent(wifi_kb_event_cb);
-}
-
-void wifi_list_add(const char *ssid)
-{
-    
+    kb->setKeyboardEvent(wifi_kb_event_cb);*/
 }
 
 static void wifi_settings_event_cb()

@@ -1,46 +1,52 @@
 #include "configurable.h"
+const char TAG[] = "CONFIG";
 
 Configurable::Configurable(String path)
 {
     this->file_path = path;
-    load();
 }
 
 void Configurable::load()
 {
-    ESP_LOGI("CONFIG", "Loading config %s", file_path.c_str());
+    StaticJsonDocument<512> doc;
+    auto exists = SPIFFS.exists(file_path);
+    ESP_LOGI(TAG, "Loading config %s (exists=%d)", file_path.c_str(), exists);
 
-    SpiRamJsonDocument json(1024);
-    if (SPIFFS.exists(file_path))
+    if (exists)
     {
         auto file = SPIFFS.open(file_path);
-        deserializeJson(json, file);
-        set_config(json.as<JsonObject>());
+        ESP_LOGI(TAG, "Config %s size=%d", file_path.c_str(), file.available());
+        auto error = deserializeJson(doc, file);
+        if(error == DeserializationError::Ok)
+        {
+            load_config_from_file(doc.as<JsonObject>());
+        }
+        else
+        {
+            ESP_LOGI(TAG, "Failed to deserialize config %s! Error=%d", file_path.c_str(), (int)error.code());            
+        }
+        
         file.close();
-    }
-    else
-    {
-        json.clear();
     }
 }
 
 void Configurable::save()
 {
-    ESP_LOGI("CONFIG", "Saving config %s", file_path.c_str());
-
-    DynamicJsonDocument json(1024);
+    StaticJsonDocument<512> doc;
     auto file = SPIFFS.open(file_path, "w");
-    get_config(json.as<JsonObject>());
-    serializeJson(json, file);
+    JsonObject obj = doc.createNestedObject("root");
+    save_config_to_file(obj);
+    serializeJson(obj, file);
+    file.flush();
     file.close();
 }
 
-void Configurable::get_config(const JsonObject& json)
+void Configurable::load_config_from_file(const JsonObject &json)
 {
-
+    ESP_LOGW(TAG, "load_config_from_file not overriden for %s", file_path.c_str());
 }
 
-void Configurable::set_config(const JsonObject& json)
+void Configurable::save_config_to_file(JsonObject &json)
 {
-
+    ESP_LOGW(TAG, "save_config_to_file not overriden for %s", file_path.c_str());
 }

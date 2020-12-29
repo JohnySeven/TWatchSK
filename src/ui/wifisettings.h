@@ -4,6 +4,7 @@
 #include "hardware/Wifi.h"
 #include "loader.h"
 #include "wifilist.h"
+#include "ui_ticker.h"
 
 class WifiSettings : public SettingsView
 {
@@ -16,9 +17,10 @@ public:
 protected:
     virtual void show_internal(lv_obj_t *parent) override
     {
+        lv_cont_set_layout(parent, LV_LAYOUT_COLUMN_LEFT);
         enableSwitch = lv_switch_create(topBar, NULL);
-        lv_obj_align(enableSwitch, topBar, LV_ALIGN_IN_RIGHT_MID, 0, 0);
-        lv_obj_set_event_cb(enableSwitch, __enable_switch_event);
+        lv_obj_align(enableSwitch, topBar, LV_ALIGN_IN_RIGHT_MID, -6, 0);
+        enableSwitch->user_data = this;
 
         if (wifi_manager->get_status() == WifiState_t::Wifi_Off)
         {
@@ -28,6 +30,8 @@ protected:
         {
             lv_switch_on(enableSwitch, false);
         }
+
+        lv_obj_set_event_cb(enableSwitch, __enable_switch_event);
 
         status = lv_label_create(parent, NULL);
 
@@ -40,17 +44,37 @@ protected:
 
         update_wifi_info();
 
-        statusUpdateTicker = new Ticker();
-        statusUpdateTicker->attach_ms<WifiSettings *>(1000, __update_ticker, this);
+        statusUpdateTicker = new UITicker(1000, [this]() {
+            if (!this->scanning_wifi)
+            {
+                this->update_wifi_info();
+            }
+            else
+            {
+                this->scan_wifi_check();
+            }
+        });
     }
 
     virtual bool hide_internal() override
     {
-        statusUpdateTicker->detach();
         delete statusUpdateTicker;
         statusUpdateTicker = NULL;
         save_wifi_settings();
         return true;
+    }
+
+    void set_ssid(const char *ssid)
+    {
+        strcpy(this->selectedAp, ssid);
+    }
+
+    void set_password(const char *password)
+    {
+        strcpy(this->password, password);
+        this->wifi_changed = true;
+
+        wifi_manager->setup(String(selectedAp), String(password));
     }
 
 private:
@@ -60,25 +84,30 @@ private:
     lv_obj_t *scanButton;
     lv_obj_t *scanButtonLabel;
     Loader *wifiScanLoader;
-    Ticker *statusUpdateTicker;
-    const char*selectedAp;
-    bool scanningWifi = false;
-
-    static void __update_ticker(WifiSettings *settings)
-    {
-        if (!settings->scanningWifi)
-        {
-            settings->update_wifi_info();
-        }
-        else
-        {
-            settings->scan_wifi_check();
-        }
-    }
+    UITicker *statusUpdateTicker;
+    char selectedAp[64];
+    char password[64];
+    bool scanning_wifi = false;
+    bool wifi_changed = false;
 
     static void __enable_switch_event(lv_obj_t *obj, lv_event_t event)
     {
+        if(event == LV_EVENT_VALUE_CHANGED)
+        {
+            ((WifiSettings*)obj->user_data)->enable_switch_updated();
+        }
+    }
 
+    void enable_switch_updated()
+    {
+        if(lv_switch_get_state(enableSwitch))
+        {
+            wifi_manager->on();
+        }
+        else
+        {
+            wifi_manager->off();
+        }
     }
 
     static void __scan_event(lv_obj_t *obj, lv_event_t event)
@@ -94,7 +123,7 @@ private:
         if (wifi_manager->scan_wifi())
         {
             wifiScanLoader = new Loader(LOC_WIFI_SCANING_PROGRESS);
-            scanningWifi = true;
+            scanning_wifi = true;
         }
     }
 
@@ -104,26 +133,46 @@ private:
         {
             delete wifiScanLoader;
             wifiScanLoader = NULL;
-            scanningWifi = false;
-            ESP_LOGI(SETTINGS_TAG, "Scan completed with %d found wifi APs", wifi_manager->found_wifi_count());
+            scanning_wifi = false;
+            ESP_LOGI(SETTINGS_TAG, "Scan completed with %d found WiFi APs", wifi_manager->found_wifi_count());
 
             auto wifiList = new WifiList();
             wifiList->show(lv_scr_act());
-            
+
             for (int i = 0; i < wifi_manager->found_wifi_count(); i++)
             {
                 auto ap = wifi_manager->get_found_wifi(i);
-                wifiList->add_ssid((char*)ap.ssid);
+                wifiList->add_ssid((char *)ap.ssid);
             }
-            
-            wifiList->on_close([this,wifiList](){
+
+            wifiList->on_close([this, wifiList]() {
                 auto ssid = wifiList->selected_ssid();
 
-                if(ssid != nullptr)
+                if (ssid != nullptr)
                 {
                     ESP_LOGI(SETTINGS_TAG, "User has selected %s SSID", ssid);
+                    this->set_ssid(ssid);
+                    delete wifiList;
+                    auto passwordPicker = new Keyboard(LOC_WIFI_PASSWORD_PROMPT);
+                    passwordPicker->on_close([this, passwordPicker]() {
+                        if (passwordPicker->is_success())
+                        {
+                            ESP_LOGI(SETTINGS_TAG, "User password input.");
+                            this->set_password(passwordPicker->get_text());
+                        }
+                        else
+                        {
+                            ESP_LOGI(SETTINGS_TAG, "User canceled password input.");
+                        }
+                    });
+
+                    passwordPicker->show(lv_scr_act());
                 }
-            });          
+                else
+                {
+                    delete wifiList;
+                }
+            });
         }
     }
 
@@ -153,6 +202,8 @@ private:
 
     void save_wifi_settings()
     {
-        ESP_LOGI("Settings", "Saving wifi settings...");
+        ESP_LOGI(SETTINGS_TAG, "Saving WiFi settings...");
+        wifi_manager->save();
+        ESP_LOGI(SETTINGS_TAG, "WiFi settings saved!");
     }
 };

@@ -25,65 +25,15 @@
 #include "esp_int_wdt.h"
 #include "esp_pm.h"
 #include "nvs_flash.h"
-
-#define G_EVENT_VBUS_PLUGIN _BV(0)
-#define G_EVENT_VBUS_REMOVE _BV(1)
-#define G_EVENT_CHARGE_DONE _BV(2)
-
-#define G_EVENT_WIFI_SCAN_START _BV(3)
-#define G_EVENT_WIFI_SCAN_DONE _BV(4)
-#define G_EVENT_WIFI_CONNECTED _BV(5)
-#define G_EVENT_WIFI_BEGIN _BV(6)
-#define G_EVENT_WIFI_OFF _BV(7)
-#define G_EVENT_TOUCH _BV(8)
-
-enum
-{
-    Q_EVENT_WIFI_SCAN_DONE,
-    Q_EVENT_WIFI_CONNECT,
-    Q_EVENT_BMA_INT,
-    Q_EVENT_AXP_INT
-};
-
-#define DEFAULT_SCREEN_TIMEOUT 10 * 1000
-
-#define WATCH_FLAG_SLEEP_MODE _BV(1)
-#define WATCH_FLAG_SLEEP_EXIT _BV(2)
-#define WATCH_FLAG_BMA_IRQ _BV(3)
-#define WATCH_FLAG_AXP_IRQ _BV(4)
-#define WATCH_FLAT_TOUCH_IRQ _BV(5)
+#include "system/events.h"
 
 const char *TAG = "APP";
-
-QueueHandle_t g_event_queue_handle = NULL;
-EventGroupHandle_t g_event_group = NULL;
-EventGroupHandle_t isr_group = NULL;
+#define DEFAULT_SCREEN_TIMEOUT 10 * 1000
 bool lenergy = false;
 bool light_sleep = false;
 TTGOClass *ttgo;
 WifiManager *wifiManager;
 SignalKSocket*sk_socket;
-
-/*void setupNetwork()
-{
-    WiFi.mode(WIFI_STA);
-    WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
-        xEventGroupClearBits(g_event_group, G_EVENT_WIFI_CONNECTED);
-    }, WiFiEvent_t::SYSTEM_EVENT_STA_DISCONNECTED);
-
-    WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
-        uint8_t data = Q_EVENT_WIFI_SCAN_DONE;
-        xQueueSend(g_event_queue_handle, &data, portMAX_DELAY);
-    }, WiFiEvent_t::SYSTEM_EVENT_SCAN_DONE);
-
-    WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
-        xEventGroupSetBits(g_event_group, G_EVENT_WIFI_CONNECTED);
-    }, WiFiEvent_t::SYSTEM_EVENT_STA_CONNECTED);
-
-    WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
-        wifi_connect_status(true);
-    }, WiFiEvent_t::SYSTEM_EVENT_STA_GOT_IP);
-}*/
 
 void low_energy()
 {
@@ -120,7 +70,7 @@ void low_energy()
                 bits = xEventGroupGetBits(isr_group);
             }
 
-            ESP_LOGI(TAG,"Wakeup request from sleep %d", bits);
+            ESP_LOGI(TAG,"Wakeup request from sleep. System flags=%d", bits);
         }
     }
     else
@@ -155,16 +105,14 @@ void setup()
 #if !CONFIG_FREERTOS_USE_TICKLESS_IDLE
 #error "CONFIG_FREERTOS_USE_TICKLESS_IDLE missing"
 #endif
-    //Create a program that allows the required message objects and group flags
-    g_event_queue_handle = xQueueCreate(20, sizeof(uint8_t));
-    g_event_group = xEventGroupCreate();
-    isr_group = xEventGroupCreate();
     //setCpuFrequencyMhz(80);
     ttgo = TTGOClass::getWatch();
     if (!SPIFFS.begin(true))
     {
         ESP_LOGE(TAG, "Failed to initialize SPIFFS!");
     }
+
+    initialize_events();
 
     //Initialize TWatch
     ttgo->begin();
@@ -220,7 +168,7 @@ void setup()
             }
             else
             {
-                uint8_t data = Q_EVENT_BMA_INT;
+                uint8_t data = ApplicationEvents_T::Q_EVENT_BMA_INT;
                 xQueueSendFromISR(g_event_queue_handle, &data, &xHigherPriorityTaskWoken);
             }
 
@@ -243,7 +191,7 @@ void setup()
             }
             else
             {
-                uint8_t data = Q_EVENT_AXP_INT;
+                uint8_t data = ApplicationEvents_T::Q_EVENT_AXP_INT;
                 xQueueSendFromISR(g_event_queue_handle, &data, &xHigherPriorityTaskWoken);
             }
             if (xHigherPriorityTaskWoken)
@@ -329,7 +277,7 @@ void loop()
     {
         switch (data)
         {
-        case Q_EVENT_BMA_INT:
+        case ApplicationEvents_T::Q_EVENT_BMA_INT:
             do
             {
                 rlst = ttgo->bma->readInterrupt();
@@ -341,20 +289,17 @@ void loop()
                 updateStepCounter(ttgo->bma->getCounter());
             }
             break;
-        case Q_EVENT_AXP_INT:
+        case ApplicationEvents_T::Q_EVENT_AXP_INT:
             ttgo->power->readIRQ();
             if (ttgo->power->isVbusPlugInIRQ())
             {
                 updateBatteryIcon(LV_ICON_CHARGE);
             }
-            if (ttgo->power->isVbusRemoveIRQ())
+            if (ttgo->power->isVbusRemoveIRQ() || ttgo->power->isChargingDoneIRQ())
             {
                 updateBatteryIcon(LV_ICON_CALCULATION);
             }
-            if (ttgo->power->isChargingDoneIRQ())
-            {
-                updateBatteryIcon(LV_ICON_CALCULATION);
-            }
+            
             if (ttgo->power->isPEKShortPressIRQ())
             {
                 ttgo->power->clearIRQ();
@@ -363,15 +308,6 @@ void loop()
             }
             ttgo->power->clearIRQ();
             break;
-        case Q_EVENT_WIFI_SCAN_DONE:
-        {
-            int16_t len = WiFi.scanComplete();
-            for (int i = 0; i < len; ++i)
-            {
-                wifi_list_add(WiFi.SSID(i).c_str());
-            }
-            break;
-        }
         default:
             break;
         }
@@ -411,6 +347,9 @@ void arduinoTask(void *pvParameter)
 
 void app_main()
 {
+    esp_log_level_set("*", ESP_LOG_INFO);
+    esp_log_level_set("WEBSOCKET_CLIENT", ESP_LOG_DEBUG);
+    esp_log_level_set("TRANS_TCP", ESP_LOG_DEBUG);
     // initialize arduino library before we start the tasks
     initArduino();
     setup();

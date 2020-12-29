@@ -26,11 +26,7 @@ public:
     bool is_configured() { return this->ssid != ""; }
     void set_ip(String ip) { this->ip = ip; }
     void update_status(WifiState_t value) { Observable<WifiState_t>::emit(value); }
-    void setup(String ssid, String password)
-    {
-        this->ssid = ssid;
-        this->password = password;
-    }
+    void setup(String ssid, String password);
 
     bool scan_wifi();
     bool is_scan_complete();
@@ -38,8 +34,8 @@ public:
     const wifi_ap_record_t get_found_wifi(int index);
 private:
     void initialize();
-    void get_config(const JsonObject &json) override;
-    void set_config(const JsonObject &json) override;
+    virtual void load_config_from_file(const JsonObject &json) override final;
+    virtual void save_config_to_file(JsonObject &json) override final;
     String ssid;
     String password;
     String ip = "";

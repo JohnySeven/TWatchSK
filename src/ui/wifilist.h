@@ -24,6 +24,7 @@ public:
 
     virtual void show_internal(lv_obj_t *parent) override
     {
+        lv_cont_set_layout(parent, LV_LAYOUT_OFF);
         static lv_style_t listStyle;
         lv_style_init(&listStyle);
         lv_style_set_radius(&listStyle, LV_OBJ_PART_MAIN, 0);
