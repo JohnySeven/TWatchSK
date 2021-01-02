@@ -26,6 +26,7 @@ Created by Lewis he on October 10, 2019.
 #include "hardware/Wifi.h"
 #include "system/systemobject.h"
 #include "system/observable.h"
+#include "system/events.h"
 #include "ui/settings_view.h"
 #include "ui/wifisettings.h"
 
@@ -55,9 +56,6 @@ LV_IMG_DECLARE(iexit);
 LV_IMG_DECLARE(modules);
 LV_IMG_DECLARE(CAMERA_PNG);
 
-extern EventGroupHandle_t g_event_group;
-extern QueueHandle_t g_event_queue_handle;
-
 static lv_style_t settingStyle;
 static lv_obj_t *mainBar = nullptr;
 static lv_obj_t *timeLabel = nullptr;
@@ -78,7 +76,7 @@ static void wifi_destory();
 
 MenuBar menuBars;
 StatusBar bar;
-SettingsView* testView;
+SettingsView *testView;
 
 #define SETTINGS_MENU_ITEMS_COUNT 2
 // Settings menu config
@@ -87,7 +85,7 @@ MenuBar::lv_menu_config_t settings_menu_cfg[SETTINGS_MENU_ITEMS_COUNT] = {
     //{.name = "Bluetooth",  .img = (void *) &bluetooth, /*.event_cb = bluetooth_event_cb*/},
     //{.name = "SD Card",  .img = (void *) &sd,  /*.event_cb =sd_event_cb*/},
     //{.name = "Light",  .img = (void *) &light, /*.event_cb = light_event_cb*/},
-    {.name = "Setting", .img = (void *)&setting, .event_cb = setting_event_cb },
+    {.name = "Setting", .img = (void *)&setting, .event_cb = setting_event_cb},
     //{.name = "Modules",  .img = (void *) &modules, /*.event_cb = modules_event_cb */},
     //{.name = "Camera",  .img = (void *) &CAMERA_PNG, /*.event_cb = camera_event_cb*/ }
 };
@@ -112,7 +110,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
     }
 }
 
-void setupGui(WifiManager *wifi, SignalKSocket*socket)
+void setupGui(WifiManager *wifi, SignalKSocket *socket)
 {
     wifiManager = wifi;
     lv_style_init(&settingStyle);
@@ -237,6 +235,31 @@ void updateBatteryIcon(lv_icon_battery_t icon)
 static void lv_update_task(struct _lv_task_t *data)
 {
     updateTime();
+    GuiEvent_t event;
+
+    if (read_gui_update(event))
+    {
+        if (event.event == GuiEventType_t::GUI_SHOW_MESSAGE || event.event == GuiEventType_t::GUI_SHOW_WARNING)
+        {
+            static const char *btns[] = {LOC_MESSAGEBOX_OK, "" };
+            lv_obj_t *mbox1 = lv_msgbox_create(lv_scr_act(), NULL);
+            lv_msgbox_set_text(mbox1, (char*)event.argument);
+            lv_msgbox_add_btns(mbox1, btns);
+            lv_obj_set_width(mbox1, 200);
+            lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0); /*Align to the corner*/
+            ESP_LOGI("GUI", "Show message %s, event=%d!", (char *)event.argument, event.event);
+            
+        }
+        else if (event.event == GuiEventType_t::GUI_SIGNALK_UPDATE)
+        {
+            ESP_LOGI("GUI", "Update SK view %s", (char *)event.argument);
+        }
+
+        if (event.argument != NULL)
+        {
+            free(event.argument);
+        }
+    }
 }
 
 static void lv_battery_task(struct _lv_task_t *data)
@@ -269,7 +292,6 @@ static void view_event_handler(lv_obj_t *obj, lv_event_t event)
         }
     }
 }
-
 
 /*****************************************************************
  *
@@ -521,7 +543,7 @@ void wifi_sw_event_cb(uint8_t index, bool en)
         }
         break;
     case 1:
-        
+
         break;
     case 2:
         if (!WiFi.isConnected())
@@ -554,8 +576,7 @@ void wifi_list_cb(const char *txt)
 static void wifi_settings_event_cb()
 {
     auto wifiSettings = new WifiSettings(wifiManager);
-    wifiSettings->on_close([wifiSettings]()
-    {
+    wifiSettings->on_close([wifiSettings]() {
         menuBars.hidden(false);
         delete wifiSettings;
     });
@@ -627,7 +648,7 @@ static void wifi_destory()
  */
 static void setting_event_cb()
 {
-    
+
     testView = new SettingsView("Test view");
     testView->on_close([]() {
         delete testView;

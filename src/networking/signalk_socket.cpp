@@ -1,7 +1,9 @@
 #include "signalk_socket.h"
 #include "system/uuid.h"
+#include "system/events.h"
 
 static const char *WS_TAG = "WS";
+const char UnsubscribeMessage[] = "{\"context\":\"*\",\"unsubscribe\":[{\"path\":\"*\"}]}";
 
 void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
                                      int32_t event_id, void *event_data)
@@ -17,7 +19,7 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
     {
         ESP_LOGI(WS_TAG, "Web socket connected to server!");
         socket->update_status(WebsocketState_t::WS_Connected);
-        //esp_websocket_client_send_text(socket->get_ws(), subscriptionMessage, sizeof(subscriptionMessage)-1, portMAX_DELAY);
+        socket->update_subscriptions();
     }
     else if (event_id == WEBSOCKET_EVENT_DISCONNECTED)
     {
@@ -68,14 +70,13 @@ SignalKSocket::SignalKSocket(WifiManager *wifi) : Configurable("/config/websocke
 bool SignalKSocket::connect()
 {
     bool ret = false;
-    if (value == WS_Offline)
+    if (value == WS_Offline && server != "")
     {
         char url[256];
         sprintf(url, "/signalk/v1/stream?subscribe=none&token=%s", token.c_str());
         esp_websocket_client_config_t ws_cfg = {
             .host = server.c_str(),
-            .path = url,
-        };
+            .path = url};
         ws_cfg.port = port;
 
         ESP_LOGI(WS_TAG, "Initializing websocket ws://%s:%d%s...", ws_cfg.host, ws_cfg.port, url);
@@ -130,12 +131,13 @@ void SignalKSocket::save_config_to_file(JsonObject &json)
 
 void SignalKSocket::parse_data(int length, const char *data)
 {
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(2048);
 
     auto result = deserializeJson(doc, data, length);
     if (result.code() == DeserializationError::Ok)
     {
         String messageType = "Unknown";
+
         if (doc.containsKey("name"))
         {
             messageType = "Welcome";
@@ -147,23 +149,78 @@ void SignalKSocket::parse_data(int length, const char *data)
                 send_token_permission();
             }
         }
-        else if(doc.containsKey("requestId"))
+        else if (doc.containsKey("requestId"))
         {
             String requestState = doc["state"];
 
             messageType = "Request status";
 
-            if(requestState == "COMPLETED" && doc.containsKey("accessRequest"))
+            if (requestState == "COMPLETED" && doc.containsKey("accessRequest"))
             {
                 messageType = "Access request";
 
                 JsonObject accessRequest = doc["accessRequest"].as<JsonObject>();
                 String permission = accessRequest["permission"].as<String>();
                 ESP_LOGI(WS_TAG, "Got token request response with status %s from server!", permission.c_str());
-                if(permission == "APPROVED")
+                if (permission == "APPROVED")
                 {
                     token = accessRequest["token"].as<String>();
                     save();
+                }
+            }
+        }
+        else if (doc.containsKey("updates"))
+        {
+            messageType = "Delta";
+            JsonArray updates = doc["updates"].as<JsonArray>();
+
+            for (int i = 0; i < updates.size(); i++)
+            {
+                JsonObject update = updates[i].as<JsonObject>();
+                JsonObject source = update["source"].as<JsonObject>();
+                String sourceName = source["label"].as<String>();
+                JsonArray values = update["values"].as<JsonArray>();
+                for (int v = 0; v < values.size(); v++)
+                {
+                    JsonObject value = values[i].as<JsonObject>();
+                    String path = value["path"].as<String>();
+
+                    if (path.startsWith("notifications."))
+                    {
+                        bool active = is_notification_active(path);
+                        JsonObject notification = value["value"];
+                        String state = notification["state"].as<String>();
+                        ESP_LOGI(WS_TAG, "Got SK notification %s with state %s, active=%d", path.c_str(), state.c_str(), active);
+
+                        if (state == "alarm" || state == "alert")
+                        {
+                            if (!active)
+                            {
+                                String message = notification["message"];
+                                GuiEvent_t event;
+                                event.argument = malloc(message.length() + 1);
+                                strcpy((char *)event.argument, message.c_str());
+                                event.event = GuiEventType_t::GUI_SHOW_WARNING;
+                                post_gui_update(event);
+                                activeNotifications.push_back(path);
+                            }
+                        }
+                        else
+                        {
+                            remove_active_notification(path);
+                        }
+                    }
+                    else if(is_low_power())
+                    {
+                        ESP_LOGI(WS_TAG, "Got SK value update %s", path.c_str());
+                        String json;
+                        serializeJson(value, json);
+                        GuiEvent_t event;
+                        event.argument = malloc(json.length() + 1);
+                        strcpy((char *)event.argument, json.c_str());
+                        event.event = GuiEventType_t::GUI_SIGNALK_UPDATE;
+                        post_gui_update(event);
+                    }
                 }
             }
         }
@@ -218,13 +275,82 @@ void SignalKSocket::send_token_permission()
     accessRequest["description"] = "TWatchSK";
     accessRequest["permissions"] = "admin";
     send_json(requestJson.as<JsonObject>());
+}
 
-    /*let accessRequest = {
-      requestId: requestId,
-      accessRequest: {
-        clientId: this.AppSettingsService.getKipUUID(),
-        description: "Kip web app",
-        permissions: "admin"
-      }
-    }*/
+SignalKSubscription *SignalKSocket::add_subscription(String path, uint period, bool is_low_power)
+{
+    auto iterator = subscriptions.find(path);
+    if (iterator != subscriptions.end())
+    {
+        return iterator->second;
+    }
+    else
+    {
+        auto newSubscription = new SignalKSubscription(path, period, is_low_power);
+        subscriptions[path] = newSubscription;
+        return newSubscription;
+    }
+}
+
+void SignalKSocket::update_subscriptions()
+{
+    if (value == WebsocketState_t::WS_Connected)
+    {
+        bool is_lp = xEventGroupGetBits(g_app_state) & G_APP_STATE_LOW_POWER;
+        DynamicJsonDocument subscriptionsJson(subscriptions.size() * 100);
+        int count = 0;
+        subscriptionsJson["context"] = "vessels.self";
+        JsonArray subscribe = subscriptionsJson.createNestedArray("subscribe");
+        for (auto subscription : this->subscriptions)
+        {
+            if (!is_lp || (is_lp && subscription.second->get_low_power()))
+            {
+                count++;
+                String path = subscription.second->get_path();
+                uint period = subscription.second->get_period();
+                JsonObject subscribePath = subscribe.createNestedObject();
+
+                subscribePath["path"] = path;
+                subscribePath["period"] = period;
+                ESP_LOGI(WS_TAG, "Adding %s subscription with listen_delay %d ms", path.c_str(), period);
+            }
+        }
+
+        esp_websocket_client_send_text(websocket, UnsubscribeMessage, strlen(UnsubscribeMessage), portMAX_DELAY);
+
+        if (count > 0)
+        {
+            String subscriptionMessage;
+            serializeJson(subscriptionsJson, subscriptionMessage);
+            ESP_LOGI(WS_TAG, "Subscription: %s", subscriptionMessage.c_str());
+            esp_websocket_client_send_text(websocket, subscriptionMessage.c_str(), subscriptionMessage.length(), portMAX_DELAY);
+        }
+    }
+}
+
+bool SignalKSocket::is_notification_active(String path)
+{
+    auto ret = false;
+    for (int i = 0; i < activeNotifications.size(); i++)
+    {
+        if (activeNotifications[i] == path)
+        {
+            ret = true;
+            break;
+        }
+    }
+    return ret;
+}
+
+void SignalKSocket::remove_active_notification(String path)
+{    
+    for (auto it = activeNotifications.begin(); it != activeNotifications.end(); it++ )
+    {
+        if (it.base()->equals(path))
+        {
+            activeNotifications.erase(it);
+            break;
+        }
+
+    }
 }

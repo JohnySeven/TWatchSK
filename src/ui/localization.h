@@ -13,3 +13,4 @@
 #define LOC_WIFI_SELECT "Select Wifi"
 #define LOC_KEYBOARD_DEL "Del"
 #define LOC_WIFI_PASSWORD_PROMPT "Type password"
+#define LOC_MESSAGEBOX_OK "OK"

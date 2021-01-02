@@ -24,7 +24,6 @@
 #include "networking/signalk_socket.h"
 #include "esp_int_wdt.h"
 #include "esp_pm.h"
-#include "nvs_flash.h"
 #include "system/events.h"
 
 const char *TAG = "APP";
@@ -34,12 +33,21 @@ bool light_sleep = false;
 TTGOClass *ttgo;
 WifiManager *wifiManager;
 SignalKSocket*sk_socket;
+EventGroupHandle_t isr_group = NULL;
+
+#define WATCH_FLAG_SLEEP_MODE _BV(1)
+#define WATCH_FLAG_SLEEP_EXIT _BV(2)
+#define WATCH_FLAG_BMA_IRQ _BV(3)
+#define WATCH_FLAG_AXP_IRQ _BV(4)
+#define WATCH_FLAT_TOUCH_IRQ _BV(5)
 
 void low_energy()
 {
     if (!lenergy)
     {
         xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_MODE);
+        set_low_power(true);
+        sk_socket->update_subscriptions();
         ttgo->closeBL();
         ttgo->stopLvglTick();
         ttgo->bma->enableStepCountInterrupt(false);
@@ -63,14 +71,23 @@ void low_energy()
             light_sleep = false;
             ESP_LOGI(TAG, "WiFi is enabled, will not enter light sleep.");
 
-            EventBits_t bits = xEventGroupGetBits(isr_group);
-            while (!(bits & WATCH_FLAG_SLEEP_EXIT))
+            EventBits_t isr_bits = xEventGroupGetBits(isr_group);
+            EventBits_t app_bits = xEventGroupGetBits(g_app_state);
+
+            while (!(isr_bits & WATCH_FLAG_SLEEP_EXIT) && !(app_bits & G_APP_STATE_WAKE_UP))
             {
                 delay(500);
-                bits = xEventGroupGetBits(isr_group);
+                isr_bits = xEventGroupGetBits(isr_group);
+                app_bits = xEventGroupGetBits(g_app_state);
             }
 
-            ESP_LOGI(TAG,"Wakeup request from sleep. System flags=%d", bits);
+            xEventGroupClearBits(g_app_state, G_APP_STATE_WAKE_UP);
+            if(app_bits & G_APP_STATE_WAKE_UP)
+            {
+                xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_EXIT);
+            }
+
+            ESP_LOGI(TAG,"Wakeup request from sleep. System isr=%d,app=%d", isr_bits, app_bits);
         }
     }
     else
@@ -82,6 +99,7 @@ void low_energy()
             ESP_LOGI(TAG, "Left light sleep with MCU freq=%d Mhz", getCpuFrequencyMhz());
         }
 
+        set_low_power(false);
         lenergy = false;
         ttgo->startLvglTick();
         ttgo->displayWakeup();
@@ -91,6 +109,7 @@ void low_energy()
         updateBatteryLevel();
         updateBatteryIcon(LV_ICON_CALCULATION);
         lv_disp_trig_activity(NULL);
+        sk_socket->update_subscriptions();
         ttgo->openBL();
         ttgo->bl->adjust(125);
         ttgo->bma->enableStepCountInterrupt();
@@ -111,7 +130,8 @@ void setup()
     {
         ESP_LOGE(TAG, "Failed to initialize SPIFFS!");
     }
-
+    
+    isr_group = xEventGroupCreate();
     initialize_events();
 
     //Initialize TWatch
@@ -211,6 +231,8 @@ void setup()
     wifiManager = new WifiManager();
     //Setting up websocket
     sk_socket = new SignalKSocket(wifiManager);
+    sk_socket->add_subscription("notifications.*", 1000, true);
+    sk_socket->add_subscription("environment.mode", 5000, false);
     //Execute your own GUI interface
     setupGui(wifiManager, sk_socket);
     //Clear lvgl counter

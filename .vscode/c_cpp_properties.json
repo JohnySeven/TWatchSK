@@ -1,13 +1,16 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
 {
     "configurations": [
         {
-            "name": "!!! WARNING !!! AUTO-GENERATED FILE, PLEASE DO NOT MODIFY IT AND USE https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags"
-        },
-        {
-            "name": "Win32",
+            "name": "PlatformIO",
             "includePath": [
                 "c:/Users/info/source/repos/TWatchSK/include",
                 "c:/Users/info/source/repos/TWatchSK/src",
+                "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/ESP8266Audio/src",
                 "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/ArduinoJson/src",
                 "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/TTGO TWatch Library/src",
                 "C:/Users/info/.platformio/packages/framework-espidf/components/esp_ringbuf/include",
@@ -127,6 +130,7 @@
                 "path": [
                     "c:/Users/info/source/repos/TWatchSK/include",
                     "c:/Users/info/source/repos/TWatchSK/src",
+                    "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/ESP8266Audio/src",
                     "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/ArduinoJson/src",
                     "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/TTGO TWatch Library/src",
                     "C:/Users/info/.platformio/packages/framework-espidf/components/esp_ringbuf/include",
@@ -247,14 +251,13 @@
                 "IDF_VER=\"HEAD-HASH-NOTFOUND\"",
                 "GCC_NOT_5_2_0",
                 "ESP_PLATFORM",
-                "PLATFORMIO=50003",
+                "PLATFORMIO=50004",
                 "ARDUINO_T-Watch",
                 "BOARD_HAS_PSRAM",
                 "ARDUINO=165",
                 "ESP32=1",
                 ""
             ],
-            "intelliSenseMode": "gcc-x64",
             "cStandard": "c99",
             "cppStandard": "c++11",
             "compilerPath": "C:/Users/info/.platformio/packages/toolchain-xtensa32/bin/xtensa-esp32-elf-gcc.exe",

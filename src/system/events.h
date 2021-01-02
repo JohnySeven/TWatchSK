@@ -1,12 +1,19 @@
-#include "freertos/queue.h"
+#pragma once
+#include <stdio.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include "freertos/timers.h"
+#include <freertos/timers.h>
+#include <freertos/queue.h>
+#include <freertos/event_groups.h>
+#include "Arduino.h"
 
 #define G_EVENT_VBUS_PLUGIN _BV(0)
 #define G_EVENT_VBUS_REMOVE _BV(1)
 #define G_EVENT_CHARGE_DONE _BV(2)
 #define G_EVENT_TOUCH _BV(3)
+
+#define G_APP_STATE_LOW_POWER _BV(0)
+#define G_APP_STATE_WAKE_UP _BV(1)
 
 enum ApplicationEvents_T
 {
@@ -15,17 +22,42 @@ enum ApplicationEvents_T
     Q_EVENT_UI_MESSAGE
 };
 
+enum GuiEventType_t
+{
+    GUI_SHOW_MESSAGE,
+    GUI_SHOW_WARNING,
+    GUI_SIGNALK_UPDATE
+};
 
-#define WATCH_FLAG_SLEEP_MODE _BV(1)
-#define WATCH_FLAG_SLEEP_EXIT _BV(2)
-#define WATCH_FLAG_BMA_IRQ _BV(3)
-#define WATCH_FLAG_AXP_IRQ _BV(4)
-#define WATCH_FLAT_TOUCH_IRQ _BV(5)
-#define WATCH_FLAG_UI_EVENT _BV(6)
+enum SignalKValueType_t
+{
+    SKString,
+    SKInt,
+    SKBool,
+    SKFloat,
+    SKJson
+};
 
-static QueueHandle_t g_event_queue_handle = NULL;
-static EventGroupHandle_t g_event_group = NULL;
-static EventGroupHandle_t isr_group = NULL;
+struct SignalKUpdateArgument_t
+{
+    char*path;
+    char*json;
+    char*source;
+    SignalKValueType_t type;
+};
 
-static void initialize_events();
-static void post_event(ApplicationEvents_T event);
+struct GuiEvent_t
+{
+    GuiEventType_t event;
+    void*argument;
+};
+
+extern QueueHandle_t g_event_queue_handle;
+extern EventGroupHandle_t g_app_state;
+
+void initialize_events();
+void post_event(ApplicationEvents_T event);
+void post_gui_update(GuiEvent_t event);
+bool read_gui_update(GuiEvent_t& event);
+bool is_low_power();
+void set_low_power(bool low_power);
