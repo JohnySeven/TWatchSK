@@ -375,5 +375,5 @@ void app_main()
     // initialize arduino library before we start the tasks
     initArduino();
     setup();
-    xTaskCreate(&arduinoTask, "app_task", configMINIMAL_STACK_SIZE, NULL, 5, NULL);
+    xTaskCreate(&arduinoTask, "app_task", configMINIMAL_STACK_SIZE * 2, NULL, 5, NULL);
 }

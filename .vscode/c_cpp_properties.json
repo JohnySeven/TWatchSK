@@ -10,7 +10,6 @@
             "includePath": [
                 "c:/Users/info/source/repos/TWatchSK/include",
                 "c:/Users/info/source/repos/TWatchSK/src",
-                "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/ESP8266Audio/src",
                 "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/ArduinoJson/src",
                 "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/TTGO TWatch Library/src",
                 "C:/Users/info/.platformio/packages/framework-espidf/components/esp_ringbuf/include",
@@ -130,7 +129,6 @@
                 "path": [
                     "c:/Users/info/source/repos/TWatchSK/include",
                     "c:/Users/info/source/repos/TWatchSK/src",
-                    "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/ESP8266Audio/src",
                     "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/ArduinoJson/src",
                     "c:/Users/info/source/repos/TWatchSK/.pio/libdeps/ttgo-t-watch/TTGO TWatch Library/src",
                     "C:/Users/info/.platformio/packages/framework-espidf/components/esp_ringbuf/include",

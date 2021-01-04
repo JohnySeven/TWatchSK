@@ -14,3 +14,4 @@
 #define LOC_KEYBOARD_DEL "Del"
 #define LOC_WIFI_PASSWORD_PROMPT "Type password"
 #define LOC_MESSAGEBOX_OK "OK"
+#define LOC_SETTINGS_MENU "Watch settings"

@@ -1,13 +1,3 @@
-/*
-Copyright (c) 2019 lewis he
-This is just a demonstration. Most of the functions are not implemented.
-The main implementation is low-power standby.
-The off-screen standby (not deep sleep) current is about 4mA.
-Select standard motherboard and standard backplane for testing.
-Created by Lewis he on October 10, 2019.
-*/
-
-// Please select the model you want to use in config.h
 #include "config.h"
 #include <Arduino.h>
 #include <time.h>
@@ -18,6 +8,7 @@ Created by Lewis he on October 10, 2019.
 #include "ui/message.h"
 #include "ui/loader.h"
 #include "ui/wifilist.h"
+#include "ui/navigationview.h"
 #include <WiFi.h>
 #include "string.h"
 #include <Ticker.h>
@@ -37,58 +28,33 @@ LV_FONT_DECLARE(Ubuntu);
 LV_FONT_DECLARE(roboto80);
 LV_IMG_DECLARE(bg_default);
 LV_IMG_DECLARE(sk_status);
-//LV_IMG_DECLARE(WALLPAPER_1_IMG);
-//LV_IMG_DECLARE(WALLPAPER_2_IMG);
-//LV_IMG_DECLARE(WALLPAPER_3_IMG);
+LV_IMG_DECLARE(signalk_48px);
 LV_IMG_DECLARE(menu);
+LV_IMG_DECLARE(wifi_48px);
+LV_IMG_DECLARE(watch_48px);
+LV_IMG_DECLARE(time_48px);
 
-LV_IMG_DECLARE(wifi);
-//LV_IMG_DECLARE(light);
-//LV_IMG_DECLARE(bluetooth);
-//LV_IMG_DECLARE(sd);
+//LV_IMG_DECLARE(wifi);
+
 LV_IMG_DECLARE(setting);
 LV_IMG_DECLARE(on);
 LV_IMG_DECLARE(off);
-LV_IMG_DECLARE(level1);
-LV_IMG_DECLARE(level2);
-LV_IMG_DECLARE(level3);
 LV_IMG_DECLARE(iexit);
-LV_IMG_DECLARE(modules);
-LV_IMG_DECLARE(CAMERA_PNG);
 
 static lv_style_t settingStyle;
 static lv_obj_t *mainBar = nullptr;
 static lv_obj_t *timeLabel = nullptr;
 static lv_obj_t *menuBtn = nullptr;
 
-static uint8_t globalIndex = 0;
-
 static WifiManager *wifiManager;
 
 static void lv_update_task(struct _lv_task_t *);
 static void lv_battery_task(struct _lv_task_t *);
 static void updateTime();
-static void view_event_handler(lv_obj_t *obj, lv_event_t event);
-
-static void wifi_settings_event_cb();
-static void setting_event_cb();
-static void wifi_destory();
 
 MenuBar menuBars;
 StatusBar bar;
 SettingsView *testView;
-
-#define SETTINGS_MENU_ITEMS_COUNT 2
-// Settings menu config
-MenuBar::lv_menu_config_t settings_menu_cfg[SETTINGS_MENU_ITEMS_COUNT] = {
-    {.name = "WiFi", .img = (void *)&wifi, .event_cb = wifi_settings_event_cb},
-    //{.name = "Bluetooth",  .img = (void *) &bluetooth, /*.event_cb = bluetooth_event_cb*/},
-    //{.name = "SD Card",  .img = (void *) &sd,  /*.event_cb =sd_event_cb*/},
-    //{.name = "Light",  .img = (void *) &light, /*.event_cb = light_event_cb*/},
-    {.name = "Setting", .img = (void *)&setting, .event_cb = setting_event_cb},
-    //{.name = "Modules",  .img = (void *) &modules, /*.event_cb = modules_event_cb */},
-    //{.name = "Camera",  .img = (void *) &CAMERA_PNG, /*.event_cb = camera_event_cb*/ }
-};
 
 static void event_handler(lv_obj_t *obj, lv_event_t event)
 {
@@ -97,15 +63,29 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
         if (obj == menuBtn)
         {
             lv_obj_set_hidden(mainBar, true);
-            if (menuBars.self() == nullptr)
-            {
-                menuBars.createMenu(settings_menu_cfg, SETTINGS_MENU_ITEMS_COUNT, view_event_handler);
-                lv_obj_align(menuBars.self(), bar.self(), LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
-            }
-            else
-            {
-                menuBars.hidden(false);
-            }
+            NavigationView *setupMenu = NULL;
+            setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu]() {
+                lv_obj_set_hidden(mainBar, false);
+                delete setupMenu;
+            });
+
+            setupMenu->add_tile("Clock", &time_48px, [setupMenu]() {
+                ESP_LOGI("GUI", "Show clock settings!");
+            });
+            setupMenu->add_tile("Wifi", &wifi_48px, [setupMenu]() {
+                auto wifiSettings = new WifiSettings(wifiManager);
+                wifiSettings->on_close([wifiSettings]() {
+                    delete wifiSettings;
+                });
+                wifiSettings->show(lv_scr_act());
+            });
+            setupMenu->add_tile("Signal K", &signalk_48px, [setupMenu]() {
+                ESP_LOGI("GUI", "Show SK settings!");
+            });
+            setupMenu->add_tile("Watch", &watch_48px, [setupMenu]() {
+                ESP_LOGI("GUI", "Show watch settings!");
+            });
+            setupMenu->show(lv_scr_act()); 
         }
     }
 }
@@ -241,14 +221,13 @@ static void lv_update_task(struct _lv_task_t *data)
     {
         if (event.event == GuiEventType_t::GUI_SHOW_MESSAGE || event.event == GuiEventType_t::GUI_SHOW_WARNING)
         {
-            static const char *btns[] = {LOC_MESSAGEBOX_OK, "" };
+            static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
             lv_obj_t *mbox1 = lv_msgbox_create(lv_scr_act(), NULL);
-            lv_msgbox_set_text(mbox1, (char*)event.argument);
+            lv_msgbox_set_text(mbox1, (char *)event.argument);
             lv_msgbox_add_btns(mbox1, btns);
             lv_obj_set_width(mbox1, 200);
-            lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0); /*Align to the corner*/
+            lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
             ESP_LOGI("GUI", "Show message %s, event=%d!", (char *)event.argument, event.event);
-            
         }
         else if (event.event == GuiEventType_t::GUI_SIGNALK_UPDATE)
         {
@@ -265,32 +244,6 @@ static void lv_update_task(struct _lv_task_t *data)
 static void lv_battery_task(struct _lv_task_t *data)
 {
     updateBatteryLevel();
-}
-
-static void view_event_handler(lv_obj_t *obj, lv_event_t event)
-{
-    int size = SETTINGS_MENU_ITEMS_COUNT;
-    if (event == LV_EVENT_SHORT_CLICKED)
-    {
-        if (obj == menuBars.exitBtn())
-        {
-            menuBars.hidden();
-            lv_obj_set_hidden(mainBar, false);
-            return;
-        }
-        for (int i = 0; i < size; i++)
-        {
-            if (obj == menuBars.obj(i))
-            {
-                if (settings_menu_cfg[i].event_cb != nullptr)
-                {
-                    menuBars.hidden();
-                    settings_menu_cfg[i].event_cb();
-                }
-                return;
-            }
-        }
-    }
 }
 
 /*****************************************************************
@@ -453,290 +406,7 @@ private:
 
 Switch *Switch::_switch = nullptr;
 
-/*****************************************************************
- *
- *          ! Task Class
- *
- */
-class Task
-{
-public:
-    Task()
-    {
-        _handler = nullptr;
-        _cb = nullptr;
-    }
-    ~Task()
-    {
-        if (_handler == nullptr)
-            return;
-        Serial.println("Free Task Func");
-        lv_task_del(_handler);
-        _handler = nullptr;
-        _cb = nullptr;
-    }
-
-    void create(lv_task_cb_t cb, uint32_t period = 1000, lv_task_prio_t prio = LV_TASK_PRIO_LOW)
-    {
-        _handler = lv_task_create(cb, period, prio, NULL);
-    };
-
-private:
-    lv_task_t *_handler = nullptr;
-    lv_task_cb_t _cb = nullptr;
-};
-
-/*****************************************************************
- *
- *          ! GLOBAL VALUE
- *
- */
-static Keyboard *kb = nullptr;
-static Loader *pl = nullptr;
-static WifiList *list = nullptr;
-static Task *task = nullptr;
-static Ticker *gTicker = nullptr;
-static MBox *mbox = nullptr;
-
-/*****************************************************************
- *
- *          !WIFI EVENT
- *
- */
-void wifi_connect_status(bool result)
-{
-    if (gTicker != nullptr)
-    {
-        delete gTicker;
-        gTicker = nullptr;
-    }
-    if (kb != nullptr)
-    {
-        delete kb;
-        kb = nullptr;
-    }
-    if (pl != nullptr)
-    {
-        delete pl;
-        pl = nullptr;
-    }
-    /*if (result) {
-        bar.show(LV_STATUS_BAR_WIFI);
-    } else {
-        bar.hidden(LV_STATUS_BAR_WIFI);
-    }*/
-    menuBars.hidden(false);
-}
-
-void wifi_sw_event_cb(uint8_t index, bool en)
-{
-    switch (index)
-    {
-    case 0:
-        if (en)
-        {
-            wifiManager->on();
-        }
-        else
-        {
-            wifiManager->off();
-        }
-        break;
-    case 1:
-
-        break;
-    case 2:
-        if (!WiFi.isConnected())
-        {
-            //TODO pop-up window
-            Serial.println("WiFi is no connect");
-            return;
-        }
-        else
-        {
-            configTzTime(RTC_TIME_ZONE, "pool.ntp.org");
-        }
-        break;
-    default:
-        break;
-    }
-}
-
-void wifi_list_cb(const char *txt)
-{
-    /*strlcpy(ssid, txt, sizeof(ssid));
-    delete list;
-    list = nullptr;
-    kb = new Keyboard;
-    kb->create();
-    kb->align(bar.self(), LV_ALIGN_OUT_BOTTOM_MID);
-    kb->setKeyboardEvent(wifi_kb_event_cb);*/
-}
-
-static void wifi_settings_event_cb()
-{
-    auto wifiSettings = new WifiSettings(wifiManager);
-    wifiSettings->on_close([wifiSettings]() {
-        menuBars.hidden(false);
-        delete wifiSettings;
-    });
-    wifiSettings->show(lv_scr_act());
-}
-
-static void wifi_destory()
-{
-    Serial.printf("globalIndex:%d\n", globalIndex);
-    switch (globalIndex)
-    {
-    //! wifi management main
-    case 0:
-        menuBars.hidden(false);
-        break;
-    //! wifi ap list
-    case 1:
-        if (list != nullptr)
-        {
-            delete list;
-            list = nullptr;
-        }
-        if (gTicker != nullptr)
-        {
-            delete gTicker;
-            gTicker = nullptr;
-        }
-        if (kb != nullptr)
-        {
-            delete kb;
-            kb = nullptr;
-        }
-        if (pl != nullptr)
-        {
-            delete pl;
-            pl = nullptr;
-        }
-        break;
-    //! wifi keyboard
-    case 2:
-        if (gTicker != nullptr)
-        {
-            delete gTicker;
-            gTicker = nullptr;
-        }
-        if (kb != nullptr)
-        {
-            delete kb;
-            kb = nullptr;
-        }
-        if (pl != nullptr)
-        {
-            delete pl;
-            pl = nullptr;
-        }
-        break;
-    case 3:
-        break;
-    default:
-        break;
-    }
-    globalIndex--;
-}
-
-/*****************************************************************
- *
- *          !SETTING EVENT
- *
- */
-static void setting_event_cb()
-{
-
-    testView = new SettingsView("Test view");
-    testView->on_close([]() {
-        delete testView;
-        testView = nullptr;
-        menuBars.hidden(false);
-    });
-    testView->show(lv_scr_act());
-}
-
-/*****************************************************************
- *
- *          ! LIGHT EVENT
- *
- */
-static void light_sw_event_cb(uint8_t index, bool en)
-{
-    //Add lights that need to be controlled
-}
-
-/*****************************************************************
- *
- *          ! MBOX EVENT
- *
- */
-static lv_obj_t *mbox1 = nullptr;
-
-static void create_mbox(const char *txt, lv_event_cb_t event_cb)
-{
-    if (mbox1 != nullptr)
-        return;
-    static const char *btns[] = {"Ok", ""};
-    mbox1 = lv_msgbox_create(lv_scr_act(), NULL);
-    lv_msgbox_set_text(mbox1, txt);
-    lv_msgbox_add_btns(mbox1, btns);
-    lv_obj_set_width(mbox1, LV_HOR_RES - 40);
-    lv_obj_set_event_cb(mbox1, event_cb);
-    lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
-}
-
-static void destory_mbox()
-{
-    if (pl != nullptr)
-    {
-        delete pl;
-        pl = nullptr;
-    }
-    if (list != nullptr)
-    {
-        delete list;
-        list = nullptr;
-    }
-    if (mbox1 != nullptr)
-    {
-        lv_obj_del(mbox1);
-        mbox1 = nullptr;
-    }
-}
-
 void toggleStatusBar(bool hidden)
 {
     bar.set_hidden(hidden);
-}
-
-/*****************************************************************
- *
- *          ! SD CARD EVENT
- *
- */
-
-static void sd_event_cb()
-{
-}
-
-/*****************************************************************
-*
- *          ! Modules EVENT
- *
- */
-static void modules_event_cb()
-{
-}
-
-/*****************************************************************
-*
- *          ! Camera EVENT
- *
- */
-
-static void camera_event_cb()
-{
 }
