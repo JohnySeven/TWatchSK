@@ -6,7 +6,7 @@ const char *SB_TAG = "StatusBar";
 
 LV_IMG_DECLARE(step);
 LV_IMG_DECLARE(sk_statusbar_icon);
-class StatusBar : public Observer<WifiState_t>, public Observer<WebsocketState_t>
+class StatusBar
 {
     typedef struct
     {
@@ -117,7 +117,7 @@ private:
     void refresh()
     {
         int prev = 0;
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 4; i++)
         {
             if (!lv_obj_get_hidden(_icons[i].icon))
             {

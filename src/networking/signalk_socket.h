@@ -36,6 +36,8 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
         String get_server_address() { return server;}
         int get_server_port() { return port; }
         bool get_token_request_pending() { return token_request_pending; }
+        bool get_sync_time_with_server() { return sync_time_with_server; }
+        void set_sync_time_with_server(bool enabled) { sync_time_with_server = enabled; }
         SignalKSubscription* add_subscription(String path, uint period, bool is_low_power);
         void update_subscriptions();
     private:
@@ -43,6 +45,7 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
                              int32_t event_id, void *event_data);
         String server = "";
         int port = 0;
+        bool sync_time_with_server = false;
         String token = "";
         String clientId = "";
         String serverName = "";

@@ -117,6 +117,7 @@ void SignalKSocket::load_config_from_file(const JsonObject &json)
     port = json["port"].as<int>();
     token = json["token"].as<String>();
     clientId = json["id"].as<String>();
+    sync_time_with_server = json["synctime"].as<bool>();
     ESP_LOGI(WS_TAG, "Loaded config with server %s:%d", server.c_str(), port);
 }
 
@@ -126,6 +127,7 @@ void SignalKSocket::save_config_to_file(JsonObject &json)
     json["port"] = port;
     json["token"] = token;
     json["id"] = clientId;
+    json["synctime"] = sync_time_with_server;
 }
 
 void SignalKSocket::parse_data(int length, const char *data)

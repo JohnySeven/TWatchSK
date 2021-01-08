@@ -73,7 +73,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
             });
 
             setupMenu->add_tile("Clock", &time_48px, [setupMenu]() {
-                auto timeSetting = new TimeSettings(TTGOClass::getWatch());
+                auto timeSetting = new TimeSettings(TTGOClass::getWatch(), ws_socket);
                 timeSetting->on_close([timeSetting]()
                 {
                     delete timeSetting;
