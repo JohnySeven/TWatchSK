@@ -24,7 +24,6 @@ public:
         lv_style_init(&plStyle);
         lv_style_set_radius(&plStyle, LV_OBJ_PART_MAIN, 0);
         lv_style_set_bg_color(&plStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-        //lv_style_set_bg_opa(&plStyle, LV_OBJ_PART_MAIN, LV_OPA_0);
         lv_style_set_border_width(&plStyle, LV_OBJ_PART_MAIN, 0);
         lv_style_set_text_color(&plStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
 
@@ -43,14 +42,13 @@ public:
         lv_obj_set_size(topBar, LV_HOR_RES, SETTINGS_TOP_BAR_HEIGHT);
         lv_obj_set_pos(topBar, 0, 0);
         lv_obj_add_style(topBar, LV_OBJ_PART_MAIN, &barStyle);
-
-        //back = lv_label_create(topBar, NULL);
+        
         back = lv_imgbtn_create(topBar, NULL);
         lv_imgbtn_set_src(back, LV_BTN_STATE_RELEASED, &exit_32px);
         lv_imgbtn_set_src(back, LV_BTN_STATE_PRESSED, &exit_32px);
         lv_imgbtn_set_src(back, LV_BTN_STATE_CHECKED_RELEASED, &exit_32px);
         lv_imgbtn_set_src(back, LV_BTN_STATE_CHECKED_PRESSED, &exit_32px);
-        //lv_label_set_text(back, LV_SYMBOL_SETTINGS);
+        
         lv_obj_set_click(back, true);
         lv_obj_set_ext_click_area(back, 0, 20, 0, 20);
         lv_obj_align(back, topBar, LV_ALIGN_IN_LEFT_MID, 6, 0);

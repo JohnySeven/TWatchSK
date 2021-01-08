@@ -20,6 +20,8 @@
 #include "system/events.h"
 #include "ui/settings_view.h"
 #include "ui/wifisettings.h"
+#include "ui/signalk_settings.h"
+#include "ui/time_settings.h"
 
 #define RTC_TIME_ZONE "CET-1CEST,M3.5.0,M10.5.0/3"
 
@@ -47,6 +49,7 @@ static lv_obj_t *timeLabel = nullptr;
 static lv_obj_t *menuBtn = nullptr;
 
 static WifiManager *wifiManager;
+static SignalKSocket *ws_socket;
 
 static void lv_update_task(struct _lv_task_t *);
 static void lv_battery_task(struct _lv_task_t *);
@@ -70,7 +73,12 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
             });
 
             setupMenu->add_tile("Clock", &time_48px, [setupMenu]() {
-                ESP_LOGI("GUI", "Show clock settings!");
+                auto timeSetting = new TimeSettings(TTGOClass::getWatch());
+                timeSetting->on_close([timeSetting]()
+                {
+                    delete timeSetting;
+                });
+                timeSetting->show(lv_scr_act());
             });
             setupMenu->add_tile("Wifi", &wifi_48px, [setupMenu]() {
                 auto wifiSettings = new WifiSettings(wifiManager);
@@ -80,12 +88,16 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
                 wifiSettings->show(lv_scr_act());
             });
             setupMenu->add_tile("Signal K", &signalk_48px, [setupMenu]() {
-                ESP_LOGI("GUI", "Show SK settings!");
+                auto skSettings = new SignalKSettings(ws_socket);
+                skSettings->on_close([skSettings]() {
+                    delete skSettings;
+                });
+                skSettings->show(lv_scr_act());
             });
             setupMenu->add_tile("Watch", &watch_48px, [setupMenu]() {
                 ESP_LOGI("GUI", "Show watch settings!");
             });
-            setupMenu->show(lv_scr_act()); 
+            setupMenu->show(lv_scr_act());
         }
     }
 }
@@ -93,6 +105,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
 void setupGui(WifiManager *wifi, SignalKSocket *socket)
 {
     wifiManager = wifi;
+    ws_socket = socket;
     lv_style_init(&settingStyle);
     lv_style_set_radius(&settingStyle, LV_OBJ_PART_MAIN, 0);
     lv_style_set_bg_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
@@ -108,7 +121,7 @@ void setupGui(WifiManager *wifi, SignalKSocket *socket)
     lv_obj_align(img_bin, NULL, LV_ALIGN_CENTER, 0, 0);
 
     //! bar
-    bar.createIcons(scr, wifi, socket);
+    bar.createIcons(scr);
     //battery
     updateBatteryLevel();
     lv_icon_battery_t icon = LV_ICON_CALCULATION;
@@ -119,6 +132,7 @@ void setupGui(WifiManager *wifi, SignalKSocket *socket)
     {
         icon = LV_ICON_CHARGE;
     }
+
     updateBatteryIcon(icon);
     //! main
     static lv_style_t mainStyle;
@@ -212,22 +226,61 @@ void updateBatteryIcon(lv_icon_battery_t icon)
     bar.updateBatteryIcon(icon);
 }
 
+char *messageFromCode(GuiEventCode_t code)
+{
+    switch (code)
+    {
+    case GuiEventCode_t::GUI_WARN_SK_REJECTED:
+        return LOC_SIGNALK_REQUEST_REJECTED;
+    default:
+        return NULL;
+    };
+}
+
 static void lv_update_task(struct _lv_task_t *data)
 {
     updateTime();
+    if(wifiManager->get_status() == WifiState_t::Wifi_Off)
+    {
+        bar.hidden(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI);
+    }
+    else
+    {
+        bar.show(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI);
+    }
+
+    if(ws_socket->get_state() == WebsocketState_t::WS_Connected)
+    {
+        bar.show(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK);
+    }
+    else
+    {
+        bar.hidden(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK);
+    }
+    
     GuiEvent_t event;
 
     if (read_gui_update(event))
     {
         if (event.event == GuiEventType_t::GUI_SHOW_MESSAGE || event.event == GuiEventType_t::GUI_SHOW_WARNING)
         {
-            static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
-            lv_obj_t *mbox1 = lv_msgbox_create(lv_scr_act(), NULL);
-            lv_msgbox_set_text(mbox1, (char *)event.argument);
-            lv_msgbox_add_btns(mbox1, btns);
-            lv_obj_set_width(mbox1, 200);
-            lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
-            ESP_LOGI("GUI", "Show message %s, event=%d!", (char *)event.argument, event.event);
+            char *message = (char *)event.argument;
+            if (message == NULL)
+            {
+                message = messageFromCode(event.eventCode);
+            }
+
+            if (message != NULL)
+            {
+                static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
+                lv_obj_t *mbox1 = lv_msgbox_create(lv_scr_act(), NULL);
+                lv_msgbox_set_text(mbox1, message);
+                lv_msgbox_add_btns(mbox1, btns);
+                lv_obj_set_width(mbox1, 200);
+                lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
+            }
+
+            ESP_LOGI("GUI", "Show message %s, event=%d, code=%d!", (char *)event.argument, event.event, event.eventCode);
         }
         else if (event.event == GuiEventType_t::GUI_SIGNALK_UPDATE)
         {

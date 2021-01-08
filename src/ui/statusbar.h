@@ -2,10 +2,7 @@
 #include "config.h"
 #include "system/observable.h"
 #include "system/systemobject.h"
-#include "hardware/Wifi.h"
-#include "networking/signalk_socket.h"
-
-const char* SB_TAG = "StatusBar";
+const char *SB_TAG = "StatusBar";
 
 LV_IMG_DECLARE(step);
 LV_IMG_DECLARE(sk_statusbar_icon);
@@ -23,7 +20,7 @@ public:
         memset(_icons, 0, sizeof(_icons));
     }
 
-    void createIcons(lv_obj_t *par, WifiManager*wifi, SignalKSocket*socket)
+    void createIcons(lv_obj_t *par)
     {
         _par = par;
 
@@ -50,11 +47,9 @@ public:
         _icons[2].icon = lv_img_create(_bar, NULL);
         lv_img_set_src(_icons[2].icon, LV_SYMBOL_WIFI);
         lv_obj_set_hidden(_icons[2].icon, true);
-
+        //web socket
         _icons[3].icon = lv_img_create(_bar, NULL);
-        lv_img_set_src(_icons[3].icon, LV_SYMBOL_BLUETOOTH);
-        lv_obj_set_hidden(_icons[3].icon, true);
-
+        lv_img_set_src(_icons[3].icon, &sk_statusbar_icon);
         //step counter
         _icons[4].icon = lv_img_create(_bar, NULL);
         lv_img_set_src(_icons[4].icon, &step);
@@ -64,13 +59,7 @@ public:
         lv_label_set_text(_icons[5].icon, "0");
         lv_obj_align(_icons[5].icon, _icons[4].icon, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
 
-        //web socket
-        _icons[6].icon = lv_img_create(_bar, NULL);
-        lv_img_set_src(_icons[6].icon, &sk_statusbar_icon);
-        lv_obj_align(_icons[6].icon, _bar, LV_ALIGN_IN_LEFT_MID, 50, 0);
-
         refresh();
-        attach(wifi, socket);
     }
 
     void setStepCounter(uint32_t counter)
@@ -94,14 +83,20 @@ public:
 
     void show(lv_icon_status_bar_t icon)
     {
-        lv_obj_set_hidden(_icons[icon].icon, false);
-        refresh();
+        if (lv_obj_get_hidden(_icons[icon].icon) == true)
+        {
+            lv_obj_set_hidden(_icons[icon].icon, false);
+            refresh();
+        }
     }
 
     void hidden(lv_icon_status_bar_t icon)
     {
-        lv_obj_set_hidden(_icons[icon].icon, true);
-        refresh();
+        if (lv_obj_get_hidden(_icons[icon].icon) == false)
+        {
+            lv_obj_set_hidden(_icons[icon].icon, true);
+            refresh();
+        }
     }
 
     uint8_t height()
@@ -113,33 +108,16 @@ public:
         return _bar;
     }
 
-    void notify_change(const WifiState_t &value) override
-    {
-        ESP_LOGI(SB_TAG, "Wifi icon updated to %d", (int)value);
-        lv_obj_set_hidden(_icons[2].icon, value == WifiState_t::Wifi_Off || value == WifiState_t::Wifi_Disconnected);
-    }
-
-    void notify_change(const WebsocketState_t &value) override
-    {
-        ESP_LOGI(SB_TAG, "Websocket icon updated to %d", (int)value);
-        lv_obj_set_hidden(_icons[6].icon, value == WS_Offline);
-    }
-
-    void attach(WifiManager*wifi, SignalKSocket*socket)
-    {
-        wifi->attach(this);
-        socket->attach(this);
-    }
-
     void set_hidden(bool hidden)
     {
         lv_obj_set_hidden(_bar, hidden);
     }
+
 private:
     void refresh()
     {
         int prev = 0;
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 5; i++)
         {
             if (!lv_obj_get_hidden(_icons[i].icon))
             {
@@ -158,6 +136,6 @@ private:
     lv_obj_t *_bar = nullptr;
     lv_obj_t *_par = nullptr;
     uint8_t _barHeight = 30;
-    lv_status_bar_t _icons[7];
+    lv_status_bar_t _icons[6];
     const int8_t iconOffset = -5;
 };

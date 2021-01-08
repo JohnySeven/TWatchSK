@@ -29,9 +29,13 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
         {
             Observable<WebsocketState_t>::emit(status);
         }
+        WebsocketState_t get_state() { return value; }
         void notify_change(const WifiState_t &wifi) override;
         String get_server_name() { return serverName; }
         String get_server_version() { return serverVersion; }
+        String get_server_address() { return server;}
+        int get_server_port() { return port; }
+        bool get_token_request_pending() { return token_request_pending; }
         SignalKSubscription* add_subscription(String path, uint period, bool is_low_power);
         void update_subscriptions();
     private:
@@ -43,10 +47,12 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
         String clientId = "";
         String serverName = "";
         String serverVersion = "";
+        bool token_request_pending = false;
+        String pending_token_request_id = "";
         esp_websocket_client_handle_t websocket;
         std::map<String,SignalKSubscription*> subscriptions;
         std::vector<String> activeNotifications;
-        SystemObject*wifi;
+        WifiManager*wifi;
         void load_config_from_file(const JsonObject &json) override;
         void save_config_to_file(JsonObject &json) override;
         void send_token_permission();

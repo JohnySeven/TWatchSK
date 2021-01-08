@@ -10,12 +10,20 @@
  *
  */
 
+enum KeyboardType_t
+{
+    Normal,
+    Number
+};
+
 class Keyboard : public SettingsView
 {
 public:
-    Keyboard(char *title) : SettingsView(title){
-
-                            };
+    Keyboard(char *title, KeyboardType_t type = KeyboardType_t::Normal, int maxTextLength = 0) : SettingsView(title)
+    {
+        keyboardType = type;
+        maxLength = maxTextLength;
+    };
 
     ~Keyboard(){
 
@@ -50,7 +58,19 @@ public:
         lv_keyboard_set_textarea(kb, ta);
         lv_obj_set_pos(kb, 0, 50);
         lv_obj_set_size(kb, LV_HOR_RES, lv_obj_get_height(parent) - 50);
-        lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, btnm_mapplus[0]);
+        if (keyboardType == KeyboardType_t::Normal)
+        {
+            lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, btnm_mapplus[0]);
+        }
+        else
+        {
+            lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, btnm_numeric[0]);
+            lv_textarea_set_accepted_chars(ta, "0123456789");
+        }
+        if (maxLength != 0)
+        {
+            lv_textarea_set_max_length(ta, maxLength);
+        }
         kb->user_data = this;
         lv_obj_set_event_cb(kb, __kb_event_cb);
     }
@@ -58,11 +78,6 @@ public:
     virtual bool hide_internal() override
     {
         return true;
-    }
-
-    void keyboard_text_updated(const char*key)
-    {
-
     }
 
     static void __kb_event_cb(lv_obj_t *kb, lv_event_t event)
@@ -107,6 +122,7 @@ public:
             }
         }
     }
+    
     const char *get_text()
     {
         return (const char *)__buf;
@@ -119,8 +135,11 @@ public:
 
 private:
     static const char *btnm_mapplus[10][23];
+    static const char *btnm_numeric[1][23];
     char __buf[128];
     bool _isSuccess = false;
+    KeyboardType_t keyboardType;
+    int maxLength;
 
     void close_and_result(bool is_success)
     {
@@ -128,6 +147,12 @@ private:
         hide();
     }
 };
+
+const char *Keyboard::btnm_numeric[1][23] = {
+    {"1", "2", "3", "\n",
+     "4", "5", "6", "\n",
+     "7", "8", "9", "\n",
+     "0", LV_SYMBOL_OK, LOC_KEYBOARD_DEL, "", ""}};
 
 const char *Keyboard::btnm_mapplus[10][23] = {
     {"a", "b", "c", "\n",

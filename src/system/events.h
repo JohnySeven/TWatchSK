@@ -29,6 +29,11 @@ enum GuiEventType_t
     GUI_SIGNALK_UPDATE
 };
 
+enum GuiEventCode_t
+{
+    GUI_WARN_SK_REJECTED
+};
+
 enum SignalKValueType_t
 {
     SKString,
@@ -50,6 +55,7 @@ struct GuiEvent_t
 {
     GuiEventType_t event;
     void*argument;
+    GuiEventCode_t eventCode;
 };
 
 extern QueueHandle_t g_event_queue_handle;

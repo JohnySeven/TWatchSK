@@ -57,7 +57,6 @@ void low_energy()
         if (wifiManager->get_status() == Wifi_Off)
         {
             light_sleep = true;
-            WiFi.mode(WIFI_OFF);
             setCpuFrequencyMhz(10);
             ESP_LOGI(TAG, "Entering light sleep mode");
             gpio_wakeup_enable((gpio_num_t)AXP202_INT, GPIO_INTR_LOW_LEVEL);
@@ -103,7 +102,7 @@ void low_energy()
         lenergy = false;
         ttgo->startLvglTick();
         ttgo->displayWakeup();
-        ttgo->touch->enterMonitorMode();
+        ttgo->touch->setPowerMode(PowerMode_t::FOCALTECH_PMODE_ACTIVE);
         ttgo->rtc->syncToSystem();
         updateStepCounter(ttgo->bma->getCounter());
         updateBatteryLevel();
@@ -116,6 +115,30 @@ void low_energy()
     }
 }
 
+#if LV_USE_LOG
+void lv_log_cb(lv_log_level_t level, const char * file, uint32_t line, const char * func, const char * dsc)
+{
+  /*Send the logs via serial port*/
+
+  if(level == LV_LOG_LEVEL_ERROR)
+  {
+      ESP_LOGE("LVGL", "%s in %s:%d", dsc, file, line);
+  }
+  else if(level == LV_LOG_LEVEL_INFO)
+  {
+      ESP_LOGI("LVGL", "%s in %s:%d", dsc, file, line);
+  }
+  else if(level == LV_LOG_LEVEL_WARN)
+  {
+      ESP_LOGW("LVGL", "%s in %s:%d", dsc, file, line);
+  }
+  else
+  {
+      ESP_LOGI("LVGL", "%s in %s:%d", dsc, file, line);
+  }
+}
+#endif
+
 void setup()
 {
 #if !CONFIG_PM_ENABLE
@@ -124,7 +147,9 @@ void setup()
 #if !CONFIG_FREERTOS_USE_TICKLESS_IDLE
 #error "CONFIG_FREERTOS_USE_TICKLESS_IDLE missing"
 #endif
-    //setCpuFrequencyMhz(80);
+#if LV_USE_LOG
+    lv_log_register_print_cb(lv_log_cb);
+#endif
     ttgo = TTGOClass::getWatch();
     if (!SPIFFS.begin(true))
     {
@@ -154,11 +179,15 @@ void setup()
     //Initialize lvgl
     ttgo->lvgl_begin();
 
+    ESP_LOGI(TAG, "LVGL initialized!");
+
+
     // Enable BMA423 interrupt ，
     // The default interrupt configuration,
     // you need to set the acceleration parameters, please refer to the BMA423_Accel example
     ttgo->bma->attachInterrupt();
-    pinMode(TOUCH_INT, INPUT);
+    ttgo->bma->enableTiltInterrupt(false);
+    /*pinMode(TOUCH_INT, INPUT);
     attachInterrupt(
         TOUCH_INT, [] {
             BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -174,7 +203,7 @@ void setup()
                 portYIELD_FROM_ISR();
             }
         },
-        RISING);
+        RISING);*/
     //Connection interrupted to the specified pin
     pinMode(BMA423_INT1, INPUT);
     attachInterrupt(

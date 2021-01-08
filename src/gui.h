@@ -27,14 +27,12 @@ typedef enum {
     LV_STATUS_BAR_BATTERY_LEVEL = 0,
     LV_STATUS_BAR_BATTERY_ICON = 1,
     LV_STATUS_BAR_WIFI = 2,
-    LV_STATUS_BAR_BLUETOOTH = 3,
+    LV_STATUS_BAR_SIGNALK = 3
 } lv_icon_status_bar_t;
 
 void setupGui(WifiManager*wifi, SignalKSocket*socket);
 void updateStepCounter(uint32_t counter);
 void updateBatteryIcon(lv_icon_battery_t index);
-void wifi_list_add(const char *ssid);
-void wifi_connect_status(bool result);
 void updateBatteryLevel();
 void toggleStatusBar(bool hidden);
 

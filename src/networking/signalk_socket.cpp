@@ -1,6 +1,7 @@
 #include "signalk_socket.h"
 #include "system/uuid.h"
 #include "system/events.h"
+#include "ui/localization.h"
 
 static const char *WS_TAG = "WS";
 const char UnsubscribeMessage[] = "{\"context\":\"*\",\"unsubscribe\":[{\"path\":\"*\"}]}";
@@ -18,8 +19,6 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
     else if (event_id == WEBSOCKET_EVENT_CONNECTED)
     {
         ESP_LOGI(WS_TAG, "Web socket connected to server!");
-        socket->update_status(WebsocketState_t::WS_Connected);
-        socket->update_subscriptions();
     }
     else if (event_id == WEBSOCKET_EVENT_DISCONNECTED)
     {
@@ -144,10 +143,18 @@ void SignalKSocket::parse_data(int length, const char *data)
             serverName = doc["name"].as<String>();
             serverVersion = doc["version"].as<String>();
 
+            update_status(WebsocketState_t::WS_Connected);
+
+            ESP_LOGI(WS_TAG, "Got welcome message token is available %s", token.isEmpty() ? "yes" : "no");
+
             if (token.isEmpty())
             {
                 send_token_permission();
             }
+            else
+            {
+                update_subscriptions();
+            }            
         }
         else if (doc.containsKey("requestId"))
         {
@@ -158,15 +165,25 @@ void SignalKSocket::parse_data(int length, const char *data)
             if (requestState == "COMPLETED" && doc.containsKey("accessRequest"))
             {
                 messageType = "Access request";
-
                 JsonObject accessRequest = doc["accessRequest"].as<JsonObject>();
                 String permission = accessRequest["permission"].as<String>();
                 ESP_LOGI(WS_TAG, "Got token request response with status %s from server!", permission.c_str());
                 if (permission == "APPROVED")
                 {
                     token = accessRequest["token"].as<String>();
+                    token_request_pending = false;
+                    pending_token_request_id = "";
+                    update_subscriptions(); //update subscriptions
                     save();
                 }
+                else
+                {
+                    GuiEvent_t event;
+                    event.event = GuiEventType_t::GUI_SHOW_WARNING;
+                    event.eventCode = GuiEventCode_t::GUI_WARN_SK_REJECTED;
+                    event.argument = NULL;
+                    post_gui_update(event);
+                }                
             }
         }
         else if (doc.containsKey("updates"))
@@ -235,7 +252,8 @@ void SignalKSocket::parse_data(int length, const char *data)
 
 void SignalKSocket::notify_change(const WifiState_t &wifiState)
 {
-    ESP_LOGI(WS_TAG, "Detected Wifi=%d, Socket state=%d", (int)wifiState, (int)this->value);
+    ESP_LOGI(WS_TAG, "Detected Wifi=%d", (int)wifiState);
+    ESP_LOGI(WS_TAG, "Socket status=%d", (int)this->get_state());
 
     if (wifiState == Wifi_Connected && value == WebsocketState_t::WS_Offline)
     {
@@ -248,9 +266,9 @@ void SignalKSocket::notify_change(const WifiState_t &wifiState)
             ESP_LOGW(WS_TAG, "Auto connect ERROR!");
         }
     }
-    else if ((wifiState == Wifi_Disconnected || wifiState == Wifi_Off) && value != WebsocketState_t::WS_Offline)
+    else if(wifiState == Wifi_Off)
     {
-        this->disconnect();
+        disconnect();
     }
 }
 
@@ -267,7 +285,8 @@ void SignalKSocket::send_token_permission()
     String requestId = UUID::new_id();
 
     ESP_LOGI(WS_TAG, "Requesting SignalK access token RequestId=%s...", requestId.c_str());
-
+    token_request_pending = true;
+    pending_token_request_id = requestId;
     StaticJsonDocument<256> requestJson;
     requestJson["requestId"] = requestId;
     auto accessRequest = requestJson.createNestedObject("accessRequest");
@@ -294,7 +313,7 @@ SignalKSubscription *SignalKSocket::add_subscription(String path, uint period, b
 
 void SignalKSocket::update_subscriptions()
 {
-    if (value == WebsocketState_t::WS_Connected)
+    if (value == WebsocketState_t::WS_Connected && !token_request_pending)
     {
         bool is_lp = xEventGroupGetBits(g_app_state) & G_APP_STATE_LOW_POWER;
         DynamicJsonDocument subscriptionsJson(subscriptions.size() * 100);

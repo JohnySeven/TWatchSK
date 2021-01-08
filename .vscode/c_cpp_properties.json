@@ -260,6 +260,7 @@
             "cppStandard": "c++11",
             "compilerPath": "C:/Users/info/.platformio/packages/toolchain-xtensa32/bin/xtensa-esp32-elf-gcc.exe",
             "compilerArgs": [
+                "-mfix-esp32-psram-cache-issue",
                 "-mlongcalls",
                 "-mfix-esp32-psram-cache-issue",
                 ""
