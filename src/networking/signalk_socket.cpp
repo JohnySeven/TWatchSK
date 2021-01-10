@@ -268,7 +268,7 @@ void SignalKSocket::notify_change(const WifiState_t &wifiState)
             ESP_LOGW(WS_TAG, "Auto connect ERROR!");
         }
     }
-    else if(wifiState == Wifi_Off)
+    else if(wifiState == Wifi_Off && value != WebsocketState_t::WS_Offline)
     {
         disconnect();
     }
