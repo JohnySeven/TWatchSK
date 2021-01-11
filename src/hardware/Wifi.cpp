@@ -135,10 +135,10 @@ void WifiManager::off()
 {
     if (enabled)
     {
-        disable_wifi();
-        ESP_LOGI(WIFI_TAG, "WiFi has been disabled.");
-        update_status(Wifi_Off);
         enabled = false;
+        disable_wifi();
+        ESP_LOGI(WIFI_TAG, "WiFi has been disabled.");        
+        this->update_status(WifiState_t::Wifi_Off);
     }
 }
 

@@ -22,8 +22,13 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
     }
     else if (event_id == WEBSOCKET_EVENT_DISCONNECTED)
     {
-        ESP_LOGI(WS_TAG, "Web socket disconnected from server!");
         socket->update_status(WebsocketState_t::WS_Offline);
+        ESP_LOGI(WS_TAG, "Web socket disconnected from server! Wifi enabled=%d", (int)socket->wifi->is_enabled());
+        if (!socket->wifi->is_enabled())
+        {
+            ESP_LOGI(WS_TAG, "Wifi is disabled, disconnecting and destroying WS client.");
+            socket->disconnect();
+        }
     }
     else if (event_id == WEBSOCKET_EVENT_DATA)
     {
@@ -55,14 +60,11 @@ SignalKSocket::SignalKSocket(WifiManager *wifi) : Configurable("/config/websocke
     server = "pi.boat";
     port = 3000;
     wifi->attach(this);
+    this->wifi = wifi;
 
     if (wifi != NULL)
     {
         ESP_LOGI(WS_TAG, "SignalK socket initialized with client ID=%s.", clientId.c_str());
-    }
-    else
-    {
-        ESP_LOGE(WS_TAG, "Wifi object not found!!!");
     }
 }
 
@@ -81,6 +83,7 @@ bool SignalKSocket::connect()
         ESP_LOGI(WS_TAG, "Initializing websocket ws://%s:%d%s...", ws_cfg.host, ws_cfg.port, url);
 
         websocket = esp_websocket_client_init(&ws_cfg);
+        websocket_initialized = true;
 
         if (esp_websocket_register_events(websocket, WEBSOCKET_EVENT_ANY, ws_event_handler, this) == ESP_OK)
         {
@@ -97,16 +100,20 @@ bool SignalKSocket::connect()
 
 bool SignalKSocket::disconnect()
 {
-    if (value != WebsocketState_t::WS_Offline)
+    if (websocket_initialized && websocket != NULL)
     {
         ESP_LOGI(WS_TAG, "Disconnecting websocket...");
 
-        if (esp_websocket_client_stop(websocket) == ESP_OK)
+        if (esp_websocket_client_is_connected(websocket))
         {
-            if (esp_websocket_client_destroy(websocket) == ESP_OK)
-            {
-                ESP_LOGI(WS_TAG, "Websocket destroyed.");
-            }
+            esp_websocket_client_stop(websocket);
+        }
+
+        if (esp_websocket_client_destroy(websocket) == ESP_OK)
+        {
+            websocket_initialized = false;
+            websocket = NULL;
+            ESP_LOGI(WS_TAG, "Websocket destroyed.");
         }
     }
 }
@@ -156,7 +163,7 @@ void SignalKSocket::parse_data(int length, const char *data)
             else
             {
                 update_subscriptions();
-            }            
+            }
         }
         else if (doc.containsKey("requestId"))
         {
@@ -185,7 +192,7 @@ void SignalKSocket::parse_data(int length, const char *data)
                     event.eventCode = GuiEventCode_t::GUI_WARN_SK_REJECTED;
                     event.argument = NULL;
                     post_gui_update(event);
-                }                
+                }
             }
         }
         else if (doc.containsKey("updates"))
@@ -229,7 +236,7 @@ void SignalKSocket::parse_data(int length, const char *data)
                             remove_active_notification(path);
                         }
                     }
-                    else if(is_low_power())
+                    else if (is_low_power())
                     {
                         ESP_LOGI(WS_TAG, "Got SK value update %s", path.c_str());
                         String json;
@@ -255,7 +262,7 @@ void SignalKSocket::parse_data(int length, const char *data)
 void SignalKSocket::notify_change(const WifiState_t &wifiState)
 {
     ESP_LOGI(WS_TAG, "Detected Wifi=%d", (int)wifiState);
-    ESP_LOGI(WS_TAG, "Socket status=%d", (int)this->get_state());
+    ESP_LOGI(WS_TAG, "Socket status=%d", (int)value);
 
     if (wifiState == Wifi_Connected && value == WebsocketState_t::WS_Offline)
     {
@@ -267,10 +274,6 @@ void SignalKSocket::notify_change(const WifiState_t &wifiState)
         {
             ESP_LOGW(WS_TAG, "Auto connect ERROR!");
         }
-    }
-    else if(wifiState == Wifi_Off && value != WebsocketState_t::WS_Offline)
-    {
-        disconnect();
     }
 }
 
@@ -364,14 +367,13 @@ bool SignalKSocket::is_notification_active(String path)
 }
 
 void SignalKSocket::remove_active_notification(String path)
-{    
-    for (auto it = activeNotifications.begin(); it != activeNotifications.end(); it++ )
+{
+    for (auto it = activeNotifications.begin(); it != activeNotifications.end(); it++)
     {
         if (it.base()->equals(path))
         {
             activeNotifications.erase(it);
             break;
         }
-
     }
 }

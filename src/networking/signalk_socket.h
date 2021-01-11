@@ -53,6 +53,7 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
         bool token_request_pending = false;
         String pending_token_request_id = "";
         esp_websocket_client_handle_t websocket;
+        bool websocket_initialized = false;
         std::map<String,SignalKSubscription*> subscriptions;
         std::vector<String> activeNotifications;
         WifiManager*wifi;
