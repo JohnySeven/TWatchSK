@@ -5,6 +5,7 @@
 #include "ui_ticker.h"
 #include "keyboard.h"
 #include "networking/signalk_socket.h"
+#include "date_picker.h"
 
 class TimeSettings : public SettingsView
 {
@@ -31,12 +32,24 @@ public:
         ESP_LOGI(SETTINGS_TAG, "User set minutes to %d", minutes);
     }
 
+    void update_date(int year, int month, int day)
+    {
+        this->year = year;
+        this->month = month;
+        this->day = day;
+        this->date_changed = true;
+        lv_label_set_text_fmt(dateLabel, LOC_DATE_FORMAT, day, months[month], year);
+    }
+
 protected:
     virtual void show_internal(lv_obj_t *parent) override
     {
         auto time = watch->rtc->getDateTime();
         hours = time.hour;
         minutes = time.minute;
+        day = time.day;
+        month = time.month;
+        year = time.year;
         lv_cont_set_layout(parent, LV_LAYOUT_OFF);
         timeLabel = lv_label_create(parent, NULL);
         lv_label_set_text(timeLabel, LOC_TIME);
@@ -67,6 +80,7 @@ protected:
         dateLabel = lv_label_create(dateButton, NULL);
         lv_label_set_text_fmt(dateLabel, LOC_DATE_FORMAT, time.day, months[time.month], time.year);
         lv_obj_align(dateButton, minuteButton, LV_ALIGN_OUT_RIGHT_MID, 4, 0);
+        lv_obj_set_event_cb(dateButton, TimeSettings::date_button_callback);
 
         sk_sync_check = lv_switch_create(parent, NULL);
         lv_obj_align(sk_sync_check, hourButton, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 10);
@@ -87,7 +101,7 @@ protected:
 
     virtual bool hide_internal() override
     {
-        if (time_changed)
+        if (time_changed || date_changed)
         {
             save_time_settings();
         }
@@ -113,10 +127,14 @@ private:
     lv_obj_t *sk_sync_label;
     int hours = 0;
     int minutes = 0;
+    int day = 0;
+    int month = 0;
+    int year = 0;
     char * months[13] = LOC_MONTHS;
     //Loader *ScanLoader;
     //UITicker *statusUpdateTicker;
     bool time_changed = false;
+    bool date_changed = false;
     bool sk_settings_changed = false;
 
     static void hour_button_callback(lv_obj_t *obj, lv_event_t event)
@@ -166,6 +184,20 @@ private:
     {
         if (event == LV_EVENT_CLICKED)
         {
+            auto timeSettings = (TimeSettings*)obj->user_data;
+            auto datePicker = new DatePicker(LOC_SELECT_DATE);
+            datePicker->on_close([datePicker,timeSettings]()
+            {
+                if(datePicker->is_success())
+                {
+                    auto date = datePicker->get_date();
+                    timeSettings->update_date(date.year, date.month, date.day);
+                }
+
+                delete datePicker;
+            });
+
+            datePicker->show(lv_scr_act());
         }
     }
 
@@ -186,13 +218,16 @@ private:
 
     void save_time_settings()
     {
-        ESP_LOGI(SETTINGS_TAG, "Saving time %d:%d into RTC...", hours, minutes);
+        ESP_LOGI(SETTINGS_TAG, "Saving time %d:%d %d-%d-%d into RTC...", hours, minutes, year, month, day);
         auto rtc = watch->rtc;
 
         auto currentTime = rtc->getDateTime();
         currentTime.hour = hours;
         currentTime.minute = minutes;
         currentTime.second = 0;
+        currentTime.year = year;
+        currentTime.month = month;
+        currentTime.day = day;
         rtc->setDateTime(currentTime);
         rtc->syncToSystem();
 
