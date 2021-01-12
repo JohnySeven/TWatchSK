@@ -25,7 +25,7 @@
 #define LOC_SIGNALK_TOKEN_PENDING "Pending authorization"
 #define LOC_SIGNALK_REQUEST_REJECTED "Signal K server rejected authorization!"
 #define LOC_SIGNALK_SERVER_ADDRESS "Server: %s:%d"
-#define LOC_SIGNALK_FIND_SERVER "Find Signal K server"
+#define LOC_SIGNALK_FIND_SERVER "Find SK Server"
 #define LOC_SIGNALK_SYNC_TIME "Sync time with SK Server"
 #define LOC_TIME_SETTINGS "Watch time"
 #define LOC_TIME "Time"
