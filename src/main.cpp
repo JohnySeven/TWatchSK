@@ -33,6 +33,7 @@ bool light_sleep = false;
 TTGOClass *ttgo;
 WifiManager *wifiManager;
 SignalKSocket*sk_socket;
+Gui*gui;
 EventGroupHandle_t isr_group = NULL;
 
 #define WATCH_FLAG_SLEEP_MODE _BV(1)
@@ -104,9 +105,9 @@ void low_energy()
         ttgo->displayWakeup();
         ttgo->touch->setPowerMode(PowerMode_t::FOCALTECH_PMODE_ACTIVE);
         ttgo->rtc->syncToSystem();
-        updateStepCounter(ttgo->bma->getCounter());
-        updateBatteryLevel();
-        updateBatteryIcon(LV_ICON_CALCULATION);
+        gui->updateStepCounter(ttgo->bma->getCounter());
+        gui->updateBatteryLevel();
+        gui->updateBatteryIcon(LV_ICON_CALCULATION);
         lv_disp_trig_activity(NULL);
         sk_socket->update_subscriptions();
         ttgo->openBL();
@@ -262,8 +263,9 @@ void setup()
     sk_socket = new SignalKSocket(wifiManager);
     sk_socket->add_subscription("notifications.*", 1000, true);
     sk_socket->add_subscription("environment.mode", 5000, false);
+    gui = new Gui();
     //Execute your own GUI interface
-    setupGui(wifiManager, sk_socket);
+    gui->setup_gui(wifiManager, sk_socket);
     //Clear lvgl counter
     lv_disp_trig_activity(NULL);
     //When the initialization is complete, turn on the backlight
@@ -339,18 +341,18 @@ void loop()
             //! setp counter
             if (ttgo->bma->isStepCounter())
             {
-                updateStepCounter(ttgo->bma->getCounter());
+                gui->updateStepCounter(ttgo->bma->getCounter());
             }
             break;
         case ApplicationEvents_T::Q_EVENT_AXP_INT:
             ttgo->power->readIRQ();
             if (ttgo->power->isVbusPlugInIRQ())
             {
-                updateBatteryIcon(LV_ICON_CHARGE);
+                gui->updateBatteryIcon(LV_ICON_CHARGE);
             }
             if (ttgo->power->isVbusRemoveIRQ() || ttgo->power->isChargingDoneIRQ())
             {
-                updateBatteryIcon(LV_ICON_CALCULATION);
+                gui->updateBatteryIcon(LV_ICON_CALCULATION);
             }
             
             if (ttgo->power->isPEKShortPressIRQ())
