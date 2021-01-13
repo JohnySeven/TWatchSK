@@ -7,8 +7,11 @@
             "components" :
             [
                 {
-                    "type" : "timeview",
-                    "layout" : "center"
+                    "type" : "textview",
+                    "layout" : "center",
+                    "path" : "$system.time",
+                    "style" : "font-large",
+                    "color" : "white"
                 },
                 {
                     "type" : "settings-button",

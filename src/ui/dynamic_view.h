@@ -15,6 +15,7 @@ class DynamicView
         void Load(lv_obj_t*parent, JsonObject viewObject, ComponentFactory * factory)
         {
             container = lv_cont_create(parent, NULL);
+            lv_cont_set_fit(container, LV_FIT_PARENT);
             String viewType = viewObject["type"].as<String>();
             if(viewType == "watchface")
             {
