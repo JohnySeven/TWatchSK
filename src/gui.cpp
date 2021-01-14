@@ -27,6 +27,8 @@
 LV_FONT_DECLARE(Geometr);
 LV_FONT_DECLARE(Ubuntu);
 LV_FONT_DECLARE(roboto80);
+LV_FONT_DECLARE(roboto60);
+LV_FONT_DECLARE(roboto40);
 LV_IMG_DECLARE(bg_default);
 LV_IMG_DECLARE(sk_status);
 LV_IMG_DECLARE(signalk_48px);
@@ -153,6 +155,14 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
 
     timeLabel = lv_label_create(mainBar, NULL);
     lv_obj_add_style(timeLabel, LV_OBJ_PART_MAIN, &timeStyle);
+
+    static lv_style_t timeSuffixStyle;
+    lv_style_copy(&timeSuffixStyle, &mainStyle);
+    lv_style_set_text_font(&timeSuffixStyle, LV_STATE_DEFAULT, &roboto40);
+
+    timeSuffixLabel = lv_label_create(mainBar, NULL);
+    lv_obj_add_style(timeSuffixLabel, LV_OBJ_PART_MAIN, &timeSuffixStyle);
+
     update_time();
 
     //! menu
@@ -192,17 +202,27 @@ void Gui::update_time()
     char buf[64];
     time(&now);
     localtime_r(&now, &info);
-    if (is24hourFormat)
+    if (time_24hour_format)
     {
-        strftime(buf, sizeof(buf), "%R", &info);
+        strftime(buf, sizeof(buf), "%H:%M", &info);
+        lv_label_set_text(timeSuffixLabel, "");
     }
     else
     {
-        strftime(buf, sizeof(buf), "%r", &info);
+        strftime(buf, sizeof(buf), "%I:%M", &info);
+        if(info.tm_hour > 12)
+        {
+            lv_label_set_text(timeSuffixLabel, "pm");
+        }
+        else
+        {
+            lv_label_set_text(timeSuffixLabel, "am");
+        }
     }
 
     lv_label_set_text(this->timeLabel, buf);
-    lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
+    lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 5);
+    lv_obj_align(timeSuffixLabel, timeLabel, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, -20);
 }
 
 void Gui::update_battery_level()
@@ -245,7 +265,14 @@ char *Gui::message_from_code(GuiEventCode_t code)
 
 void Gui::toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden)
 {
-    
+    if (hidden)
+    {
+        bar->hidden(icon);
+    }
+    else
+    {
+        bar->show(icon);
+    }
 }
 
 void Gui::lv_update_task(struct _lv_task_t *data)
@@ -255,20 +282,20 @@ void Gui::lv_update_task(struct _lv_task_t *data)
 
     if (gui->wifiManager->get_status() == WifiState_t::Wifi_Off)
     {
-        gui->bar->hidden(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI);
+        gui->toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, true);
     }
     else
     {
-        gui->bar->show(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI);
+        gui->toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, false);
     }
 
     if (gui->ws_socket->get_state() == WebsocketState_t::WS_Connected)
     {
-        gui->bar->show(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK);
+        gui->toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, false);
     }
     else
     {
-        gui->bar->hidden(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK);
+        gui->toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, true);
     }
 
     GuiEvent_t event;
@@ -325,14 +352,18 @@ void Gui::toggle_main_bar(bool hidden)
 
 void Gui::load_config_from_file(const JsonObject &json)
 {
-    is24hourFormat = json["24hourformat"].as<bool>();
-    screenTimeout = json["screentimeout"].as<int>();
-    timeZone = json["timezone"].as<String>();
+    time_24hour_format = json["24hourformat"].as<bool>();
+    screen_timeout = json["screentimeout"].as<int>();
+    time_zone = json["timezone"].as<String>();
+    display_brightness = json["brightness"].as<int>();
+
+    ESP_LOGI("GUI", "Loaded settings 24hour=%d,ScreenTimeout=%d,TimeZone=%s,Brightness=%d", time_24hour_format, screen_timeout, time_zone.c_str(), display_brightness);
 }
 
 void Gui::save_config_to_file(JsonObject &json)
 {
-    json["24hourformat"] = is24hourFormat;
-    json["screentimeout"] = screenTimeout;
-    json["timezone"] = timeZone;
+    json["24hourformat"] = time_24hour_format;
+    json["screentimeout"] = screen_timeout;
+    json["timezone"] = time_zone;
+    json["brightness"] = display_brightness;
 }

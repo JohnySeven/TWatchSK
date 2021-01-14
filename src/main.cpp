@@ -105,9 +105,9 @@ void low_energy()
         ttgo->displayWakeup();
         ttgo->touch->setPowerMode(PowerMode_t::FOCALTECH_PMODE_ACTIVE);
         ttgo->rtc->syncToSystem();
-        gui->updateStepCounter(ttgo->bma->getCounter());
-        gui->updateBatteryLevel();
-        gui->updateBatteryIcon(LV_ICON_CALCULATION);
+        gui->update_step_counter(ttgo->bma->getCounter());
+        gui->update_battery_level();
+        gui->update_battery_icon(LV_ICON_CALCULATION);
         lv_disp_trig_activity(NULL);
         sk_socket->update_subscriptions();
         ttgo->openBL();
@@ -341,18 +341,18 @@ void loop()
             //! setp counter
             if (ttgo->bma->isStepCounter())
             {
-                gui->updateStepCounter(ttgo->bma->getCounter());
+                gui->update_step_counter(ttgo->bma->getCounter());
             }
             break;
         case ApplicationEvents_T::Q_EVENT_AXP_INT:
             ttgo->power->readIRQ();
             if (ttgo->power->isVbusPlugInIRQ())
             {
-                gui->updateBatteryIcon(LV_ICON_CHARGE);
+                gui->update_battery_icon(LV_ICON_CHARGE);
             }
             if (ttgo->power->isVbusRemoveIRQ() || ttgo->power->isChargingDoneIRQ())
             {
-                gui->updateBatteryIcon(LV_ICON_CALCULATION);
+                gui->update_battery_icon(LV_ICON_CALCULATION);
             }
             
             if (ttgo->power->isPEKShortPressIRQ())
