@@ -40,7 +40,9 @@ public:
         this->date_changed = true;
         lv_label_set_text_fmt(dateLabel, LOC_DATE_FORMAT, day, months[month], year);
     }
-
+    
+    bool get_24hour_format() { return time_24hour_format; }
+    void set_24hour_format(bool value) { time_24hour_format = value; }
 protected:
     virtual void show_internal(lv_obj_t *parent) override
     {
@@ -88,15 +90,24 @@ protected:
         lv_label_set_text(sk_sync_label, LOC_SIGNALK_SYNC_TIME);
         lv_obj_align(sk_sync_label, sk_sync_check, LV_ALIGN_OUT_RIGHT_MID, 4, 0);
         lv_obj_set_event_cb(sk_sync_check, TimeSettings::sync_with_sk_callback);
+
         if (ws_socket->get_sync_time_with_server())
         {
             lv_switch_on(sk_sync_check, LV_ANIM_OFF);
         }
 
+        time_24hour_check = lv_switch_create(parent, NULL);
+        lv_obj_align(time_24hour_check, sk_sync_check, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 10);
+        time_24hour_label = lv_label_create(parent, NULL);
+        lv_label_set_text(time_24hour_label, LOC_24HOUR_TIME);
+        lv_obj_align(time_24hour_label, time_24hour_check, LV_ALIGN_OUT_RIGHT_MID, 4, 0);
+        lv_obj_set_event_cb(time_24hour_check, TimeSettings::time_24hour_callback);    
+
         hourButton->user_data = this;
         minuteButton->user_data = this;
         dateButton->user_data = this;
         sk_sync_check->user_data = this;
+        time_24hour_check->user_data = this;
     }
 
     virtual bool hide_internal() override
@@ -112,7 +123,6 @@ protected:
 
         return true;
     }
-
 private:
     TTGOClass *watch;
     SignalKSocket *ws_socket;
@@ -125,11 +135,14 @@ private:
     lv_obj_t *dateButton;
     lv_obj_t *sk_sync_check;
     lv_obj_t *sk_sync_label;
+    lv_obj_t *time_24hour_check;
+    lv_obj_t *time_24hour_label;
     int hours = 0;
     int minutes = 0;
     int day = 0;
     int month = 0;
     int year = 0;
+    bool time_24hour_format = false;
     char * months[13] = LOC_MONTHS;
     //Loader *ScanLoader;
     //UITicker *statusUpdateTicker;
@@ -209,6 +222,17 @@ private:
             bool state = lv_switch_get_state(obj);
             ESP_LOGI(SETTINGS_TAG, "User changed sync with SK to %s", state ? "on" : "off");
             settings->sk_settings_changed = true;
+        }
+    }
+
+    static void time_24hour_callback(lv_obj_t *obj, lv_event_t event)
+    {
+        if (event == LV_EVENT_VALUE_CHANGED)
+        {
+            TimeSettings *settings = (TimeSettings *)obj->user_data;
+            bool state = lv_switch_get_state(obj);
+            ESP_LOGI(SETTINGS_TAG, "User changed 24 hour format to %s", state ? "on" : "off");
+            settings->time_24hour_format = state;
         }
     }
 

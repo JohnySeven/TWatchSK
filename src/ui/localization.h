@@ -39,3 +39,4 @@
 #define LOC_WATCH_VERSION "Version 0.0.1"
 #define LOC_AUTHOR "Author: Jan Dytrych"
 #define LOC_UPTIME "Uptime: %d:%.2d:%.2d "
+#define LOC_24HOUR_TIME "Show 24 hour time"

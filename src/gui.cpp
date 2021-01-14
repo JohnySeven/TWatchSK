@@ -2,8 +2,6 @@
 #include <Arduino.h>
 #include <time.h>
 #include "gui.h"
-#include "ui/statusbar.h"
-#include "ui/menubar.h"
 #include "ui/keyboard.h"
 #include "ui/message.h"
 #include "ui/loader.h"
@@ -43,37 +41,31 @@ LV_IMG_DECLARE(off);
 LV_IMG_DECLARE(iexit);
 
 static lv_style_t settingStyle;
-static lv_obj_t *mainBar = nullptr;
-static lv_obj_t *timeLabel = nullptr;
-static lv_obj_t *menuBtn = nullptr;
 const char *GUI_TAG = "GUI";
 
-static WifiManager *wifiManager;
-static SignalKSocket *ws_socket;
-
-MenuBar menuBars;
-StatusBar bar;
-SettingsView *testView;
-
-static void event_handler(lv_obj_t *obj, lv_event_t event)
+static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
 {
+    Gui *gui = (Gui *)obj->user_data;
     if (event == LV_EVENT_SHORT_CLICKED)
     { //!  Event callback Is in here
-        if (obj == menuBtn)
-        {
-            lv_obj_set_hidden(mainBar, true);
-            NavigationView *setupMenu = NULL;
-            setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu]() {
-                lv_obj_set_hidden(mainBar, false);
-                delete setupMenu;
-            });
+        gui->toggle_main_bar(true);
+        NavigationView *setupMenu = NULL;
+        setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]() {
+            delete setupMenu;
+            gui->toggle_main_bar(false);
+        });
 
-            setupMenu->add_tile("Clock", &time_48px, [setupMenu]() {
-                auto timeSetting = new TimeSettings(TTGOClass::getWatch(), ws_socket);
-                timeSetting->on_close([timeSetting]() {
-                    delete timeSetting;
-                });
-                timeSetting->show(lv_scr_act());
+        setupMenu->add_tile("Clock", &time_48px, [setupMenu, gui]() {
+            auto timeSetting = new TimeSettings(TTGOClass::getWatch(), gui->get_sk_socket());
+            timeSetting->set_24hour_format(gui->get_time_24hour_format());
+            timeSetting->on_close([timeSetting, gui]() {
+                if (gui->get_time_24hour_format() != timeSetting->get_24hour_format())
+                {
+                    gui->set_time_24hour_format(timeSetting->get_24hour_format());
+                    gui->save();
+                }
+
+                delete timeSetting;
             });
             
             setupMenu->add_tile("Wifi", &wifi_48px, [setupMenu]() {
@@ -124,10 +116,11 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
     lv_img_set_src(img_bin, &bg_default);
     lv_obj_align(img_bin, NULL, LV_ALIGN_CENTER, 0, 0);
 
+    bar = new StatusBar();
     //! bar
-    bar.createIcons(scr);
+    bar->createIcons(scr);
     //battery
-    updateBatteryLevel();
+    update_battery_level();
     lv_icon_battery_t icon = LV_ICON_CALCULATION;
 
     TTGOClass *ttgo = TTGOClass::getWatch();
@@ -137,7 +130,7 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
         icon = LV_ICON_CHARGE;
     }
 
-    updateBatteryIcon(icon);
+    update_battery_icon(icon);
     //! main
     static lv_style_t mainStyle;
     lv_style_init(&mainStyle);
@@ -149,9 +142,9 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
     lv_style_set_image_recolor(&mainStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
 
     mainBar = lv_cont_create(scr, NULL);
-    lv_obj_set_size(mainBar, LV_HOR_RES, LV_VER_RES - bar.height());
+    lv_obj_set_size(mainBar, LV_HOR_RES, LV_VER_RES - bar->height());
     lv_obj_add_style(mainBar, LV_OBJ_PART_MAIN, &mainStyle);
-    lv_obj_align(mainBar, bar.self(), LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
+    lv_obj_align(mainBar, bar->self(), LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
 
     //! Time
     static lv_style_t timeStyle;
@@ -160,7 +153,7 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
 
     timeLabel = lv_label_create(mainBar, NULL);
     lv_obj_add_style(timeLabel, LV_OBJ_PART_MAIN, &timeStyle);
-    updateTime();
+    update_time();
 
     //! menu
     static lv_style_t style_pr;
@@ -178,7 +171,8 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
     lv_obj_add_style(menuBtn, LV_OBJ_PART_MAIN, &style_pr);
 
     lv_obj_align(menuBtn, mainBar, LV_ALIGN_OUT_BOTTOM_MID, 0, -70);
-    lv_obj_set_event_cb(menuBtn, event_handler);
+    menuBtn->user_data = this;
+    lv_obj_set_event_cb(menuBtn, main_menu_event_cb);
 
     auto update_task = lv_task_create(lv_update_task, 1000, LV_TASK_PRIO_LOWEST, NULL);
     auto batery_update_task = lv_task_create(lv_battery_task, 30000, LV_TASK_PRIO_LOWEST, NULL);
@@ -186,31 +180,39 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
     batery_update_task->user_data = this;
 }
 
-void Gui::updateStepCounter(uint32_t counter)
+void Gui::update_step_counter(uint32_t counter)
 {
-    bar.setStepCounter(counter);
+    bar->setStepCounter(counter);
 }
 
-void Gui::updateTime()
+void Gui::update_time()
 {
     time_t now;
     struct tm info;
     char buf[64];
     time(&now);
     localtime_r(&now, &info);
-    strftime(buf, sizeof(buf), "%H:%M", &info);
-    lv_label_set_text(timeLabel, buf);
+    if (is24hourFormat)
+    {
+        strftime(buf, sizeof(buf), "%R", &info);
+    }
+    else
+    {
+        strftime(buf, sizeof(buf), "%r", &info);
+    }
+
+    lv_label_set_text(this->timeLabel, buf);
     lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
 }
 
-void Gui::updateBatteryLevel()
+void Gui::update_battery_level()
 {
     TTGOClass *ttgo = TTGOClass::getWatch();
     int p = ttgo->power->getBattPercentage();
-    bar.updateLevel(p);
+    bar->updateLevel(p);
 }
 
-void Gui::updateBatteryIcon(lv_icon_battery_t icon)
+void Gui::update_battery_icon(lv_icon_battery_t icon)
 {
     if (icon >= LV_ICON_CALCULATION)
     {
@@ -227,10 +229,10 @@ void Gui::updateBatteryIcon(lv_icon_battery_t icon)
         else
             icon = LV_ICON_BAT_EMPTY;
     }
-    bar.updateBatteryIcon(icon);
+    bar->updateBatteryIcon(icon);
 }
 
-char * Gui::message_from_code(GuiEventCode_t code)
+char *Gui::message_from_code(GuiEventCode_t code)
 {
     switch (code)
     {
@@ -241,26 +243,32 @@ char * Gui::message_from_code(GuiEventCode_t code)
     };
 }
 
+void Gui::toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden)
+{
+    
+}
+
 void Gui::lv_update_task(struct _lv_task_t *data)
 {
     Gui *gui = (Gui *)data->user_data;
-    updateTime();
-    if (wifiManager->get_status() == WifiState_t::Wifi_Off)
+    gui->update_time();
+
+    if (gui->wifiManager->get_status() == WifiState_t::Wifi_Off)
     {
-        bar.hidden(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI);
+        gui->bar->hidden(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI);
     }
     else
     {
-        bar.show(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI);
+        gui->bar->show(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI);
     }
 
-    if (ws_socket->get_state() == WebsocketState_t::WS_Connected)
+    if (gui->ws_socket->get_state() == WebsocketState_t::WS_Connected)
     {
-        bar.show(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK);
+        gui->bar->show(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK);
     }
     else
     {
-        bar.hidden(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK);
+        gui->bar->hidden(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK);
     }
 
     GuiEvent_t event;
@@ -302,12 +310,17 @@ void Gui::lv_update_task(struct _lv_task_t *data)
 void Gui::lv_battery_task(struct _lv_task_t *data)
 {
     Gui *gui = (Gui *)data->user_data;
-    gui->updateBatteryLevel();
+    gui->update_battery_level();
 }
 
-void Gui::toggleStatusBar(bool hidden)
+void Gui::toggle_status_bar(bool hidden)
 {
-    bar.set_hidden(hidden);
+    bar->set_hidden(hidden);
+}
+
+void Gui::toggle_main_bar(bool hidden)
+{
+    lv_obj_set_hidden(mainBar, hidden);
 }
 
 void Gui::load_config_from_file(const JsonObject &json)

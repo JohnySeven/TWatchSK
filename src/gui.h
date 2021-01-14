@@ -1,15 +1,9 @@
-/*
-Copyright (c) 2019 lewis he
-This is just a demonstration. Most of the functions are not implemented.
-The main implementation is low-power standby. 
-The off-screen standby (not deep sleep) current is about 4mA.
-Select standard motherboard and standard backplane for testing.
-Created by Lewis he on October 10, 2019.
-*/
 #include "hardware/Wifi.h"
 #include "networking/signalk_socket.h"
 #include "system/configurable.h"
 #include "system/events.h"
+#include "ui/statusbar.h"
+#include "ui/menubar.h"
 
 #ifndef __GUI_H
 #define __GUI_H
@@ -36,21 +30,35 @@ typedef enum
 class Gui : public Configurable
 {
 public:
-    Gui() : Configurable("gui") { }
+    Gui() : Configurable("/config/gui") { }
     void setup_gui(WifiManager *wifi, SignalKSocket *socket);
-    void updateStepCounter(uint32_t counter);
-    void updateBatteryIcon(lv_icon_battery_t index);
-    void updateBatteryLevel();
-    void toggleStatusBar(bool hidden);
+    void update_step_counter(uint32_t counter);
+    void update_battery_icon(lv_icon_battery_t index);
+    void update_battery_level();
+    void toggle_status_bar(bool hidden);
+    void toggle_main_bar(bool hidden);
     void load_config_from_file(const JsonObject &json) override;
     void save_config_to_file(JsonObject &json) override;
+    WifiManager*get_wifi_manager() { return wifiManager; }
+    SignalKSocket * get_sk_socket() { return ws_socket; }
+    bool get_time_24hour_format() { return time_24hour_format;}
+    void set_time_24hour_format(bool value) { time_24hour_format = value; }
+    void toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden);
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);
-    static void updateTime();
+    void update_time();
     char * message_from_code(GuiEventCode_t code);
 
-    bool is24hourFormat = false;
+    WifiManager *wifiManager = NULL;
+    SignalKSocket *ws_socket = NULL;
+    lv_obj_t *mainBar = NULL;
+    lv_obj_t *timeLabel = NULL;
+    lv_obj_t *menuBtn = NULL;
+    MenuBar *menuBars = NULL;
+    StatusBar *bar = NULL;
+
+    bool time_24hour_format = false;
     int screenTimeout = 5;
     String timeZone = "";
     int brightness = 128;
