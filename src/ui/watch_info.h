@@ -3,7 +3,6 @@
 #include "settings_view.h"
 #include "localization.h"
 #include "ui_ticker.h"
-#include "system/system_data.h"
 
 /**
  * @brief Shows version, author, and uptime. Future: wake-ups, number of handled SK deltas, more?
@@ -33,8 +32,6 @@ protected:
         uptimeTicker_ = new UITicker(1000, [this]() {
             this->update_uptime();
         });
-
-        uptime_->user_data = this;
     }
 
     virtual bool hide_internal() override
