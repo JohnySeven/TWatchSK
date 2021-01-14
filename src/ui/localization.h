@@ -35,3 +35,7 @@
 #define LOC_INPUT_MINUTE "Type current minute"
 #define LOC_SELECT_DATE "Select current date"
 #define LOC_MONTHS {"???","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+#define LOC_WATCH_INFO "Watch info"
+#define LOC_WATCH_VERSION "Version 0.0.1"
+#define LOC_AUTHOR "Author: Jan Dytrych"
+#define LOC_UPTIME "Uptime: %d:%.2d:%.2d "
