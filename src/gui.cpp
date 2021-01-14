@@ -22,6 +22,7 @@
 #include "ui/wifisettings.h"
 #include "ui/signalk_settings.h"
 #include "ui/time_settings.h"
+#include "ui/watch_info.h"
 
 #define RTC_TIME_ZONE "CET-1CEST,M3.5.0,M10.5.0/3"
 
@@ -33,7 +34,7 @@ LV_IMG_DECLARE(sk_status);
 LV_IMG_DECLARE(signalk_48px);
 LV_IMG_DECLARE(menu);
 LV_IMG_DECLARE(wifi_48px);
-LV_IMG_DECLARE(watch_48px);
+LV_IMG_DECLARE(info_48px);
 LV_IMG_DECLARE(time_48px);
 
 //LV_IMG_DECLARE(wifi);
@@ -80,6 +81,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
                 });
                 timeSetting->show(lv_scr_act());
             });
+            
             setupMenu->add_tile("Wifi", &wifi_48px, [setupMenu]() {
                 auto wifiSettings = new WifiSettings(wifiManager);
                 wifiSettings->on_close([wifiSettings]() {
@@ -87,6 +89,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
                 });
                 wifiSettings->show(lv_scr_act());
             });
+            
             setupMenu->add_tile("Signal K", &signalk_48px, [setupMenu]() {
                 auto skSettings = new SignalKSettings(ws_socket);
                 skSettings->on_close([skSettings]() {
@@ -94,9 +97,16 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
                 });
                 skSettings->show(lv_scr_act());
             });
-            setupMenu->add_tile("Watch", &watch_48px, [setupMenu]() {
-                ESP_LOGI("GUI", "Show watch settings!");
+            
+            setupMenu->add_tile("Watch info", &info_48px, [setupMenu]() {
+                ESP_LOGI("GUI", "Show watch info!");
+                auto watchInfo = new WatchInfo();
+                watchInfo->on_close([watchInfo]() {
+                    delete watchInfo;
+                });
+                watchInfo->show(lv_scr_act());
             });
+            
             setupMenu->show(lv_scr_act());
         }
     }
