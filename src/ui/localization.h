@@ -38,4 +38,6 @@
 #define LOC_WATCH_INFO "Watch info"
 #define LOC_WATCH_VERSION "Version 0.0.1"
 #define LOC_AUTHOR "Author: Jan Dytrych"
-#define LOC_UPTIME "Uptime: %d:%.2d:%.2d "
+#define LOC_UPTIME "Uptime: %d:%.2d:%.2d"
+#define LOC_SCREEN_TIMEOUT "Screen timeout: "
+#define LOC_INPUT_SCREEN_TIMEOUT "Scrn timeout (5-120 sec.)"

@@ -51,6 +51,7 @@ static lv_obj_t *menuBtn = nullptr;
 
 static WifiManager *wifiManager;
 static SignalKSocket *ws_socket;
+static SystemData *system_data;
 
 static void lv_update_task(struct _lv_task_t *);
 static void lv_battery_task(struct _lv_task_t *);
@@ -100,7 +101,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
             
             setupMenu->add_tile("Watch info", &info_48px, [setupMenu]() {
                 ESP_LOGI("GUI", "Show watch info!");
-                auto watchInfo = new WatchInfo();
+                auto watchInfo = new WatchInfo(system_data);
                 watchInfo->on_close([watchInfo]() {
                     delete watchInfo;
                 });
