@@ -2,10 +2,29 @@
 #include "config.h"
 #include "system/observable.h"
 #include "system/systemobject.h"
-const char *SB_TAG = "StatusBar";
 
 LV_IMG_DECLARE(step);
 LV_IMG_DECLARE(sk_statusbar_icon);
+
+typedef enum
+{
+    LV_ICON_BAT_EMPTY,
+    LV_ICON_BAT_1,
+    LV_ICON_BAT_2,
+    LV_ICON_BAT_3,
+    LV_ICON_BAT_FULL,
+    LV_ICON_CHARGE,
+    LV_ICON_CALCULATION
+} lv_icon_battery_t;
+
+typedef enum
+{
+    LV_STATUS_BAR_BATTERY_LEVEL = 0,
+    LV_STATUS_BAR_BATTERY_ICON = 1,
+    LV_STATUS_BAR_WIFI = 2,
+    LV_STATUS_BAR_SIGNALK = 3
+} lv_icon_status_bar_t;
+
 class StatusBar
 {
     typedef struct

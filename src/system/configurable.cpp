@@ -39,6 +39,7 @@ void Configurable::save()
     serializeJson(obj, file);
     file.flush();
     file.close();
+    ESP_LOGI(TAG, "Saved config %s to SPIFFS!", file_path.c_str());
 }
 
 void Configurable::load_config_from_file(const JsonObject &json)
