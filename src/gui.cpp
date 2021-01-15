@@ -57,7 +57,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             gui->toggle_main_bar(false);
         });
 
-        setupMenu->add_tile("Clock", &time_48px, [setupMenu, gui]() {
+        setupMenu->add_tile("Clock", &time_48px, [gui]() {
             auto timeSetting = new TimeSettings(TTGOClass::getWatch(), gui->get_sk_socket());
             timeSetting->set_24hour_format(gui->get_time_24hour_format());
             timeSetting->on_close([timeSetting, gui]() {
@@ -69,34 +69,34 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
 
                 delete timeSetting;
             });
-            
-            setupMenu->add_tile("Wifi", &wifi_48px, [setupMenu]() {
-                auto wifiSettings = new WifiSettings(wifiManager);
-                wifiSettings->on_close([wifiSettings]() {
-                    delete wifiSettings;
-                });
-                wifiSettings->show(lv_scr_act());
+        });
+
+        setupMenu->add_tile("Wifi", &wifi_48px, [gui]() {
+            auto wifiSettings = new WifiSettings(gui->get_wifi_manager());
+            wifiSettings->on_close([wifiSettings]() {
+                delete wifiSettings;
             });
-            
-            setupMenu->add_tile("Signal K", &signalk_48px, [setupMenu]() {
-                auto skSettings = new SignalKSettings(ws_socket);
-                skSettings->on_close([skSettings]() {
-                    delete skSettings;
-                });
-                skSettings->show(lv_scr_act());
+            wifiSettings->show(lv_scr_act());
+        });
+
+        setupMenu->add_tile("Signal K", &signalk_48px, [gui]() {
+            auto skSettings = new SignalKSettings(gui->get_sk_socket());
+            skSettings->on_close([skSettings]() {
+                delete skSettings;
             });
-            
-            setupMenu->add_tile("Watch info", &info_48px, [setupMenu]() {
-                ESP_LOGI("GUI", "Show watch info!");
-                auto watchInfo = new WatchInfo();
-                watchInfo->on_close([watchInfo]() {
-                    delete watchInfo;
-                });
-                watchInfo->show(lv_scr_act());
+            skSettings->show(lv_scr_act());
+        });
+
+        setupMenu->add_tile("Watch info", &info_48px, []() {
+            ESP_LOGI("GUI", "Show watch info!");
+            auto watchInfo = new WatchInfo();
+            watchInfo->on_close([watchInfo]() {
+                delete watchInfo;
             });
-            
-            setupMenu->show(lv_scr_act());
-        }
+            watchInfo->show(lv_scr_act());
+        });
+
+        setupMenu->show(lv_scr_act());
     }
 }
 
@@ -210,7 +210,7 @@ void Gui::update_time()
     else
     {
         strftime(buf, sizeof(buf), "%I:%M", &info);
-        if(info.tm_hour > 12)
+        if (info.tm_hour > 12)
         {
             lv_label_set_text(timeSuffixLabel, "pm");
         }
