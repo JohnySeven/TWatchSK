@@ -5,7 +5,7 @@
  * @brief Used to store and retrieve various system-wide bits of info.
  **/  
 
-class SystemData : public Configurable, public SystemObject
+class SystemData : public Configurable
 {
     public:
         SystemData();

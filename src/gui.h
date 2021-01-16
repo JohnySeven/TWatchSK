@@ -8,6 +8,7 @@ Created by Lewis he on October 10, 2019.
 */
 #include "hardware/Wifi.h"
 #include "networking/signalk_socket.h"
+#include "system/system_data.h"
 
 #ifndef __GUI_H
 #define __GUI_H
@@ -30,7 +31,7 @@ typedef enum {
     LV_STATUS_BAR_SIGNALK = 3
 } lv_icon_status_bar_t;
 
-void setupGui(WifiManager*wifi, SignalKSocket*socket);
+void setupGui(WifiManager*wifi, SignalKSocket*socket, SystemData*system_data_ptr);
 void updateStepCounter(uint32_t counter);
 void updateBatteryIcon(lv_icon_battery_t index);
 void updateBatteryLevel();

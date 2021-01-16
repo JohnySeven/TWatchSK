@@ -25,6 +25,7 @@
 #include "esp_int_wdt.h"
 #include "esp_pm.h"
 #include "system/events.h"
+#include "system/system_data.h"
 
 const char *TAG = "APP";
 #define DEFAULT_SCREEN_TIMEOUT 10 * 1000
@@ -33,6 +34,7 @@ bool light_sleep = false;
 TTGOClass *ttgo;
 WifiManager *wifiManager;
 SignalKSocket*sk_socket;
+SystemData*system_data;
 EventGroupHandle_t isr_group = NULL;
 
 #define WATCH_FLAG_SLEEP_MODE _BV(1)
@@ -256,6 +258,7 @@ void setup()
 
     //Synchronize time to system time
     ttgo->rtc->syncToSystem();
+    system_data = new SystemData();
     //Setting up the network
     wifiManager = new WifiManager();
     //Setting up websocket
@@ -263,7 +266,7 @@ void setup()
     sk_socket->add_subscription("notifications.*", 1000, true);
     sk_socket->add_subscription("environment.mode", 5000, false);
     //Execute your own GUI interface
-    setupGui(wifiManager, sk_socket);
+    setupGui(wifiManager, sk_socket, system_data);
     //Clear lvgl counter
     lv_disp_trig_activity(NULL);
     //When the initialization is complete, turn on the backlight

@@ -113,10 +113,12 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
     }
 }
 
-void setupGui(WifiManager *wifi, SignalKSocket *socket)
+void setupGui(WifiManager *wifi, SignalKSocket *socket, SystemData*system_data_ptr)
 {
     wifiManager = wifi;
     ws_socket = socket;
+    system_data = system_data_ptr;
+    
     lv_style_init(&settingStyle);
     lv_style_set_radius(&settingStyle, LV_OBJ_PART_MAIN, 0);
     lv_style_set_bg_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);

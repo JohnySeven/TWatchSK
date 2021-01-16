@@ -4,7 +4,7 @@
 
 static const char *SD_TAG = "SD";
 
-SystemData::SystemData() : Configurable("/config/system_data"), SystemObject("systemdata")
+SystemData::SystemData() : Configurable("/config/system_data")
 {
     load();
 }
