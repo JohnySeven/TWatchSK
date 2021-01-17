@@ -3,27 +3,16 @@
     "views": 
     [
         {
-            "type" : "watchface",
+            "type" : "normal",
             "components" :
             [
                 {
-                    "type" : "textview",
+                    "type" : "label",
                     "layout" : "center",
-                    "path" : "$system.time",
+                    "text" : "Hello world!",
                     "style" : "font-large",
                     "color" : "white"
-                },
-                {
-                    "type" : "settings-button",
-                    "location" : [ 100, 100 ]
                 }
-            ]
-        },
-        {
-            "type" : "normal",
-            "components":
-            [
-
             ]
         }
     ]

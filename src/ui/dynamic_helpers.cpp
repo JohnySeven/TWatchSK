@@ -59,3 +59,39 @@ void DynamicHelpers::set_location(lv_obj_t *obj, JsonObject &json)
         }
     }
 }
+
+lv_color_t DynamicHelpers::get_color(const String&value)
+{
+    lv_color_t ret = LV_COLOR_BLACK;
+
+    if(value.startsWith("#"))
+    {
+        ret = lv_color_hex(strtol(value.c_str(), NULL, 16));
+    }
+    else if(value == "white")
+    {
+        ret = LV_COLOR_WHITE;
+    }
+    else if(value == "blue")
+    {
+        ret = LV_COLOR_BLUE;
+    }
+    else if(value == "red")
+    {
+        ret = LV_COLOR_RED;
+    }
+    else if(value == "green")
+    {
+        ret = LV_COLOR_GREEN;
+    }
+    else if(value == "gray")
+    {
+        ret = LV_COLOR_GRAY;
+    }
+    else
+    {
+        ESP_LOGW("HELPERS", "Color %s not found!", value.c_str());
+    }    
+
+    return ret;
+}
