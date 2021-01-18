@@ -85,6 +85,15 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
                 });
                 timeSetting->show(lv_scr_act());
             });
+
+            setupMenu->add_tile("Display", &display_48px, [setupMenu]() {
+                ESP_LOGI("GUI", "Show display settings");
+                auto displaySettings = new DisplaySettings(system_data);
+                displaySettings->on_close([displaySettings]() {
+                    delete displaySettings;
+                });
+                displaySettings->show(lv_scr_act());
+            });
             
             setupMenu->add_tile("Wifi", &wifi_48px, [setupMenu]() {
                 auto wifiSettings = new WifiSettings(wifiManager);
@@ -102,15 +111,6 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
                 skSettings->show(lv_scr_act());
             });
 
-            setupMenu->add_tile("Display", &display_48px, [setupMenu]() {
-                ESP_LOGI("GUI", "Show display settings");
-                auto displaySettings = new DisplaySettings(system_data);
-                displaySettings->on_close([displaySettings]() {
-                    delete displaySettings;
-                });
-                displaySettings->show(lv_scr_act());
-            });
-            
             setupMenu->add_tile("Watch info", &info_48px, [setupMenu]() {
                 ESP_LOGI("GUI", "Show watch info");
                 auto watchInfo = new WatchInfo();
