@@ -28,9 +28,10 @@
 #include "system/system_data.h"
 
 const char *TAG = "APP";
-#define DEFAULT_SCREEN_TIMEOUT 10 * 1000
+// #define DEFAULT_SCREEN_TIMEOUT 10 * 1000
 bool lenergy = false;
 bool light_sleep = false;
+int screen_timeout = 10;
 TTGOClass *ttgo;
 WifiManager *wifiManager;
 SignalKSocket*sk_socket;
@@ -258,7 +259,13 @@ void setup()
 
     //Synchronize time to system time
     ttgo->rtc->syncToSystem();
+    //Setting up system_data
     system_data = new SystemData();
+    int saved_screen_timeout = system_data->get_screen_timeout();
+    if (saved_screen_timeout >= 5){
+        screen_timeout = saved_screen_timeout;
+    }
+    screen_timeout = screen_timeout * 1000;
     //Setting up the network
     wifiManager = new WifiManager();
     //Setting up websocket
@@ -371,7 +378,7 @@ void loop()
 
     if (!lenergy)
     {
-        if (lv_disp_get_inactive_time(NULL) < DEFAULT_SCREEN_TIMEOUT)
+        if (lv_disp_get_inactive_time(NULL) < screen_timeout)
         {
             auto sleep = lv_task_handler();
             if(sleep > 250)

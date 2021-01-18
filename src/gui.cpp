@@ -22,7 +22,9 @@
 #include "ui/wifisettings.h"
 #include "ui/signalk_settings.h"
 #include "ui/time_settings.h"
+#include "ui/display_settings.h"
 #include "ui/watch_info.h"
+
 
 #define RTC_TIME_ZONE "CET-1CEST,M3.5.0,M10.5.0/3"
 
@@ -36,6 +38,7 @@ LV_IMG_DECLARE(menu);
 LV_IMG_DECLARE(wifi_48px);
 LV_IMG_DECLARE(info_48px);
 LV_IMG_DECLARE(time_48px);
+LV_IMG_DECLARE(display_48px);
 
 //LV_IMG_DECLARE(wifi);
 
@@ -98,9 +101,18 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
                 });
                 skSettings->show(lv_scr_act());
             });
+
+            setupMenu->add_tile("Display", &display_48px, [setupMenu]() {
+                ESP_LOGI("GUI", "Show display settings");
+                auto displaySettings = new DisplaySettings(system_data);
+                displaySettings->on_close([displaySettings]() {
+                    delete displaySettings;
+                });
+                displaySettings->show(lv_scr_act());
+            });
             
             setupMenu->add_tile("Watch info", &info_48px, [setupMenu]() {
-                ESP_LOGI("GUI", "Show watch info!");
+                ESP_LOGI("GUI", "Show watch info");
                 auto watchInfo = new WatchInfo(system_data);
                 watchInfo->on_close([watchInfo]() {
                     delete watchInfo;
