@@ -113,7 +113,7 @@ static void event_handler(lv_obj_t *obj, lv_event_t event)
             
             setupMenu->add_tile("Watch info", &info_48px, [setupMenu]() {
                 ESP_LOGI("GUI", "Show watch info");
-                auto watchInfo = new WatchInfo(system_data);
+                auto watchInfo = new WatchInfo();
                 watchInfo->on_close([watchInfo]() {
                     delete watchInfo;
                 });
