@@ -9,5 +9,4 @@ public:
 
 private:
     DynamicLabelBuilder() {}
-    static void initializeStyles();
 };

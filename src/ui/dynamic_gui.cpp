@@ -2,6 +2,9 @@
 #include "SPIFFS.h"
 #include "ArduinoJson.h"
 #include "default_view_json.h"
+#include "json.h"
+#include "networking/signalk_socket.h"
+#include "networking/signalk_subscription.h"
 
 const char *DGUI_TAG = "DGUI";
 
@@ -15,12 +18,13 @@ void DynamicGui::initialize_builders()
     DynamicLabelBuilder::initialize(factory);
 }
 
-bool DynamicGui::load_file(String path, lv_obj_t *parent, int &count)
+bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket, int &count)
 {
     bool ret = false;
 
-    DynamicJsonDocument uiJson(10240);
+    SpiRamJsonDocument uiJson(20240); //allocate 20 kB in SPI RAM for JSON parsing
     DeserializationError result;
+
     if (SPIFFS.exists(path))
     {
         auto file = SPIFFS.open(path);
@@ -41,7 +45,7 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, int &count)
         {
             x++;
             DynamicView *newView = new DynamicView();
-            newView->Load(parent, viewJson, factory);
+            newView->load(parent, viewJson, factory);
             this->views.push_back(newView);
             lv_obj_set_pos(newView->get_obj(), x * LV_HOR_RES, 0);
             lv_tileview_add_element(parent, newView->get_obj());
@@ -49,6 +53,11 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, int &count)
 
         count = x;
         ESP_LOGI(DGUI_TAG, "Loaded %d views.", count);
+
+        for (auto adapter : factory->get_adapters())
+        {
+            socket->add_subscription(adapter->get_path(), adapter->get_subscription_period(), false);
+        }
         ret = true;
     }
     else
@@ -57,4 +66,15 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, int &count)
     }
 
     return ret;
+}
+
+void DynamicGui::handle_signalk_update(const String& path, const JsonVariant &value)
+{
+    for (auto adapter : factory->get_adapters())
+    {
+        if (adapter->get_path() == path)
+        {
+            adapter->on_updated(value);
+        }
+    }
 }

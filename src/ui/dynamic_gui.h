@@ -3,6 +3,7 @@
 #include "component_factory.h"
 #include "dynamic_label.h"
 #include "vector"
+#include "networking/signalk_socket.h"
 
 
 class DynamicGui
@@ -10,7 +11,8 @@ class DynamicGui
 public:
     DynamicGui();
     void initialize_builders();
-    bool load_file(String path, lv_obj_t*parent, int& count);
+    bool load_file(String path, lv_obj_t*parent, SignalKSocket*socket, int& count);
+    void handle_signalk_update(const String& path, const JsonVariant&value);
 private:
     ComponentFactory *factory;
     std::vector<DynamicView*> views;

@@ -242,7 +242,8 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
 
     dynamic_gui->initialize_builders();
     int dynamic_view_count = 0;
-    if(!dynamic_gui->load_file("/sk_view.json", mainBar, dynamic_view_count))
+
+    if(!dynamic_gui->load_file("/sk_view.json", mainBar, socket, dynamic_view_count))
     {
         ESP_LOGW(GUI_TAG, "Failed to load dynamic views!");
     }
@@ -411,6 +412,20 @@ void Gui::lv_update_task(struct _lv_task_t *data)
         else if (event.event == GuiEventType_t::GUI_SIGNALK_UPDATE)
         {
             ESP_LOGI(GUI_TAG, "Update SK view %s", (char *)event.argument);
+            StaticJsonDocument<256> update;
+            auto result = deserializeJson(update, event.argument);
+
+            if(result == DeserializationError::Ok)
+            {
+                auto path = update["path"].as<String>();
+                auto value = update["value"].as<JsonVariant>();
+                gui->dynamic_gui->handle_signalk_update(path, value);
+            }
+            else
+            {
+                ESP_LOGI(GUI_TAG, "Unable to parse json, error=%s", result.c_str());
+            }
+            
         }
 
         if (event.argument != NULL)

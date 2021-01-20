@@ -236,7 +236,7 @@ void SignalKSocket::parse_data(int length, const char *data)
                             remove_active_notification(path);
                         }
                     }
-                    else if (is_low_power())
+                    else if (!is_low_power())
                     {
                         ESP_LOGI(WS_TAG, "Got SK value update %s", path.c_str());
                         String json;

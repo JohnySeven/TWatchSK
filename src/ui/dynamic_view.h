@@ -2,6 +2,7 @@
 #include "ArduinoJson.h"
 #include "component_factory.h"
 #include "vector"
+#include "dynamic_helpers.h"
 
 enum ViewType_t
 {
@@ -13,7 +14,7 @@ class DynamicView
 {
 public:
     lv_obj_t *get_obj() { return container; }
-    void Load(lv_obj_t *parent, JsonObject viewObject, ComponentFactory *factory)
+    void load(lv_obj_t *parent, JsonObject viewObject, ComponentFactory *factory)
     {
         //! main
         static lv_style_t mainStyle;
@@ -27,7 +28,7 @@ public:
 
         container = lv_cont_create(parent, NULL);
         lv_obj_add_style(container, LV_CONT_PART_MAIN, &mainStyle);
-        lv_obj_set_size(container, LV_HOR_RES - 30, LV_VER_RES);
+        lv_obj_set_size(container, LV_HOR_RES, LV_VER_RES - 30);
 
         String viewType = viewObject["type"].as<String>();
         if (viewType == "watchface")
@@ -48,11 +49,30 @@ public:
 
         for (JsonObject component : components)
         {
-            auto obj = factory->createComponent(component, container);
+            auto obj = factory->create_component(component, container);
             if (obj != NULL)
             {
                 created_components.push_back(obj);
             }
+        }
+
+        if (viewObject.containsKey("layout"))
+        {
+            String layout = viewObject["layout"].as<String>();
+            DynamicHelpers::set_container_layout(container, layout);
+            lv_obj_set_style_local_pad_all(container, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, 4);
+        }
+        else
+        {
+            lv_cont_set_layout(container, LV_LAYOUT_OFF);
+        }
+    }
+
+    void on_visible()
+    {
+        for (auto view : created_components)
+        {
+            lv_obj_realign(view);
         }
     }
 

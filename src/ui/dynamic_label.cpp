@@ -1,36 +1,19 @@
 #include "dynamic_label.h"
+#include "localization.h"
+
 LV_FONT_DECLARE(Geometr);
 LV_FONT_DECLARE(Ubuntu);
 LV_FONT_DECLARE(roboto80);
 LV_FONT_DECLARE(roboto60);
 LV_FONT_DECLARE(roboto40);
-
-static lv_style_t ubuntu_font_style;
-static lv_style_t roboto_80_style;
-static lv_style_t roboto_60_style;
-static lv_style_t roboto_40_style;
-
-void DynamicLabelBuilder::initializeStyles()
-{
-    lv_style_init(&ubuntu_font_style);
-    lv_style_set_value_font(&ubuntu_font_style, LV_STATE_DEFAULT, &Ubuntu);
-
-    lv_style_init(&roboto_80_style);
-    lv_style_set_value_font(&roboto_80_style, LV_STATE_DEFAULT, &roboto80);
-
-    lv_style_init(&roboto_60_style);
-    lv_style_set_value_font(&roboto_80_style, LV_STATE_DEFAULT, &roboto60);
-
-    lv_style_init(&roboto_40_style);
-    lv_style_set_value_font(&roboto_80_style, LV_STATE_DEFAULT, &roboto40);
-}
+LV_FONT_DECLARE(lv_font_montserrat_14)
+LV_FONT_DECLARE(lv_font_montserrat_28)
+LV_FONT_DECLARE(lv_font_montserrat_32)
 
 void DynamicLabelBuilder::initialize(ComponentFactory *factory)
 {
-    factory->registerConstructor("label", [](JsonObject &json, lv_obj_t *parent) -> lv_obj_t * {
+    factory->register_constructor("label", [factory](JsonObject &json, lv_obj_t *parent) -> lv_obj_t * {
         lv_obj_t *label = lv_label_create(parent, NULL);
-        DynamicHelpers::set_layout(label, parent, json);
-        DynamicHelpers::set_location(label, json);
 
         if (json.containsKey("color"))
         {
@@ -38,45 +21,104 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
             lv_obj_set_style_local_text_color(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, color);
         }
 
-        if(json.containsKey("text"))
+        if (json.containsKey("text"))
         {
             lv_label_set_text(label, json["text"].as<String>().c_str());
         }
-        else if(json.containsKey("path"))
+        else if (json.containsKey("binding"))
         {
+            JsonObject binding = json["binding"].as<JsonObject>();
+            Data_formating_t formating;
+            int period = 1000;
+            formating.multiply = 1.0f;
+            formating.offset = 0.0f;
 
+            if (binding.containsKey("period"))
+            {
+                period = binding["period"].as<int>();
+            }
+            if (binding.containsKey("multiply"))
+            {
+                formating.multiply = binding["multiply"].as<float>();
+            }
+            if (binding.containsKey("offset"))
+            {
+                formating.offset = binding["offset"].as<float>();
+            }
+
+            float multiply = 1.0f;
+
+            factory->add_data_adapter(binding["path"].as<String>(), period, formating, [label](const JsonVariant &value, const Data_formating_t &format) {
+                if (value.is<String>())
+                {
+                    lv_label_set_text(label, value.as<String>().c_str());
+                }
+                else if (value.is<int>())
+                {
+                    auto intValue = String(value.as<int>());
+                    lv_label_set_text(label, intValue.c_str());
+                }
+                else if (value.is<float>())
+                {
+                    auto floatValue = String((value.as<float>() + format.offset) * format.multiply, 1);
+
+                    lv_label_set_text(label, floatValue.c_str());
+                }
+                else if (value.is<bool>())
+                {
+                    lv_label_set_text(label, value.as<bool>() ? LOC_TRUE : LOC_FALSE);
+                }
+                else
+                {
+                    String json;
+                    serializeJson(value, json);
+                    lv_label_set_text(label, json.c_str());
+                }
+            });
         }
 
-        if(json.containsKey("style"))
+        if (json.containsKey("font"))
         {
-            auto styleName = json["style"].as<String>();
-            lv_style_t* style = NULL;
-            if(styleName == "ubuntu50")
+            auto styleName = json["font"].as<String>();
+            if (styleName == "montserrat14")
             {
-                style = &ubuntu_font_style;
+                lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_14);
             }
-            else if(styleName == "roboto40")
+            else if (styleName == "montserrat28")
             {
-                style = &roboto_40_style;
+                lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_28);
             }
-            else if(styleName == "roboto60")
+            else if (styleName == "montserrat32")
             {
-                style = &roboto_60_style;
+                lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_32);
             }
-            else if(styleName == "roboto80")
+            else if (styleName == "ubuntu50")
             {
-                style = &roboto_80_style;
+                lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &Ubuntu);
+            }
+            else if (styleName == "roboto40")
+            {
+                lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &roboto40);
+            }
+            else if (styleName == "roboto60")
+            {
+                lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &roboto60);
+            }
+            else if (styleName == "roboto80")
+            {
+                lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &roboto80);
             }
             else
             {
                 ESP_LOGW("LABEL", "Style %s not found!", styleName.c_str());
             }
-
-            if(style != NULL)
-            {
-                lv_obj_add_style(label, LV_LABEL_PART_MAIN, style);
-            }
         }
+
+        DynamicHelpers::set_location(label, json);
+        DynamicHelpers::set_size(label, json);
+        DynamicHelpers::set_layout(label, parent, json);
+
+        ESP_LOGI("LABEL", "Parent size %d;%d, Label %d;%d", lv_obj_get_width(parent), lv_obj_get_height(parent), lv_obj_get_width(label), lv_obj_get_height(label));
 
         return label;
     });

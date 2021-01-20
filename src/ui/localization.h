@@ -46,3 +46,7 @@
 #define LOC_WAKEUP_COUNT "Wakeup count: %d"
 #define LOC_DISPLAY_BRIGHTNESS "Display brightness: "
 #define LOC_INPUT_DISPLAY_BRIGHTNESS "Disp brightness (1 to 5)"
+#define LOC_ON "On"
+#define LOC_OFF "Off"
+#define LOC_TRUE "True"
+#define LOC_FALSE "False"

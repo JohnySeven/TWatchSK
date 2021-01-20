@@ -1,3 +1,4 @@
+#pragma once
 #include <ArduinoJson.h>
 //allocate all JSON strings in SPI RAM
 struct SpiRamAllocator {
