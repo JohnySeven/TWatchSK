@@ -107,6 +107,7 @@ void low_energy()
         gui->update_step_counter(ttgo->bma->getCounter());
         gui->update_battery_level();
         gui->update_battery_icon(LV_ICON_CALCULATION);
+        gui->on_wake_up();
         lv_disp_trig_activity(NULL);
         sk_socket->update_subscriptions();
         ttgo->openBL();

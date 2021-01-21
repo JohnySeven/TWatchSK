@@ -36,13 +36,14 @@ public:
     uint8_t get_display_brightness() { return display_brightness; }
     uint8_t get_adjusted_display_brightness();
     void set_display_brightness(uint8_t value) { display_brightness = value; }
-
+    void on_wake_up();
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);
     void update_time();
     void update_tiles_valid_points(int count);
-    char *message_from_code(GuiEventCode_t code);
+    char *message_from_code(GuiMessageCode_t code);
+    void update_gui();
 
     WifiManager *wifiManager = NULL;
     SignalKSocket *ws_socket = NULL;

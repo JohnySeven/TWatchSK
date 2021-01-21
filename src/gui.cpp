@@ -243,7 +243,7 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
     dynamic_gui->initialize_builders();
     int dynamic_view_count = 0;
 
-    if(!dynamic_gui->load_file("/sk_view.json", mainBar, socket, dynamic_view_count))
+    if (!dynamic_gui->load_file("/sk_view.json", mainBar, socket, dynamic_view_count))
     {
         ESP_LOGW(GUI_TAG, "Failed to load dynamic views!");
     }
@@ -257,20 +257,19 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
 
 void Gui::update_tiles_valid_points(int count)
 {
-    if(tile_valid_points != NULL)
+    if (tile_valid_points != NULL)
     {
         free(tile_valid_points);
         tile_valid_points = NULL;
         tile_valid_points_count = 0;
     }
 
-    tile_valid_points = (lv_point_t*)malloc(sizeof(lv_point_t) * count);
-    for(int i = 0; i < count; i++)
+    tile_valid_points = (lv_point_t *)malloc(sizeof(lv_point_t) * count);
+    for (int i = 0; i < count; i++)
     {
         tile_valid_points[i].x = i;
         tile_valid_points[i].y = 0;
         ESP_LOGI(GUI_TAG, "Tile location (%d,%d)", tile_valid_points[i].x, tile_valid_points[i].y);
-
     }
     tile_valid_points_count = count;
 
@@ -339,12 +338,14 @@ void Gui::update_battery_icon(lv_icon_battery_t icon)
     bar->updateBatteryIcon(icon);
 }
 
-char *Gui::message_from_code(GuiEventCode_t code)
+char *Gui::message_from_code(GuiMessageCode_t code)
 {
     switch (code)
     {
-    case GuiEventCode_t::GUI_WARN_SK_REJECTED:
+    case GuiMessageCode_t::GUI_WARN_SK_REJECTED:
         return LOC_SIGNALK_REQUEST_REJECTED;
+    case GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED:
+        return LOC_WIFI_LOST_CONNECTION;
     default:
         return NULL;
     };
@@ -362,27 +363,37 @@ void Gui::toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden)
     }
 }
 
+void Gui::on_wake_up()
+{
+    update_gui();
+}
+
 void Gui::lv_update_task(struct _lv_task_t *data)
 {
     Gui *gui = (Gui *)data->user_data;
-    gui->update_time();
+    gui->update_gui();
+}
 
-    if (gui->wifiManager->get_status() == WifiState_t::Wifi_Off)
+void Gui::update_gui()
+{
+    update_time();
+
+    if (wifiManager->get_status() == WifiState_t::Wifi_Off)
     {
-        gui->toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, true);
+        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, true);
     }
     else
     {
-        gui->toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, false);
+        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, false);
     }
 
-    if (gui->ws_socket->get_state() == WebsocketState_t::WS_Connected)
+    if (ws_socket->get_state() == WebsocketState_t::WS_Connected)
     {
-        gui->toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, false);
+        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, false);
     }
     else
     {
-        gui->toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, true);
+        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, true);
     }
 
     GuiEvent_t event;
@@ -391,10 +402,15 @@ void Gui::lv_update_task(struct _lv_task_t *data)
     {
         if (event.event == GuiEventType_t::GUI_SHOW_MESSAGE || event.event == GuiEventType_t::GUI_SHOW_WARNING)
         {
-            char *message = (char *)event.argument;
-            if (message == NULL)
+            ESP_LOGI(GUI_TAG, "Show message %d, event=%d, message code=%d!", (int)event.argument, event.event, event.message_code);
+            char *message = NULL;
+            if (event.message_code != GuiMessageCode_t::NONE)
             {
-                message = gui->message_from_code(event.eventCode);
+                message = message_from_code(event.message_code);
+            }
+            else
+            {
+                message = (char *)event.argument;
             }
 
             if (message != NULL)
@@ -406,8 +422,6 @@ void Gui::lv_update_task(struct _lv_task_t *data)
                 lv_obj_set_width(mbox1, 200);
                 lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
             }
-
-            ESP_LOGI(GUI_TAG, "Show message %s, event=%d, code=%d!", (char *)event.argument, event.event, event.eventCode);
         }
         else if (event.event == GuiEventType_t::GUI_SIGNALK_UPDATE)
         {
@@ -415,17 +429,16 @@ void Gui::lv_update_task(struct _lv_task_t *data)
             StaticJsonDocument<256> update;
             auto result = deserializeJson(update, event.argument);
 
-            if(result == DeserializationError::Ok)
+            if (result == DeserializationError::Ok)
             {
                 auto path = update["path"].as<String>();
                 auto value = update["value"].as<JsonVariant>();
-                gui->dynamic_gui->handle_signalk_update(path, value);
+                dynamic_gui->handle_signalk_update(path, value);
             }
             else
             {
                 ESP_LOGI(GUI_TAG, "Unable to parse json, error=%s", result.c_str());
             }
-            
         }
 
         if (event.argument != NULL)

@@ -47,7 +47,7 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
                 formating.offset = binding["offset"].as<float>();
             }
 
-            if(binding.containsKey("decimals"))
+            if (binding.containsKey("decimals"))
             {
                 formating.decimal_places = binding["decimals"].as<int>();
             }
@@ -81,6 +81,7 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
                     lv_label_set_text(label, json.c_str());
                 }
             });
+            lv_label_set_text(label, "--");
         }
 
         if (json.containsKey("font"))

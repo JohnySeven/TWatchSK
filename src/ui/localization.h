@@ -13,6 +13,7 @@
 #define LOC_WIFI_SELECT "Select Wifi"
 #define LOC_KEYBOARD_DEL "Del"
 #define LOC_WIFI_PASSWORD_PROMPT "Type password"
+#define LOC_WIFI_LOST_CONNECTION "WiFi has lost connection to AP!"
 #define LOC_MESSAGEBOX_OK "OK"
 #define LOC_SETTINGS_MENU "Watch settings"
 #define LOC_SIGNALK_SETTINGS "Signal K settings"

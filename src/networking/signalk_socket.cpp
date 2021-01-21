@@ -187,11 +187,7 @@ void SignalKSocket::parse_data(int length, const char *data)
                 }
                 else
                 {
-                    GuiEvent_t event;
-                    event.event = GuiEventType_t::GUI_SHOW_WARNING;
-                    event.eventCode = GuiEventCode_t::GUI_WARN_SK_REJECTED;
-                    event.argument = NULL;
-                    post_gui_update(event);
+                    post_gui_warning(GuiMessageCode_t::GUI_WARN_SK_REJECTED);
                 }
             }
         }
@@ -218,16 +214,12 @@ void SignalKSocket::parse_data(int length, const char *data)
                         String state = notification["state"].as<String>();
                         ESP_LOGI(WS_TAG, "Got SK notification %s with state %s, active=%d", path.c_str(), state.c_str(), active);
 
-                        if (state == "alarm" || state == "alert")
+                        if (state == "alarm" || state == "alert") //alarm is active we need to wake up the watch and show alert text on the display
                         {
                             if (!active)
                             {
                                 String message = notification["message"];
-                                GuiEvent_t event;
-                                event.argument = malloc(message.length() + 1);
-                                strcpy((char *)event.argument, message.c_str());
-                                event.event = GuiEventType_t::GUI_SHOW_WARNING;
-                                post_gui_update(event);
+                                post_gui_warning(message);
                                 activeNotifications.push_back(path);
                             }
                         }
@@ -241,11 +233,7 @@ void SignalKSocket::parse_data(int length, const char *data)
                         ESP_LOGI(WS_TAG, "Got SK value update %s", path.c_str());
                         String json;
                         serializeJson(value, json);
-                        GuiEvent_t event;
-                        event.argument = malloc(json.length() + 1);
-                        strcpy((char *)event.argument, json.c_str());
-                        event.event = GuiEventType_t::GUI_SIGNALK_UPDATE;
-                        post_gui_update(event);
+                        post_gui_signalk_update(json);
                     }
                 }
             }
