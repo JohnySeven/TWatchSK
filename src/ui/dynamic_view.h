@@ -45,6 +45,13 @@ public:
             type = ViewType_t::NormalView;
         }
 
+        if(viewObject.containsKey("background"))
+        {
+            lv_color_t background = DynamicHelpers::get_color(viewObject["background"]);
+            lv_obj_set_style_local_bg_color(container, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, background);
+            lv_obj_set_style_local_bg_opa(container, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_100);
+        }
+
         JsonArray components = viewObject["components"].as<JsonArray>();
 
         for (JsonObject component : components)

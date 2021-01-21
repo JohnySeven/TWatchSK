@@ -32,6 +32,7 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
             int period = 1000;
             formating.multiply = 1.0f;
             formating.offset = 0.0f;
+            formating.decimal_places = 1;
 
             if (binding.containsKey("period"))
             {
@@ -44,6 +45,11 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
             if (binding.containsKey("offset"))
             {
                 formating.offset = binding["offset"].as<float>();
+            }
+
+            if(binding.containsKey("decimals"))
+            {
+                formating.decimal_places = binding["decimals"].as<int>();
             }
 
             float multiply = 1.0f;
@@ -60,7 +66,7 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
                 }
                 else if (value.is<float>())
                 {
-                    auto floatValue = String((value.as<float>() + format.offset) * format.multiply, 1);
+                    auto floatValue = String((value.as<float>() + format.offset) * format.multiply, format.decimal_places);
 
                     lv_label_set_text(label, floatValue.c_str());
                 }
