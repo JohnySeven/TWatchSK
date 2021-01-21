@@ -28,6 +28,8 @@ public:
     bool get_time_24hour_format() { return time_24hour_format; }
     void set_time_24hour_format(bool value) { time_24hour_format = value; }
     void toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden);
+    int get_screen_timeout() { return screen_timeout; }
+    void set_screen_timeout(int value) { screen_timeout = value; }
 
 private:
     static void lv_update_task(struct _lv_task_t *);

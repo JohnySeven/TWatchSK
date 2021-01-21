@@ -27,7 +27,6 @@
 #include "system/events.h"
 
 const char *TAG = "APP";
-#define DEFAULT_SCREEN_TIMEOUT 10 * 1000
 bool lenergy = false;
 bool light_sleep = false;
 TTGOClass *ttgo;
@@ -370,7 +369,7 @@ void loop()
 
     if (!lenergy)
     {
-        if (lv_disp_get_inactive_time(NULL) < DEFAULT_SCREEN_TIMEOUT)
+        if (lv_disp_get_inactive_time(NULL) < (gui->get_screen_timeout() * 1000))
         {
             auto sleep = lv_task_handler();
             if(sleep > 250)

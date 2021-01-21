@@ -69,7 +69,7 @@ protected:
         is_time_am = hours <= 12;
         if (!time_24hour_format && !is_time_am)
         {
-            hours = (hours % 12) + 1;
+            hours = (hours % 12);
         }
         else if(!time_24hour_format && is_time_am && hours == 0)
         {
@@ -298,7 +298,7 @@ private:
             {
                 if(settings->hours > 12)
                 {
-                    settings->hours = (settings->hours % 12) + 1;
+                    settings->hours = (settings->hours % 12);
                     settings->is_time_am = false;
                 }
                 else

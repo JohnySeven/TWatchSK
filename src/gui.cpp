@@ -21,6 +21,7 @@
 #include "ui/signalk_settings.h"
 #include "ui/time_settings.h"
 #include "ui/watch_info.h"
+#include "ui/display_settings.h"
 
 #define RTC_TIME_ZONE "CET-1CEST,M3.5.0,M10.5.0/3"
 
@@ -36,6 +37,7 @@ LV_IMG_DECLARE(menu);
 LV_IMG_DECLARE(wifi_48px);
 LV_IMG_DECLARE(info_48px);
 LV_IMG_DECLARE(time_48px);
+LV_IMG_DECLARE(display_48px);
 
 LV_IMG_DECLARE(setting);
 LV_IMG_DECLARE(on);
@@ -69,6 +71,32 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
 
                 delete timeSetting;
             });
+            timeSetting->show(lv_scr_act());
+        });
+
+        setupMenu->add_tile("Display", &display_48px, [gui]() {
+            auto displaySettings = new DisplaySettings();
+            
+            // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
+            displaySettings->set_screen_timeout(gui->get_screen_timeout());
+            
+            // Define the callback function (on_close()). If the value of screen_timeout
+            // changed while the Display tile was up, save it.
+            displaySettings->on_close([displaySettings, gui]() {
+                int new_timeout = displaySettings->get_screen_timeout();
+                ESP_LOGI(GUI_TAG, "new_timeout = %d", new_timeout);
+                if(gui->get_screen_timeout() != new_timeout &&
+                    new_timeout >= 5)
+                {
+                    gui->set_screen_timeout(new_timeout);
+                    gui->save();
+                }
+                delete displaySettings;
+            });
+
+            // show() does a few things, then calls show_internal(), which defines
+            // the way this tile looks and acts.
+            displaySettings->show(lv_scr_act());
         });
 
         setupMenu->add_tile("Wifi", &wifi_48px, [gui]() {
@@ -88,7 +116,6 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
         });
 
         setupMenu->add_tile("Watch info", &info_48px, []() {
-            ESP_LOGI("GUI", "Show watch info!");
             auto watchInfo = new WatchInfo();
             watchInfo->on_close([watchInfo]() {
                 delete watchInfo;
@@ -357,7 +384,7 @@ void Gui::load_config_from_file(const JsonObject &json)
     time_zone = json["timezone"].as<String>();
     display_brightness = json["brightness"].as<int>();
 
-    ESP_LOGI("GUI", "Loaded settings 24hour=%d,ScreenTimeout=%d,TimeZone=%s,Brightness=%d", time_24hour_format, screen_timeout, time_zone.c_str(), display_brightness);
+    ESP_LOGI("GUI", "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimeZone=%s, Brightness=%d", time_24hour_format, screen_timeout, time_zone.c_str(), display_brightness);
 }
 
 void Gui::save_config_to_file(JsonObject &json)
