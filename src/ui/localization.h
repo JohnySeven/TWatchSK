@@ -40,3 +40,6 @@
 #define LOC_AUTHOR "Author: Jan Dytrych"
 #define LOC_UPTIME "Uptime: %d:%.2d:%.2d "
 #define LOC_24HOUR_TIME "Show 24 hour time"
+#define LOC_DISPLAY_SETTINGS "Display settings"
+#define LOC_SCREEN_TIMEOUT "Screen timeout: "
+#define LOC_INPUT_SCREEN_TIMEOUT "Scrn timeout (5-120 sec.)"

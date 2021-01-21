@@ -5,7 +5,8 @@
 #include "ui_ticker.h"
 
 /**
- * @brief Shows version, author, and uptime. Future: wake-ups, number of handled SK deltas, more?
+ * @brief Shows version, author, and uptime.
+ * Future: wake-ups, number of handled SK deltas, more?
  **/
 
 class WatchInfo : public SettingsView
