@@ -55,7 +55,7 @@ public:
 protected:
     virtual void show_internal(lv_obj_t *parent) override
     {
-        lv_cont_set_layout(parent, LV_LAYOUT_COLUMN_LEFT);
+        lv_cont_set_layout(parent, LV_LAYOUT_PRETTY_TOP);
 
         static lv_style_t buttonStyle;
         lv_style_init(&buttonStyle);
