@@ -111,6 +111,7 @@ void low_energy()
         sk_socket->update_subscriptions();
         ttgo->openBL();
         ttgo->bl->adjust(125);
+        gui->increment_wakeup_count();
         ttgo->bma->enableStepCountInterrupt();
     }
 }

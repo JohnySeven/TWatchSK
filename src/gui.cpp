@@ -115,8 +115,8 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             skSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile("Watch info", &info_48px, []() {
-            auto watchInfo = new WatchInfo();
+        setupMenu->add_tile("Watch info", &info_48px, [gui]() {
+            auto watchInfo = new WatchInfo(gui);
             watchInfo->on_close([watchInfo]() {
                 delete watchInfo;
             });

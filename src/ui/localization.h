@@ -43,3 +43,4 @@
 #define LOC_DISPLAY_SETTINGS "Display settings"
 #define LOC_SCREEN_TIMEOUT "Screen timeout: "
 #define LOC_INPUT_SCREEN_TIMEOUT "Scrn timeout (5-120 sec.)"
+#define LOC_WAKEUP_COUNT "Wakeup count: %d"
