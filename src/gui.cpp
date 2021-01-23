@@ -75,20 +75,36 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
         });
 
         setupMenu->add_tile("Display", &display_48px, [gui]() {
-            auto displaySettings = new DisplaySettings();
+            auto displaySettings = new DisplaySettings(TTGOClass::getWatch());
             
             // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
             displaySettings->set_screen_timeout(gui->get_screen_timeout());
+
+            // display_setting is saved to disk through GUI::display_brightness. Retrieve it here:
+            displaySettings->set_display_brightness(gui->get_display_brightness());
             
-            // Define the callback function (on_close()). If the value of screen_timeout
-            // changed while the Display tile was up, save it.
+            // Define the callback function (on_close()). If the value of screen_timeout or
+            // display_brightness changed while the Display tile was up, save it.
             displaySettings->on_close([displaySettings, gui]() {
+                bool need_to_save = false;
                 int new_timeout = displaySettings->get_screen_timeout();
                 ESP_LOGI(GUI_TAG, "new_timeout = %d", new_timeout);
                 if(gui->get_screen_timeout() != new_timeout &&
                     new_timeout >= 5)
                 {
                     gui->set_screen_timeout(new_timeout);
+                    need_to_save = true;
+                }
+                uint8_t new_brightness = displaySettings->get_display_brightness();
+                ESP_LOGI(GUI_TAG, "new_brightness = %d", new_brightness);
+                if(gui->get_display_brightness() != new_brightness &&
+                    new_brightness > 0)
+                {
+                    gui->set_display_brightness(new_brightness);
+                    need_to_save = true;
+                }
+                if (need_to_save)
+                {
                     gui->save();
                 }
                 delete displaySettings;
@@ -375,6 +391,16 @@ void Gui::toggle_status_bar(bool hidden)
 void Gui::toggle_main_bar(bool hidden)
 {
     lv_obj_set_hidden(mainBar, hidden);
+}
+
+uint8_t Gui::get_adjusted_display_brightness()
+{
+    uint8_t adjusted_brightness = get_display_brightness();
+    if (adjusted_brightness > 1)
+    {
+        adjusted_brightness = (adjusted_brightness - 1) * 63;
+    }
+    return adjusted_brightness;
 }
 
 void Gui::load_config_from_file(const JsonObject &json)

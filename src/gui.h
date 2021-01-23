@@ -32,6 +32,9 @@ public:
     void set_screen_timeout(int value) { screen_timeout = value; }
     int get_wakeup_count() { return wakeup_count; }
     void increment_wakeup_count() { wakeup_count++; }
+    uint8_t get_display_brightness() { return display_brightness; }
+    uint8_t get_adjusted_display_brightness();
+    void set_display_brightness(uint8_t value) { display_brightness = value; }
 
 private:
     static void lv_update_task(struct _lv_task_t *);
@@ -49,9 +52,9 @@ private:
     StatusBar *bar = NULL;
 
     bool time_24hour_format = false;
-    int screen_timeout = 10;
+    int screen_timeout = 10; // only until it's first changed
     String time_zone = "";
-    int display_brightness = 128;
     int wakeup_count = 0; // restarts at zero at each startup
+    uint8_t display_brightness = 155; // only until it's first changed
 };
 #endif /*__GUI_H */
