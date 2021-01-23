@@ -1,4 +1,5 @@
 #pragma once
+#include "gui.h"
 #include "esp_timer.h"
 #include "settings_view.h"
 #include "localization.h"
@@ -12,8 +13,9 @@
 class WatchInfo : public SettingsView
 {
 public:
-    WatchInfo() : SettingsView(LOC_WATCH_INFO)
+    WatchInfo(Gui* gui) : SettingsView(LOC_WATCH_INFO)
     {
+        gui_ = gui;
     }
 
 protected:
@@ -33,6 +35,9 @@ protected:
         uptimeTicker_ = new UITicker(1000, [this]() {
             this->update_uptime();
         });
+
+        wakeup_count_ = lv_label_create(parent, NULL);
+        lv_label_set_text_fmt(wakeup_count_, LOC_WAKEUP_COUNT, gui_->get_wakeup_count());
     }
 
     virtual bool hide_internal() override
@@ -55,8 +60,10 @@ protected:
     }
 
 private:
+    Gui* gui_;
     lv_obj_t* version_;
     lv_obj_t* author_;
     lv_obj_t* uptime_;
     UITicker* uptimeTicker_;
+    lv_obj_t* wakeup_count_;
 };

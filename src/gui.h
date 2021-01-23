@@ -30,6 +30,8 @@ public:
     void toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden);
     int get_screen_timeout() { return screen_timeout; }
     void set_screen_timeout(int value) { screen_timeout = value; }
+    int get_wakeup_count() { return wakeup_count; }
+    void increment_wakeup_count() { wakeup_count++; }
 
 private:
     static void lv_update_task(struct _lv_task_t *);
@@ -50,5 +52,6 @@ private:
     int screen_timeout = 10;
     String time_zone = "";
     int display_brightness = 128;
+    int wakeup_count = 0; // restarts at zero at each startup
 };
 #endif /*__GUI_H */
