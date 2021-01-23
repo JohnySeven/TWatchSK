@@ -28,7 +28,11 @@ public:
         display_brightness_ = new_brightness_level;
         lv_label_set_text_fmt(brightnessLabel_, "%d", display_brightness_);
         uint8_t adjusted_brightness = display_brightness_;
-        if (adjusted_brightness > 1) 
+        if (adjusted_brightness == 1)
+        {
+            adjusted_brightness = 10; // minimum readable level in bright light
+        }
+        else
         {
             adjusted_brightness = (adjusted_brightness - 1) * 63;
         }

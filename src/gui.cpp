@@ -396,10 +396,11 @@ void Gui::toggle_main_bar(bool hidden)
 uint8_t Gui::get_adjusted_display_brightness()
 {
     uint8_t adjusted_brightness = get_display_brightness();
-    if (adjusted_brightness > 1)
+    if (adjusted_brightness == 1)
     {
-        adjusted_brightness = (adjusted_brightness - 1) * 63;
+        return 10; // minimum readable level in bright light
     }
+    adjusted_brightness = (adjusted_brightness - 1) * 63;
     return adjusted_brightness;
 }
 
