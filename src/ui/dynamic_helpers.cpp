@@ -98,6 +98,10 @@ lv_color_t DynamicHelpers::get_color(const String &value)
     {
         ret = LV_COLOR_WHITE;
     }
+    else if(value == "black")
+    {
+        ret = LV_COLOR_BLACK;
+    }
     else if (value == "blue")
     {
         ret = LV_COLOR_BLUE;
@@ -114,9 +118,13 @@ lv_color_t DynamicHelpers::get_color(const String &value)
     {
         ret = LV_COLOR_GRAY;
     }
-    else if(value == "green")
+    else if(value == "primary")
     {
-        ret = LV_COLOR_GREEN;
+        ret = LV_THEME_DEFAULT_COLOR_PRIMARY;
+    }
+    else if(value == "secondary")
+    {
+        ret = LV_THEME_DEFAULT_COLOR_SECONDARY;
     }
     else
     {
