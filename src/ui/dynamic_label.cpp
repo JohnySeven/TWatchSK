@@ -117,7 +117,7 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
             }
             else
             {
-                ESP_LOGW("LABEL", "Style %s not found!", styleName.c_str());
+                ESP_LOGW("LABEL", "Font %s not found!", styleName.c_str());
             }
         }
 
