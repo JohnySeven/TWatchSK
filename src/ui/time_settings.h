@@ -330,7 +330,7 @@ private:
     void update_time_date_display()
     {
         lv_label_set_text_fmt(hourLabel, "%d", hours);
-        lv_label_set_text_fmt(minuteLabel, "%d", minutes);
+        lv_label_set_text_fmt(minuteLabel, "%.2d", minutes);
 
         if (!time_24hour_format)
         {

@@ -13,7 +13,8 @@
 enum KeyboardType_t
 {
     Normal,
-    Number
+    Number,
+    Brightness
 };
 
 class Keyboard : public SettingsView
@@ -62,10 +63,15 @@ public:
         {
             lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, btnm_mapplus[0]);
         }
-        else
+        else if (keyboardType == KeyboardType_t::Number)
         {
             lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, btnm_numeric[0]);
             lv_textarea_set_accepted_chars(ta, "0123456789");
+        }
+        else // type == Brightness)
+        {
+            lv_keyboard_set_map(kb, LV_KEYBOARD_MODE_TEXT_LOWER, btnm_brightness[0]);
+            lv_textarea_set_accepted_chars(ta, "12345");
         }
         if (maxLength != 0)
         {
@@ -136,6 +142,7 @@ public:
 private:
     static const char *btnm_mapplus[10][23];
     static const char *btnm_numeric[1][23];
+    static const char *btnm_brightness[1][23];
     char __buf[128];
     bool _isSuccess = false;
     KeyboardType_t keyboardType;
@@ -153,6 +160,10 @@ const char *Keyboard::btnm_numeric[1][23] = {
      "4", "5", "6", "\n",
      "7", "8", "9", "\n",
      "0", LV_SYMBOL_OK, LOC_KEYBOARD_DEL, "", ""}};
+
+const char *Keyboard::btnm_brightness[1][23] = {
+    {"1", "2", "3", "\n",
+     "4", "5", LV_SYMBOL_OK, LOC_KEYBOARD_DEL, "", ""}};     
 
 const char *Keyboard::btnm_mapplus[10][23] = {
     {"a", "b", "c", "\n",

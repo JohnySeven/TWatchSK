@@ -110,8 +110,8 @@ void low_energy()
         lv_disp_trig_activity(NULL);
         sk_socket->update_subscriptions();
         ttgo->openBL();
-        ttgo->bl->adjust(125);
         gui->increment_wakeup_count();
+        ttgo->bl->adjust(gui->get_adjusted_display_brightness());
         ttgo->bma->enableStepCountInterrupt();
     }
 }
@@ -270,6 +270,7 @@ void setup()
     lv_disp_trig_activity(NULL);
     //When the initialization is complete, turn on the backlight
     ttgo->openBL();
+    ttgo->bl->adjust(gui->get_adjusted_display_brightness());
 
 #if CONFIG_PM_ENABLE
     // Configure dynamic frequency scaling:
