@@ -84,6 +84,7 @@ bool SignalKSocket::connect()
 
         websocket = esp_websocket_client_init(&ws_cfg);
         websocket_initialized = true;
+        delta_counter = 0;
 
         if (esp_websocket_register_events(websocket, WEBSOCKET_EVENT_ANY, ws_event_handler, this) == ESP_OK)
         {
@@ -194,6 +195,7 @@ void SignalKSocket::parse_data(int length, const char *data)
         else if (doc.containsKey("updates"))
         {
             messageType = "Delta";
+            delta_counter++;
             JsonArray updates = doc["updates"].as<JsonArray>();
 
             for (int i = 0; i < updates.size(); i++)

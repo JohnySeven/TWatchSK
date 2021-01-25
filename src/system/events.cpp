@@ -23,6 +23,7 @@ void post_gui_update(GuiEvent_t event)
     {
         xEventGroupSetBits(g_app_state, G_APP_STATE_WAKE_UP);
     }
+    
     xQueueSend(gui_queue_handle, &event, 10);
 }
 
@@ -51,7 +52,7 @@ void post_gui_signalk_update(const String& json)
     GuiEvent_t event;
     event.argument = malloc(json.length() + 1);
     strcpy((char *)event.argument, json.c_str());
-    event.event = GuiEventType_t::GUI_SHOW_WARNING;
+    event.event = GuiEventType_t::GUI_SIGNALK_UPDATE;
     event.message_code = GuiMessageCode_t::NONE;
 
     post_gui_update(event);
