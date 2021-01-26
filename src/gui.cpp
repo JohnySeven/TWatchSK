@@ -398,7 +398,7 @@ void Gui::update_gui()
 
     GuiEvent_t event;
 
-    if (read_gui_update(event))
+    while (read_gui_update(event))
     {
         if (event.event_type == GuiEventType_t::GUI_SHOW_MESSAGE || event.event_type == GuiEventType_t::GUI_SHOW_WARNING)
         {
