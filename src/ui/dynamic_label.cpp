@@ -52,8 +52,6 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
                 formating.decimal_places = binding["decimals"].as<int>();
             }
 
-            float multiply = 1.0f;
-
             factory->add_data_adapter(binding["path"].as<String>(), period, formating, [label](const JsonVariant &value, const Data_formating_t &format) {
                 if (value.is<String>())
                 {
