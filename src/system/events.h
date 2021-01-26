@@ -38,7 +38,7 @@ enum GuiMessageCode_t
 
 struct GuiEvent_t
 {
-    GuiEventType_t event;
+    GuiEventType_t event_type;
     void*argument;
     GuiMessageCode_t message_code;
 };

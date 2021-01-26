@@ -400,9 +400,9 @@ void Gui::update_gui()
 
     if (read_gui_update(event))
     {
-        if (event.event == GuiEventType_t::GUI_SHOW_MESSAGE || event.event == GuiEventType_t::GUI_SHOW_WARNING)
+        if (event.event_type == GuiEventType_t::GUI_SHOW_MESSAGE || event.event_type == GuiEventType_t::GUI_SHOW_WARNING)
         {
-            ESP_LOGI(GUI_TAG, "Show message %d, event=%d, message code=%d!", (int)event.argument, event.event, event.message_code);
+            ESP_LOGI(GUI_TAG, "Show message %d, event=%d, message code=%d!", (int)event.argument, event.event_type, event.message_code);
             char *message = NULL;
             if (event.message_code != GuiMessageCode_t::NONE)
             {
@@ -423,7 +423,7 @@ void Gui::update_gui()
                 lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
             }
         }
-        else if (event.event == GuiEventType_t::GUI_SIGNALK_UPDATE)
+        else if (event.event_type == GuiEventType_t::GUI_SIGNALK_UPDATE)
         {
             ESP_LOGI(GUI_TAG, "Update SK view %s", (char *)event.argument);
             StaticJsonDocument<256> update;

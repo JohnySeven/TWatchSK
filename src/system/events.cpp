@@ -19,7 +19,7 @@ void post_event(ApplicationEvents_T event)
 
 void post_gui_update(GuiEvent_t event)
 {
-    if (event.event == GuiEventType_t::GUI_SHOW_WARNING && is_low_power())
+    if (event.event_type == GuiEventType_t::GUI_SHOW_WARNING && is_low_power())
     {
         xEventGroupSetBits(g_app_state, G_APP_STATE_WAKE_UP);
     }
@@ -30,7 +30,7 @@ void post_gui_update(GuiEvent_t event)
 void post_gui_warning(GuiMessageCode_t code)
 {
     GuiEvent_t event;
-    event.event = GuiEventType_t::GUI_SHOW_WARNING;
+    event.event_type = GuiEventType_t::GUI_SHOW_WARNING;
     event.message_code = code;
     event.argument = NULL;
 
@@ -42,7 +42,7 @@ void post_gui_warning(const String& message)
     GuiEvent_t event;
     event.argument = malloc(message.length() + 1);
     strcpy((char *)event.argument, message.c_str());
-    event.event = GuiEventType_t::GUI_SHOW_WARNING;
+    event.event_type = GuiEventType_t::GUI_SHOW_WARNING;
     event.message_code = GuiMessageCode_t::NONE;
     post_gui_update(event);
 }
@@ -52,7 +52,7 @@ void post_gui_signalk_update(const String& json)
     GuiEvent_t event;
     event.argument = malloc(json.length() + 1);
     strcpy((char *)event.argument, json.c_str());
-    event.event = GuiEventType_t::GUI_SIGNALK_UPDATE;
+    event.event_type = GuiEventType_t::GUI_SIGNALK_UPDATE;
     event.message_code = GuiMessageCode_t::NONE;
 
     post_gui_update(event);
