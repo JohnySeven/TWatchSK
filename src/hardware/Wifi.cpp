@@ -10,6 +10,7 @@
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
+#include "system/events.h"
 
 const char *WIFI_TAG = "WIFI";
 static bool scan_done = false;
@@ -29,6 +30,10 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         manager->update_status(Wifi_Disconnected);
+        if(manager->is_enabled())
+        {
+            post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED);
+        }
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {

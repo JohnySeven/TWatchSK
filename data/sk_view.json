@@ -1,49 +1,59 @@
 {
-    "Name": "Test view",
-    "Screens": [
+    "name": "Test view",
+    "views": [
         {
-            "Name": "Boat overview",
-            "Layout": "Row",
-            "Controls": [
+            "type": "normal",
+            "layout": "column_mid",
+            "components": [
                 {
-                    "Type": "Label",
-                    "Text": "Speed",
-                    "Font": "Small"
+                    "type": "label",
+                    "text": "Speed",
+                    "font": "roboto40",
+                    "color": "white"
                 },
                 {
-                    "Type": "Label",
-                    "Text": "@navigation.speedOverGround",
-                    "Format": "? Km/h",
-                    "Font": "Big"
+                    "type": "label",
+                    "font": "roboto60",
+                    "color": "blue",
+                    "binding": {
+                        "path": "navigation.speedOverGround",
+                        "multiply": 3.6,
+                        "period": 1000
+                    }
+                },
+                {
+                    "type": "label",
+                    "text": "Km/h",
+                    "font": "roboto40",
+                    "color": "white"
                 }
             ]
         },
         {
-            "Name": "Light controls",
-            "Layout": "Row",
-            "Controls": [
+            "type": "normal",
+            "layout": "column_mid",
+            "components": [
                 {
-                    "Type": "Switch",
-                    "Path": "navigation.lights",
-                    "States": [
-                        {
-                            "name": "on",
-                            "value": "1"
-                        },
-                        {
-                            "name": "off",
-                            "value": "0"
-                        }
-                    ]
+                    "type": "label",
+                    "text": "Depth",
+                    "font": "roboto40",
+                    "color": "white"
                 },
                 {
-                    "Type": "Button",
-                    "Text": "Horn",
-                    "Action": "Put",
-                    "Put": {
-                        "path": "electrical.horn",
-                        "value": "1sec"
+                    "type": "label",
+                    "font": "roboto60",
+                    "color": "blue",
+                    "binding": {
+                        "path": "environment.depth.belowTransducer",
+                        "multiply": 1.0,
+                        "period": 1000
                     }
+                },
+                {
+                    "type": "label",
+                    "text": "m",
+                    "font": "roboto40",
+                    "color": "white"
                 }
             ]
         }

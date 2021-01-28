@@ -29,33 +29,18 @@ enum GuiEventType_t
     GUI_SIGNALK_UPDATE
 };
 
-enum GuiEventCode_t
+enum GuiMessageCode_t
 {
-    GUI_WARN_SK_REJECTED
-};
-
-enum SignalKValueType_t
-{
-    SKString,
-    SKInt,
-    SKBool,
-    SKFloat,
-    SKJson
-};
-
-struct SignalKUpdateArgument_t
-{
-    char*path;
-    char*json;
-    char*source;
-    SignalKValueType_t type;
+    NONE,
+    GUI_WARN_SK_REJECTED,
+    GUI_WARN_WIFI_DISCONNECTED
 };
 
 struct GuiEvent_t
 {
-    GuiEventType_t event;
+    GuiEventType_t event_type;
     void*argument;
-    GuiEventCode_t eventCode;
+    GuiMessageCode_t message_code;
 };
 
 extern QueueHandle_t g_event_queue_handle;
@@ -63,7 +48,9 @@ extern EventGroupHandle_t g_app_state;
 
 void initialize_events();
 void post_event(ApplicationEvents_T event);
-void post_gui_update(GuiEvent_t event);
+void post_gui_signalk_update(const String& json);
+void post_gui_warning(GuiMessageCode_t message);
+void post_gui_warning(const String& message);
 bool read_gui_update(GuiEvent_t& event);
 bool is_low_power();
 void set_low_power(bool low_power);

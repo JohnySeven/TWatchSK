@@ -4,6 +4,7 @@
 #include "system/events.h"
 #include "ui/statusbar.h"
 #include "ui/menubar.h"
+#include "ui/dynamic_gui.h"
 
 #ifndef __GUI_H
 #define __GUI_H
@@ -35,14 +36,16 @@ public:
     uint8_t get_display_brightness() { return display_brightness; }
     uint8_t get_adjusted_display_brightness();
     void set_display_brightness(uint8_t value) { display_brightness = value; }
+    void on_wake_up();
     int8_t get_timezone_id() { return timezone_id; }
     void set_timezone_id(int8_t new_tz_id) { timezone_id = new_tz_id; }
-
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);
     void update_time();
-    char *message_from_code(GuiEventCode_t code);
+    void update_tiles_valid_points(int count);
+    char *message_from_code(GuiMessageCode_t code);
+    void update_gui();
 
     WifiManager *wifiManager = NULL;
     SignalKSocket *ws_socket = NULL;
@@ -50,13 +53,17 @@ private:
     lv_obj_t *timeLabel = NULL;
     lv_obj_t *timeSuffixLabel = NULL;
     lv_obj_t *menuBtn = NULL;
+    lv_obj_t *watch_face = NULL;
     MenuBar *menuBars = NULL;
     StatusBar *bar = NULL;
+    DynamicGui*dynamic_gui = NULL;
 
     bool time_24hour_format = false;
     int screen_timeout = 10; // only until it's first changed
     int8_t timezone_id = 0; // Index of the array of timezones in the timezone Roller selector widget
     int wakeup_count = 0; // restarts at zero at each startup
     uint8_t display_brightness = 155; // only until it's first changed
+    lv_point_t*tile_valid_points = NULL; //this is for tile navigation matrix to allow user navigation in multiple directions
+    int tile_valid_points_count = 0; //number of matrix points
 };
 #endif /*__GUI_H */
