@@ -23,7 +23,7 @@
 #include "ui/watch_info.h"
 #include "ui/display_settings.h"
 
-#define RTC_TIME_ZONE "CET-1CEST,M3.5.0,M10.5.0/3"
+#define RTC_TIME_ZONE "CET-1CEST,M3.5.0,M10.5.0/3" // this doesn't do anything yet. Will it ever be used?
 
 LV_FONT_DECLARE(Geometr);
 LV_FONT_DECLARE(Ubuntu);
@@ -62,10 +62,22 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
         setupMenu->add_tile("Clock", &time_48px, [gui]() {
             auto timeSetting = new TimeSettings(TTGOClass::getWatch(), gui->get_sk_socket());
             timeSetting->set_24hour_format(gui->get_time_24hour_format());
+            timeSetting->set_timezone_id(gui->get_timezone_id());
             timeSetting->on_close([timeSetting, gui]() {
+                bool need_to_save_gui = false;
                 if (gui->get_time_24hour_format() != timeSetting->get_24hour_format())
                 {
                     gui->set_time_24hour_format(timeSetting->get_24hour_format());
+                    need_to_save_gui = true;
+                }
+                if (gui->get_timezone_id() != timeSetting->get_timezone_id())
+                {
+                    gui->set_timezone_id(timeSetting->get_timezone_id());
+                    need_to_save_gui = true;
+                }
+
+                if (need_to_save_gui)
+                {
                     gui->save();
                 }
 
@@ -88,7 +100,6 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             displaySettings->on_close([displaySettings, gui]() {
                 bool need_to_save = false;
                 int new_timeout = displaySettings->get_screen_timeout();
-                ESP_LOGI(GUI_TAG, "new_timeout = %d", new_timeout);
                 if(gui->get_screen_timeout() != new_timeout &&
                     new_timeout >= 5)
                 {
@@ -96,7 +107,6 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
                     need_to_save = true;
                 }
                 uint8_t new_brightness = displaySettings->get_display_brightness();
-                ESP_LOGI(GUI_TAG, "new_brightness = %d", new_brightness);
                 if(gui->get_display_brightness() != new_brightness &&
                     new_brightness > 0)
                 {
@@ -479,16 +489,16 @@ void Gui::load_config_from_file(const JsonObject &json)
 {
     time_24hour_format = json["24hourformat"].as<bool>();
     screen_timeout = json["screentimeout"].as<int>();
-    time_zone = json["timezone"].as<String>();
+    timezone_id = json["timezone"].as<int>();
     display_brightness = json["brightness"].as<int>();
 
-    ESP_LOGI("GUI", "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimeZone=%s, Brightness=%d", time_24hour_format, screen_timeout, time_zone.c_str(), display_brightness);
+    ESP_LOGI("GUI", "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimezoneID=%d, Brightness=%d", time_24hour_format, screen_timeout, timezone_id, display_brightness);
 }
 
 void Gui::save_config_to_file(JsonObject &json)
 {
     json["24hourformat"] = time_24hour_format;
     json["screentimeout"] = screen_timeout;
-    json["timezone"] = time_zone;
+    json["timezone"] = timezone;
     json["brightness"] = display_brightness;
 }

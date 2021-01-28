@@ -1,9 +1,11 @@
 #pragma once
+#include <array>
 #include "settings_view.h"
 #include "localization.h"
 #include "loader.h"
 #include "ui_ticker.h"
 #include "keyboard.h"
+#include "roller.h"
 #include "networking/signalk_socket.h"
 #include "date_picker.h"
 
@@ -51,10 +53,29 @@ public:
         update_time_date_display();
     }
 
+    void update_timezone_id(int8_t new_timezone_id) // for when user changes the timezone
+    {
+        timezone_id = new_timezone_id;
+        lv_label_set_text_fmt(timezone_label, "%s", get_timezone_string(timezone_id).c_str());
+        ESP_LOGI(SETTINGS_TAG, "User set timezone to %s", get_timezone_string(timezone_id).c_str());
+        // BS: Need to adjust the actual time for this timezone change
+    }
+
     bool get_24hour_format() { return time_24hour_format; }
     void set_24hour_format(bool value)
     {
         time_24hour_format = value; 
+    }
+
+    int8_t get_timezone_id() { return timezone_id; }
+    void set_timezone_id(int8_t new_timezone_id)
+    {
+        timezone_id = new_timezone_id; 
+    }
+
+    String get_timezone_string(int8_t id) 
+    {
+        return timezone_strings[id];
     }
 
 protected:
@@ -116,8 +137,20 @@ protected:
         lv_obj_set_event_cb(dateButton, TimeSettings::date_button_callback);
         lv_obj_set_width(dateButton, 100);
 
+        timezoneTextLabel = lv_label_create(parent, NULL);
+        lv_obj_align(timezoneTextLabel, hourButton, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 16);
+        lv_label_set_text(timezoneTextLabel, LOC_TIMEZONE);
+        timezone_button = lv_btn_create(parent, NULL);
+        lv_obj_align(timezone_button, timezoneTextLabel, LV_ALIGN_OUT_RIGHT_MID, 10, 0);
+        lv_obj_add_style(timezone_button, LV_OBJ_PART_MAIN, &buttonStyle);
+        timezone_label = lv_label_create(timezone_button, NULL);
+        lv_label_set_text_fmt(timezone_label, "%s", get_timezone_string(timezone_id).c_str());
+        lv_obj_set_event_cb(timezone_button, timezone_button_callback);
+        lv_obj_set_width(timezone_button, 90);
+
         time_24hour_check = lv_switch_create(parent, NULL);
-        lv_obj_align(time_24hour_check, hourButton, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 10);
+        // BS: Need to change the following to align it with some object, instead of an absolute position
+        lv_obj_set_pos(time_24hour_check, 4, 114);
         time_24hour_label = lv_label_create(parent, NULL);
         lv_label_set_text(time_24hour_label, LOC_24HOUR_TIME);
         lv_obj_align(time_24hour_label, time_24hour_check, LV_ALIGN_OUT_RIGHT_MID, 4, 0);
@@ -146,6 +179,7 @@ protected:
         dateButton->user_data = this;
         sk_sync_check->user_data = this;
         time_24hour_check->user_data = this;
+        timezone_button->user_data = this;
 
         update_time_date_display();
     }
@@ -176,10 +210,13 @@ private:
     lv_obj_t *timeModeLabel;
     lv_obj_t *dateLabel;
     lv_obj_t *dateButton;
+    lv_obj_t *timezoneTextLabel;
     lv_obj_t *sk_sync_check;
     lv_obj_t *sk_sync_label;
     lv_obj_t *time_24hour_check;
     lv_obj_t *time_24hour_label;
+    lv_obj_t *timezone_button;
+    lv_obj_t *timezone_label;
     int hours = 0;
     int minutes = 0;
     int day = 0;
@@ -187,8 +224,12 @@ private:
     int year = 0;
     bool time_24hour_format = false;
     char *months[13] = LOC_MONTHS;
-    //Loader *ScanLoader;
-    //UITicker *statusUpdateTicker;
+    int8_t timezone_id = 12; // only until it's changed the first time
+    std::array<String, 25> timezone_strings = {"GMT-12:00", "GMT-11:00", "GMT-10:00",
+        "GMT-9:00", "GMT-8:00", "GMT-7:00", "GMT-6:00", "GMT-5:00", "GMT-4:00",
+        "GMT-3:00", "GMT-2:00", "GMT-1:00","GMT0", "GMT+1:00", "GMT+2:00", "GMT+3:00",
+        "GMT+4:00", "GMT+5:00", "GMT+6:00", "GMT+7:00", "GMT+8:00", "GMT+9:00",
+        "GMT+10:00", "GMT11:00", "GMT+12:00"};
     bool time_changed = false;
     bool date_changed = false;
     bool sk_settings_changed = false;
@@ -276,6 +317,24 @@ private:
         }
     }
 
+    static void timezone_button_callback(lv_obj_t *obj, lv_event_t event)
+    {
+        if (event == LV_EVENT_CLICKED)
+        {
+            auto timeSettings = (TimeSettings*)obj->user_data;
+            auto roller = new Roller(LOC_INPUT_TIMEZONE, RollerType_t::Timezone, timeSettings->timezone_id);
+            roller->on_close([roller, timeSettings]() 
+            {
+                if (roller->is_success())
+                {
+                    auto selected_id = roller->get_selected_id();
+                    timeSettings->update_timezone_id(selected_id);
+                }
+            });
+            roller->show(lv_scr_act());
+        }
+    }
+
     static void sync_with_sk_callback(lv_obj_t *obj, lv_event_t event)
     {
         if (event == LV_EVENT_VALUE_CHANGED)
@@ -294,7 +353,7 @@ private:
             TimeSettings *settings = (TimeSettings *)obj->user_data;
             bool state = lv_switch_get_state(obj);
             ESP_LOGI(SETTINGS_TAG, "User changed 24 hour format to %s", state ? "on" : "off");
-            if(!state)
+            if(!state) // state of the switch has changed
             {
                 if(settings->hours > 12)
                 {
