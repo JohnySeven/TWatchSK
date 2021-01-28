@@ -35,6 +35,8 @@ public:
     uint8_t get_display_brightness() { return display_brightness; }
     uint8_t get_adjusted_display_brightness();
     void set_display_brightness(uint8_t value) { display_brightness = value; }
+    int8_t get_timezone_id() { return timezone_id; }
+    void set_timezone_id(int8_t new_tz_id) { timezone_id = new_tz_id; }
 
 private:
     static void lv_update_task(struct _lv_task_t *);
@@ -53,7 +55,7 @@ private:
 
     bool time_24hour_format = false;
     int screen_timeout = 10; // only until it's first changed
-    String time_zone = "";
+    int8_t timezone_id = 0; // Index of the array of timezones in the timezone Roller selector widget
     int wakeup_count = 0; // restarts at zero at each startup
     uint8_t display_brightness = 155; // only until it's first changed
 };

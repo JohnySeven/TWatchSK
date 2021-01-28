@@ -39,6 +39,7 @@
 #define LOC_WATCH_VERSION "Version 0.0.1"
 #define LOC_AUTHOR "Author: Jan Dytrych"
 #define LOC_UPTIME "Uptime: %d:%.2d:%.2d "
+#define LOC_TIMEZONE "Timezone: "
 #define LOC_24HOUR_TIME "Show 24 hour time"
 #define LOC_DISPLAY_SETTINGS "Display settings"
 #define LOC_SCREEN_TIMEOUT "Screen\ntimeout: "
@@ -46,3 +47,4 @@
 #define LOC_WAKEUP_COUNT "Wakeup count: %d"
 #define LOC_DISPLAY_BRIGHTNESS "Display brightness: "
 #define LOC_INPUT_DISPLAY_BRIGHTNESS "Disp brightness (1 to 5)"
+#define LOC_INPUT_TIMEZONE "Select timezone"
