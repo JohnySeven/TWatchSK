@@ -499,6 +499,6 @@ void Gui::save_config_to_file(JsonObject &json)
 {
     json["24hourformat"] = time_24hour_format;
     json["screentimeout"] = screen_timeout;
-    json["timezone"] = timezone;
+    json["timezone"] = timezone_id;
     json["brightness"] = display_brightness;
 }
