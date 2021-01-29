@@ -9,6 +9,7 @@
 #include "system/observable.h"
 #include "hardware/Wifi.h"
 #include "networking/signalk_subscription.h"
+#include "hardware/Hardware.h"
 
 enum WebsocketState_t
 {
@@ -41,6 +42,8 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
         uint get_handled_delta_count() { return delta_counter; }
         SignalKSubscription* add_subscription(String path, uint period, bool is_low_power);
         void update_subscriptions();
+        ///This is intended to be wired with Hardware class power events
+        void handle_power_event(PowerCode_t code, uint32_t arg);
     private:
         static void ws_event_handler(void *arg, esp_event_base_t event_base,
                              int32_t event_id, void *event_data);

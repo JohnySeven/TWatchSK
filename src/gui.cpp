@@ -88,26 +88,26 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
 
         setupMenu->add_tile("Display", &display_48px, [gui]() {
             auto displaySettings = new DisplaySettings(TTGOClass::getWatch());
-            
+
             // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
             displaySettings->set_screen_timeout(gui->get_screen_timeout());
 
             // display_setting is saved to disk through GUI::display_brightness. Retrieve it here:
             displaySettings->set_display_brightness(gui->get_display_brightness());
-            
+
             // Define the callback function (on_close()). If the value of screen_timeout or
             // display_brightness changed while the Display tile was up, save it.
             displaySettings->on_close([displaySettings, gui]() {
                 bool need_to_save = false;
                 int new_timeout = displaySettings->get_screen_timeout();
-                if(gui->get_screen_timeout() != new_timeout &&
+                if (gui->get_screen_timeout() != new_timeout &&
                     new_timeout >= 5)
                 {
                     gui->set_screen_timeout(new_timeout);
                     need_to_save = true;
                 }
                 uint8_t new_brightness = displaySettings->get_display_brightness();
-                if(gui->get_display_brightness() != new_brightness &&
+                if (gui->get_display_brightness() != new_brightness &&
                     new_brightness > 0)
                 {
                     gui->set_display_brightness(new_brightness);
@@ -373,9 +373,31 @@ void Gui::toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden)
     }
 }
 
-void Gui::on_wake_up()
+void Gui::on_power_event(PowerCode_t code, uint32_t arg)
 {
-    update_gui();
+    if (code == PowerCode_t::POWER_LEAVE_LOW_POWER)
+    {
+        auto ttgo = TTGOClass::getWatch();
+        ttgo->bl->adjust(get_adjusted_display_brightness());
+        update_step_counter(ttgo->bma->getCounter());
+        update_battery_level();
+        update_battery_icon(LV_ICON_CALCULATION);
+        increment_wakeup_count();
+        update_gui();
+        lv_disp_trig_activity(NULL);
+    }
+    else if(code == PowerCode_t::POWER_CHARGING_ON)
+    {
+        update_battery_icon(LV_ICON_CHARGE);
+    }
+    else if(code == PowerCode_t::POWER_CHARGING_OFF || code == PowerCode_t::POWER_CHARGING_DONE)
+    {
+        update_battery_icon(LV_ICON_CALCULATION);
+    }
+    else if(code == PowerCode_t::WALK_STEP_COUNTER_UPDATED)
+    {
+        update_step_counter(arg);
+    }
 }
 
 void Gui::lv_update_task(struct _lv_task_t *data)
@@ -499,6 +521,6 @@ void Gui::save_config_to_file(JsonObject &json)
 {
     json["24hourformat"] = time_24hour_format;
     json["screentimeout"] = screen_timeout;
-    json["timezone"] = timezone;
+    json["timezone"] = timezone_id;
     json["brightness"] = display_brightness;
 }

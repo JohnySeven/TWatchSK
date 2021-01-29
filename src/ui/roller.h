@@ -50,7 +50,7 @@ public:
         }
         // add more RollerType_t checking here as they are added      
         
-        lv_roller_set_selected(roller_widget, starting_id_, 1); // BS: 0 should be LV_ANIM_ON or LV_ANIM_OFF
+        lv_roller_set_selected(roller_widget, starting_id_, LV_ANIM_OFF); // BS: 0 should be LV_ANIM_ON or LV_ANIM_OFF
         lv_roller_set_visible_row_count(roller_widget, 5); // number of rows to make visible in the widget
         lv_obj_set_event_cb(roller_widget, roller_widget_cb);
         roller_widget->user_data = this;

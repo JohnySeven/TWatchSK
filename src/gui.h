@@ -5,6 +5,7 @@
 #include "ui/statusbar.h"
 #include "ui/menubar.h"
 #include "ui/dynamic_gui.h"
+#include "hardware/Hardware.h"
 
 #ifndef __GUI_H
 #define __GUI_H
@@ -36,7 +37,7 @@ public:
     uint8_t get_display_brightness() { return display_brightness; }
     uint8_t get_adjusted_display_brightness();
     void set_display_brightness(uint8_t value) { display_brightness = value; }
-    void on_wake_up();
+    void on_power_event(PowerCode_t code, uint32_t arg);
     int8_t get_timezone_id() { return timezone_id; }
     void set_timezone_id(int8_t new_tz_id) { timezone_id = new_tz_id; }
 private:

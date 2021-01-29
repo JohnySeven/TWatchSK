@@ -25,97 +25,17 @@
 #include "esp_int_wdt.h"
 #include "esp_pm.h"
 #include "system/events.h"
+#include "hardware/Hardware.h"
+#include <functional>
+using std::placeholders::_1;
+using std::placeholders::_2;
 
 const char *TAG = "APP";
-bool lenergy = false;
-bool light_sleep = false;
 TTGOClass *ttgo;
 WifiManager *wifiManager;
 SignalKSocket*sk_socket;
+Hardware*hardware;
 Gui*gui;
-EventGroupHandle_t isr_group = NULL;
-
-#define WATCH_FLAG_SLEEP_MODE _BV(1)
-#define WATCH_FLAG_SLEEP_EXIT _BV(2)
-#define WATCH_FLAG_BMA_IRQ _BV(3)
-#define WATCH_FLAG_AXP_IRQ _BV(4)
-#define WATCH_FLAT_TOUCH_IRQ _BV(5)
-
-void low_energy()
-{
-    if (!lenergy)
-    {
-        xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_MODE);
-        set_low_power(true);
-        sk_socket->update_subscriptions();
-        ttgo->closeBL();
-        ttgo->stopLvglTick();
-        ttgo->bma->enableStepCountInterrupt(false);
-        ttgo->displaySleep();
-        lenergy = true;
-
-        if (wifiManager->get_status() == Wifi_Off)
-        {
-            light_sleep = true;
-            setCpuFrequencyMhz(10);
-            ESP_LOGI(TAG, "Entering light sleep mode");
-            gpio_wakeup_enable((gpio_num_t)AXP202_INT, GPIO_INTR_LOW_LEVEL);
-            gpio_wakeup_enable((gpio_num_t)BMA423_INT1, GPIO_INTR_HIGH_LEVEL);
-            gpio_wakeup_enable((gpio_num_t)TOUCH_INT, GPIO_INTR_HIGH_LEVEL);
-            esp_sleep_enable_gpio_wakeup();
-            esp_light_sleep_start();
-        }
-        else
-        {
-            light_sleep = false;
-            ESP_LOGI(TAG, "WiFi is enabled, will not enter light sleep.");
-
-            EventBits_t isr_bits = xEventGroupGetBits(isr_group);
-            EventBits_t app_bits = xEventGroupGetBits(g_app_state);
-
-            while (!(isr_bits & WATCH_FLAG_SLEEP_EXIT) && !(app_bits & G_APP_STATE_WAKE_UP))
-            {
-                delay(500);
-                isr_bits = xEventGroupGetBits(isr_group);
-                app_bits = xEventGroupGetBits(g_app_state);
-            }
-
-            xEventGroupClearBits(g_app_state, G_APP_STATE_WAKE_UP);
-            if(app_bits & G_APP_STATE_WAKE_UP)
-            {
-                xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_EXIT);
-            }
-
-            ESP_LOGI(TAG,"Wakeup request from sleep. System isr=%d,app=%d", isr_bits, app_bits);
-        }
-    }
-    else
-    {
-        if(light_sleep)
-        {
-            setCpuFrequencyMhz(80);
-            light_sleep = false;
-            ESP_LOGI(TAG, "Left light sleep with MCU freq=%d Mhz", getCpuFrequencyMhz());
-        }
-
-        set_low_power(false);
-        lenergy = false;
-        ttgo->startLvglTick();
-        ttgo->displayWakeup();
-        ttgo->touch->setPowerMode(PowerMode_t::FOCALTECH_PMODE_ACTIVE);
-        ttgo->rtc->syncToSystem();
-        gui->update_step_counter(ttgo->bma->getCounter());
-        gui->update_battery_level();
-        gui->update_battery_icon(LV_ICON_CALCULATION);
-        gui->on_wake_up();
-        lv_disp_trig_activity(NULL);
-        sk_socket->update_subscriptions();
-        ttgo->openBL();
-        gui->increment_wakeup_count();
-        ttgo->bl->adjust(gui->get_adjusted_display_brightness());
-        ttgo->bma->enableStepCountInterrupt();
-    }
-}
 
 #if LV_USE_LOG
 void lv_log_cb(lv_log_level_t level, const char * file, uint32_t line, const char * func, const char * dsc)
@@ -157,105 +77,16 @@ void setup()
     {
         ESP_LOGE(TAG, "Failed to initialize SPIFFS!");
     }
-    
-    isr_group = xEventGroupCreate();
     initialize_events();
-
     //Initialize TWatch
     ttgo->begin();
-
-    // Turn on the IRQ used
-    ttgo->power->adc1Enable(AXP202_BATT_VOL_ADC1 | AXP202_BATT_CUR_ADC1 | AXP202_VBUS_VOL_ADC1 | AXP202_VBUS_CUR_ADC1, AXP202_ON);
-    ttgo->power->enableIRQ(AXP202_VBUS_REMOVED_IRQ | AXP202_VBUS_CONNECT_IRQ | AXP202_CHARGING_FINISHED_IRQ, AXP202_ON);
-    ttgo->power->clearIRQ();
-    ttgo->power->setChgLEDMode(axp_chgled_mode_t::AXP20X_LED_OFF);
-
-    // Turn off unused power
-    ttgo->power->setPowerOutPut(AXP202_EXTEN, AXP202_OFF);
-    ttgo->power->setPowerOutPut(AXP202_DCDC2, AXP202_OFF);
-    ttgo->power->setPowerOutPut(AXP202_LDO3, AXP202_OFF);
-    ttgo->power->setPowerOutPut(AXP202_LDO4, AXP202_OFF);
-
-    ESP_LOGI(TAG, "Watch power initialized!");
-
+    //initalize Hardware (power management, sensors and interupts)
+    hardware = new Hardware();
+    hardware->initialize(ttgo);
     //Initialize lvgl
     ttgo->lvgl_begin();
 
     ESP_LOGI(TAG, "LVGL initialized!");
-
-
-    // Enable BMA423 interrupt ，
-    // The default interrupt configuration,
-    // you need to set the acceleration parameters, please refer to the BMA423_Accel example
-    ttgo->bma->attachInterrupt();
-    ttgo->bma->enableTiltInterrupt(false);
-    /*pinMode(TOUCH_INT, INPUT);
-    attachInterrupt(
-        TOUCH_INT, [] {
-            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            EventBits_t bits = xEventGroupGetBitsFromISR(isr_group);
-            if (bits & WATCH_FLAG_SLEEP_MODE)
-            {
-                //! For quick wake up, use the group flag
-                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAT_TOUCH_IRQ, &xHigherPriorityTaskWoken);
-            }
-
-            if (xHigherPriorityTaskWoken)
-            {
-                portYIELD_FROM_ISR();
-            }
-        },
-        RISING);*/
-    //Connection interrupted to the specified pin
-    pinMode(BMA423_INT1, INPUT);
-    attachInterrupt(
-        BMA423_INT1, [] {
-            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            EventBits_t bits = xEventGroupGetBitsFromISR(isr_group);
-            if (bits & WATCH_FLAG_SLEEP_MODE)
-            {
-                //! For quick wake up, use the group flag
-                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAG_BMA_IRQ, &xHigherPriorityTaskWoken);
-            }
-            else
-            {
-                uint8_t data = ApplicationEvents_T::Q_EVENT_BMA_INT;
-                xQueueSendFromISR(g_event_queue_handle, &data, &xHigherPriorityTaskWoken);
-            }
-
-            if (xHigherPriorityTaskWoken)
-            {
-                portYIELD_FROM_ISR();
-            }
-        },
-        RISING);
-    // Connection interrupted to the specified pin
-    pinMode(AXP202_INT, INPUT);
-    attachInterrupt(
-        AXP202_INT, [] {
-            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            EventBits_t bits = xEventGroupGetBitsFromISR(isr_group);
-            if (bits & WATCH_FLAG_SLEEP_MODE)
-            {
-                //! For quick wake up, use the group flag
-                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAG_AXP_IRQ, &xHigherPriorityTaskWoken);
-            }
-            else
-            {
-                uint8_t data = ApplicationEvents_T::Q_EVENT_AXP_INT;
-                xQueueSendFromISR(g_event_queue_handle, &data, &xHigherPriorityTaskWoken);
-            }
-            if (xHigherPriorityTaskWoken)
-            {
-                portYIELD_FROM_ISR();
-            }
-        },
-        FALLING);
-
-    ESP_LOGI(TAG, "Sensors initialized!");
-    //Check if the RTC clock matches, if not, use compile time
-    //ttgo->rtc->check();
-
     //Synchronize time to system time
     ttgo->rtc->syncToSystem();
     //Setting up the network
@@ -264,9 +95,16 @@ void setup()
     sk_socket = new SignalKSocket(wifiManager);
     sk_socket->add_subscription("notifications.*", 1000, true);
     sk_socket->add_subscription("environment.mode", 5000, false);
+    //Attach power management events to sk_socket
+    hardware->attach_power_callback(std::bind(&SignalKSocket::handle_power_event, sk_socket, _1, _2));
+    //Intialize watch GUI
     gui = new Gui();
-    //Execute your own GUI interface
+    //Setup GUI
     gui->setup_gui(wifiManager, sk_socket);
+    //attach power events to GUI
+    hardware->attach_power_callback(std::bind(&Gui::on_power_event, gui, _1, _2));
+    //Hardware class needs to know what is the screen timeout, wire it to Gui::get_screen_timeout func
+    hardware->set_screen_timeout_func(std::bind(&Gui::get_screen_timeout, gui));
     //Clear lvgl counter
     lv_disp_trig_activity(NULL);
     //When the initialization is complete, turn on the backlight
@@ -291,107 +129,7 @@ void setup()
 }
 void loop()
 {
-    bool rlst;
-    uint8_t data;
-    //! Fast response wake-up interrupt
-    EventBits_t bits = xEventGroupGetBits(isr_group);
-    if (bits & WATCH_FLAG_SLEEP_EXIT)
-    {
-        low_energy();
-
-        if (bits & WATCH_FLAG_BMA_IRQ)
-        {
-            do
-            {
-                rlst = ttgo->bma->readInterrupt();
-            } while (!rlst);
-            xEventGroupClearBits(isr_group, WATCH_FLAG_BMA_IRQ);
-        }
-        if (bits & WATCH_FLAG_AXP_IRQ)
-        {
-            ttgo->power->readIRQ();
-            ttgo->power->clearIRQ();
-
-            xEventGroupClearBits(isr_group, WATCH_FLAG_AXP_IRQ);
-        }
-        if (bits & WATCH_FLAT_TOUCH_IRQ)
-        {
-            xEventGroupClearBits(isr_group, WATCH_FLAT_TOUCH_IRQ);
-            ESP_LOGD(TAG, "Touch interupt!");
-        }
-
-        xEventGroupClearBits(isr_group, WATCH_FLAG_SLEEP_EXIT);
-        xEventGroupClearBits(isr_group, WATCH_FLAG_SLEEP_MODE);
-    }
-    if ((bits & WATCH_FLAG_SLEEP_MODE))
-    {
-        //! No event processing after entering the information screen
-        return;
-    }
-
-    //! Normal polling
-    if (xQueueReceive(g_event_queue_handle, &data, 5 / portTICK_RATE_MS) == pdPASS)
-    {
-        switch (data)
-        {
-        case ApplicationEvents_T::Q_EVENT_BMA_INT:
-            do
-            {
-                rlst = ttgo->bma->readInterrupt();
-            } while (!rlst);
-
-            //! setp counter
-            if (ttgo->bma->isStepCounter())
-            {
-                gui->update_step_counter(ttgo->bma->getCounter());
-            }
-            break;
-        case ApplicationEvents_T::Q_EVENT_AXP_INT:
-            ttgo->power->readIRQ();
-            if (ttgo->power->isVbusPlugInIRQ())
-            {
-                gui->update_battery_icon(LV_ICON_CHARGE);
-            }
-            if (ttgo->power->isVbusRemoveIRQ() || ttgo->power->isChargingDoneIRQ())
-            {
-                gui->update_battery_icon(LV_ICON_CALCULATION);
-            }
-            
-            if (ttgo->power->isPEKShortPressIRQ())
-            {
-                ttgo->power->clearIRQ();
-                low_energy();
-                return;
-            }
-            ttgo->power->clearIRQ();
-            break;
-        default:
-            break;
-        }
-    }
-
-    if (!lenergy)
-    {
-        if (lv_disp_get_inactive_time(NULL) < (gui->get_screen_timeout() * 1000))
-        {
-            auto sleep = lv_task_handler();
-            if(sleep > 250)
-            {
-                sleep = 250;
-            }
-
-            delay(sleep);
-        }
-        else
-        {
-            low_energy();
-        }
-    }
-    else
-    {
-        ESP_LOGI(TAG, "Low power");
-        delay(250);
-    }
+   hardware->loop();
 }
 
 void arduinoTask(void *pvParameter)
