@@ -33,41 +33,32 @@ typedef std::function<void(PowerCode_t, uint32_t)> low_power_callback;
  **/
 class Hardware : public Configurable
 {
-    public:
-        Hardware();
+public:
+    Hardware();
 
-        void load_config_from_file(const JsonObject &json) override;
-        void save_config_to_file(JsonObject &json) override;
+    void load_config_from_file(const JsonObject &json) override;
+    void save_config_to_file(JsonObject &json) override;
 
-        bool get_double_tap_wakeup()
-        {
-            return double_tap_wakeup_;
-        }
+    bool get_tilt_wakeup() { return tilt_wakeup_; }
+    void set_tilt_wakeup(bool value) { tilt_wakeup_ = value; update_bma_wakeup(); }
 
-        bool get_titl_wakeup()
-        {
-            return tilt_wakeup_;
-        }
+    bool get_double_tap_wakeup() { return double_tap_wakeup_; }
+    void set_double_tap_wakeup(bool value) { double_tap_wakeup_ = value; update_bma_wakeup(); }
 
-        void set_double_tap_wakeup(bool value)
-        {
-            double_tap_wakeup_ = value;
-        }
 
-        void enter_low_power();
-        void leave_low_power();
-        void initialize(TTGOClass*watch);
-        void attach_power_callback(low_power_callback callback) { power_callbacks_.push_back(callback); }
-        void loop();
-        void set_screen_timeout_func(std::function<uint32_t(void)> func) { get_screen_timeout_ = func; }
-    private:
-        std::vector<low_power_callback> power_callbacks_;
-        std::function<uint32_t(void)> get_screen_timeout_;
-        bool double_tap_wakeup_ = false;
-        bool tilt_wakeup_ = false;
-        TTGOClass*watch_;
-        bool lenergy_ = false;
-        bool light_sleep_ = false;
-        void low_energy();
-        void invoke_power_callbacks(PowerCode_t code, uint32_t arg);
+    void initialize(TTGOClass *watch);
+    void attach_power_callback(low_power_callback callback) { power_callbacks_.push_back(callback); }
+    void loop();
+    void set_screen_timeout_func(std::function<uint32_t(void)> func) { get_screen_timeout_ = func; }
+private:
+    std::vector<low_power_callback> power_callbacks_;
+    std::function<uint32_t(void)> get_screen_timeout_;
+    bool double_tap_wakeup_ = false;
+    bool tilt_wakeup_ = false;
+    TTGOClass *watch_;
+    bool lenergy_ = false;
+    bool light_sleep_ = false;
+    void low_energy();
+    void invoke_power_callbacks(PowerCode_t code, uint32_t arg);
+    void update_bma_wakeup();
 };

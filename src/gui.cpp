@@ -22,6 +22,12 @@
 #include "ui/time_settings.h"
 #include "ui/watch_info.h"
 #include "ui/display_settings.h"
+#include "ui/wakeup_settings.h"
+#include "hardware/Hardware.h"
+#include <functional>
+using std::placeholders::_1;
+using std::placeholders::_2;
+
 
 #define RTC_TIME_ZONE "CET-1CEST,M3.5.0,M10.5.0/3" // this doesn't do anything yet. Will it ever be used?
 
@@ -59,7 +65,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             gui->toggle_main_bar(false);
         });
 
-        setupMenu->add_tile("Clock", &time_48px, [gui]() {
+        setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, [gui]() {
             auto timeSetting = new TimeSettings(TTGOClass::getWatch(), gui->get_sk_socket());
             timeSetting->set_24hour_format(gui->get_time_24hour_format());
             timeSetting->set_timezone_id(gui->get_timezone_id());
@@ -86,7 +92,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             timeSetting->show(lv_scr_act());
         });
 
-        setupMenu->add_tile("Display", &display_48px, [gui]() {
+        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, [gui]() {
             auto displaySettings = new DisplaySettings(TTGOClass::getWatch());
 
             // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
@@ -125,7 +131,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             displaySettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile("Wifi", &wifi_48px, [gui]() {
+        setupMenu->add_tile(LOC_WIFI_SETTINGS_MENU, &wifi_48px, [gui]() {
             auto wifiSettings = new WifiSettings(gui->get_wifi_manager());
             wifiSettings->on_close([wifiSettings]() {
                 delete wifiSettings;
@@ -133,7 +139,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             wifiSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile("Signal K", &signalk_48px, [gui]() {
+        setupMenu->add_tile(LOC_SIGNALK_SETTING_MENU, &signalk_48px, [gui]() {
             auto skSettings = new SignalKSettings(gui->get_sk_socket());
             skSettings->on_close([skSettings]() {
                 delete skSettings;
@@ -141,7 +147,15 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             skSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile("Watch info", &info_48px, [gui]() {
+        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &display_48px, [gui]() {
+            auto wakeupSettings = new WakeupSettings(gui, gui->get_hardware());
+            wakeupSettings->on_close([wakeupSettings]() {
+                delete wakeupSettings;
+            });
+            wakeupSettings->show(lv_scr_act());
+        });
+
+        setupMenu->add_tile(LOC_WATCH_INFO_MENU, &info_48px, [gui]() {
             auto watchInfo = new WatchInfo(gui);
             watchInfo->on_close([watchInfo]() {
                 delete watchInfo;
@@ -153,10 +167,15 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
     }
 }
 
-void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket)
+void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware*hardware)
 {
     wifiManager = wifi;
     ws_socket = socket;
+    hardware_ = hardware;
+    //attach power events to GUI
+    hardware->attach_power_callback(std::bind(&Gui::on_power_event, this, _1, _2));
+    //Hardware class needs to know what is the screen timeout, wire it to Gui::get_screen_timeout func
+    hardware->set_screen_timeout_func(std::bind(&Gui::get_screen_timeout, this));
     lv_style_init(&settingStyle);
     lv_style_set_radius(&settingStyle, LV_OBJ_PART_MAIN, 0);
     lv_style_set_bg_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);

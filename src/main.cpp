@@ -100,11 +100,7 @@ void setup()
     //Intialize watch GUI
     gui = new Gui();
     //Setup GUI
-    gui->setup_gui(wifiManager, sk_socket);
-    //attach power events to GUI
-    hardware->attach_power_callback(std::bind(&Gui::on_power_event, gui, _1, _2));
-    //Hardware class needs to know what is the screen timeout, wire it to Gui::get_screen_timeout func
-    hardware->set_screen_timeout_func(std::bind(&Gui::get_screen_timeout, gui));
+    gui->setup_gui(wifiManager, sk_socket, hardware);
     //Clear lvgl counter
     lv_disp_trig_activity(NULL);
     //When the initialization is complete, turn on the backlight

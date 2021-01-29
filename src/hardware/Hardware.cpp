@@ -30,20 +30,10 @@ void Hardware::save_config_to_file(JsonObject &json)
     json["tiltwakeup"] = tilt_wakeup_;
 }
 
-void Hardware::enter_low_power()
-{
-
-}
-
-void Hardware::leave_low_power()
-{
-
-}
-
 /**
  * Initializes hardware required for power managements operation and configures wake up source
  * 
- */ 
+ */
 void Hardware::initialize(TTGOClass *watch)
 {
     isr_group = xEventGroupCreate();
@@ -67,8 +57,7 @@ void Hardware::initialize(TTGOClass *watch)
     // The default interrupt configuration,
     // you need to set the acceleration parameters, please refer to the BMA423_Accel example
     watch->bma->attachInterrupt();
-    watch->bma->enableTiltInterrupt(this->tilt_wakeup_);
-    watch->bma->enableWakeupInterrupt(this->double_tap_wakeup_);
+    update_bma_wakeup();
     //TODO: touch interrupt breaks touch as it uses the interrupt also
     /*pinMode(TOUCH_INT, INPUT);
     attachInterrupt(
@@ -134,14 +123,13 @@ void Hardware::initialize(TTGOClass *watch)
         FALLING);
 }
 
-
 ///Invokes power callback to all listeners
 void Hardware::invoke_power_callbacks(PowerCode_t code, uint32_t arg)
 {
-    for(auto callback : power_callbacks_)
+    ESP_LOGI(HW_TAG, "Power event %d with arg %d", (int)code, arg);
+    for (auto callback : power_callbacks_)
     {
         callback(code, arg);
-        ESP_LOGI(HW_TAG, "Power event %d with arg %d", (int)code, arg);
     }
 }
 
@@ -156,8 +144,10 @@ void Hardware::low_energy()
     {
         watch_->closeBL();
         watch_->stopLvglTick();
+        //disable step count interrupt to save battery (counter will still work)
         watch_->bma->enableStepCountInterrupt(false);
         watch_->displaySleep();
+        //set event bits in events.cpp
         xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_MODE);
         set_low_power(true);
         //notify every one we are going low power!
@@ -177,43 +167,41 @@ void Hardware::low_energy()
         }
         else
         {*/
-            light_sleep_ = false;
-            ESP_LOGI(HW_TAG, "WiFi is enabled, will not enter light sleep.");
+        light_sleep_ = false;
+        ESP_LOGI(HW_TAG, "Entering light sleep.");
 
-            EventBits_t isr_bits = xEventGroupGetBits(isr_group);
-            EventBits_t app_bits = xEventGroupGetBits(g_app_state);
+        EventBits_t isr_bits = xEventGroupGetBits(isr_group);
+        EventBits_t app_bits = xEventGroupGetBits(g_app_state);
 
-            while (!(isr_bits & WATCH_FLAG_SLEEP_EXIT) && !(app_bits & G_APP_STATE_WAKE_UP))
-            {
-                delay(500);
-                isr_bits = xEventGroupGetBits(isr_group);
-                app_bits = xEventGroupGetBits(g_app_state);
-            }
+        while (!(isr_bits & WATCH_FLAG_SLEEP_EXIT) && !(app_bits & G_APP_STATE_WAKE_UP))
+        {
+            delay(500);
+            isr_bits = xEventGroupGetBits(isr_group);
+            app_bits = xEventGroupGetBits(g_app_state);
+        }
 
-            xEventGroupClearBits(g_app_state, G_APP_STATE_WAKE_UP);
-            if(app_bits & G_APP_STATE_WAKE_UP)
-            {
-                xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_EXIT);
-            }
+        xEventGroupClearBits(g_app_state, G_APP_STATE_WAKE_UP);
+        if (app_bits & G_APP_STATE_WAKE_UP)
+        {
+            xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_EXIT);
+        }
 
-            ESP_LOGI(HW_TAG, "Wakeup request from sleep. System isr=%d,app=%d", isr_bits, app_bits);
+        ESP_LOGI(HW_TAG, "Wakeup request from sleep. System isr=%d,app=%d", isr_bits, app_bits);
         //}
     }
     else
     {
-        /*if(light_sleep_)
-        {
-            setCpuFrequencyMhz(80);
-            light_sleep_ = false;
-            ESP_LOGI(HW_TAG, "Left light sleep with MCU freq=%d Mhz", getCpuFrequencyMhz());
-        }*/
-
+        //set events in events.cpp
         set_low_power(false);
         lenergy_ = false;
+        //start LVGL ticking
         watch_->startLvglTick();
+        //wakeup display
         watch_->displayWakeup();
         watch_->touch->setPowerMode(PowerMode_t::FOCALTECH_PMODE_ACTIVE);
+        //update system time from RTC
         watch_->rtc->syncToSystem();
+        //enable display backlight
         watch_->openBL();
         //notify everyone we are leaving low power mode
         invoke_power_callbacks(PowerCode_t::POWER_LEAVE_LOW_POWER, 0);
@@ -223,7 +211,7 @@ void Hardware::low_energy()
 
 void Hardware::loop()
 {
-     bool rlst;
+    bool rlst;
     uint8_t data;
     //! Fast response wake-up interrupt
     EventBits_t bits = xEventGroupGetBits(isr_group);
@@ -291,11 +279,11 @@ void Hardware::loop()
                 invoke_power_callbacks(PowerCode_t::POWER_CHARGING_OFF, 0);
             }
 
-            if(watch_->power->isChargingDoneIRQ())
+            if (watch_->power->isChargingDoneIRQ())
             {
                 invoke_power_callbacks(PowerCode_t::POWER_CHARGING_DONE, 0);
             }
-            
+
             if (watch_->power->isPEKShortPressIRQ())
             {
                 watch_->power->clearIRQ();
@@ -315,7 +303,7 @@ void Hardware::loop()
         if (lv_disp_get_inactive_time(NULL) < (get_screen_timeout_() * 1000))
         {
             auto sleep = lv_task_handler();
-            if(sleep > 250)
+            if (sleep > 250)
             {
                 sleep = 250;
             }
@@ -332,4 +320,10 @@ void Hardware::loop()
         ESP_LOGI(HW_TAG, "Low power");
         delay(250);
     }
+}
+
+void Hardware::update_bma_wakeup()
+{
+    watch_->bma->enableTiltInterrupt(this->tilt_wakeup_);
+    watch_->bma->enableWakeupInterrupt(this->double_tap_wakeup_);
 }
