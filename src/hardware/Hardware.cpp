@@ -211,7 +211,7 @@ void Hardware::low_energy()
 
 void Hardware::loop()
 {
-    bool rlst;
+    bool result;
     uint8_t data;
     //! Fast response wake-up interrupt
     EventBits_t bits = xEventGroupGetBits(isr_group);
@@ -223,8 +223,8 @@ void Hardware::loop()
         {
             do
             {
-                rlst = watch_->bma->readInterrupt();
-            } while (!rlst);
+                result = watch_->bma->readInterrupt();
+            } while (!result);
             xEventGroupClearBits(isr_group, WATCH_FLAG_BMA_IRQ);
         }
         if (bits & WATCH_FLAG_AXP_IRQ)
@@ -257,8 +257,8 @@ void Hardware::loop()
         case ApplicationEvents_T::Q_EVENT_BMA_INT:
             do
             {
-                rlst = watch_->bma->readInterrupt();
-            } while (!rlst);
+                result = watch_->bma->readInterrupt();
+            } while (!result);
 
             //! setp counter
             if (watch_->bma->isStepCounter())

@@ -33,9 +33,9 @@ using std::placeholders::_2;
 const char *TAG = "APP";
 TTGOClass *ttgo;
 WifiManager *wifiManager;
-SignalKSocket*sk_socket;
-Hardware*hardware;
-Gui*gui;
+SignalKSocket *sk_socket;
+Hardware *hardware;
+Gui *gui;
 
 #if LV_USE_LOG
 void lv_log_cb(lv_log_level_t level, const char * file, uint32_t line, const char * func, const char * dsc)

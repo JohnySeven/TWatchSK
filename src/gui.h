@@ -17,7 +17,7 @@ public:
     {
         load();
     }
-    void setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware*hardware);
+    void setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware);
     void update_step_counter(uint32_t counter);
     void update_battery_icon(lv_icon_battery_t index);
     void update_battery_level();

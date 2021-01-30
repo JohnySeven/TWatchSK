@@ -25,6 +25,9 @@
 #include "ui/wakeup_settings.h"
 #include "hardware/Hardware.h"
 #include <functional>
+/* In order to use std::bind to attach to method we need to use arguments placeholders that will map arguments to final method.
+ * So in function setup_gui on line with attach_power_callback we just type _1 or _2 without whole namespace.
+ */
 using std::placeholders::_1;
 using std::placeholders::_2;
 
@@ -167,7 +170,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
     }
 }
 
-void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware*hardware)
+void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware* hardware)
 {
     wifiManager = wifi;
     ws_socket = socket;
