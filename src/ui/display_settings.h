@@ -5,7 +5,8 @@
 
 /**
  * @brief Used to set display brightness, wake-up sources (watch flip, touch,
- * double tap (accelerometer driven), and auto screen timeout (sleep time).
+ * double tap (accelerometer driven), auto screen timeout (sleep time), and
+ * turn the Dark Theme on or off.
  **/
 
 class DisplaySettings : public SettingsView
@@ -40,6 +41,12 @@ public:
         ESP_LOGI(SETTINGS_TAG, "User set display brightness to %d", display_brightness_);
     }
 
+    void update_dark_theme(bool new_dark_theme) // for when user changes the dark theme value
+    {
+        dark_theme_enabled_ = new_dark_theme;
+        ESP_LOGI(SETTINGS_TAG, "User set dark theme to %d", dark_theme_enabled_);
+    }
+
     int get_screen_timeout() { return screen_timeout_; }
     void set_screen_timeout(int value)
     {
@@ -50,6 +57,12 @@ public:
     void set_display_brightness(uint8_t value)
     {
         display_brightness_ = value; 
+    }
+
+    bool get_dark_theme_enabled() { return dark_theme_enabled_; }
+    void set_dark_theme_enabled(bool value)
+    {
+        dark_theme_enabled_ = value;
     }
 
 protected:
@@ -81,8 +94,28 @@ protected:
         lv_obj_set_event_cb(brightnessButton_, brightness_button_callback);
         lv_obj_set_width(brightnessButton_, 50);
 
+        dark_switch_ = lv_switch_create(parent, NULL);
+        if (lv_theme_get_flags() & LV_THEME_MATERIAL_FLAG_DARK) // is the theme's "dark" version currently on?
+        {
+            lv_switch_on(dark_switch_, LV_ANIM_OFF); // set the switch widget to "ON"
+        }
+        dark_switch_label_ = lv_label_create(parent, NULL);
+        lv_obj_align(dark_switch_label_, dark_switch_, LV_ALIGN_OUT_RIGHT_MID, 4, 0); // orig 4, 0
+        lv_label_set_text(dark_switch_label_, LOC_DARK_SWITCH_LABEL);
+        if (dark_theme_enabled_)
+        {
+            lv_switch_on(dark_switch_, LV_ANIM_OFF);
+            // BS: need to move the following to main.cpp
+            uint32_t flag = LV_THEME_MATERIAL_FLAG_DARK;
+            LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag,
+                lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
+                lv_theme_get_font_title());
+        }
+        lv_obj_set_event_cb(dark_switch_, dark_switch_cb);
+
         timeoutButton_->user_data = this;
         brightnessButton_->user_data = this;
+        dark_switch_->user_data = this;
     }
 
     virtual bool hide_internal() override
@@ -100,6 +133,9 @@ private:
     lv_obj_t* brightnessButton_;
     lv_obj_t* brightnessLabel_;
     uint8_t display_brightness_;
+    bool dark_theme_enabled_;
+    lv_obj_t* dark_switch_;
+    lv_obj_t* dark_switch_label_;
 
     static void timeout_button_callback(lv_obj_t *obj, lv_event_t event)
     {
@@ -141,4 +177,23 @@ private:
             keyboard->show(lv_scr_act());
         }
     }
+
+    static void dark_switch_cb(lv_obj_t* obj, lv_event_t event)
+    {
+        if (event == LV_EVENT_VALUE_CHANGED) 
+        {
+            DisplaySettings* settings = (DisplaySettings* )obj->user_data;
+            uint32_t flag = LV_THEME_MATERIAL_FLAG_LIGHT; // create a theme flag with the value of the LIGHT version of the theme (a "flag" is a setting for a theme)
+            if(lv_switch_get_state(obj)) // if the state of the switch is ON, change the value of "flag" to the DARK version
+            {
+                flag = LV_THEME_MATERIAL_FLAG_DARK;  
+            }
+            settings->set_dark_theme_enabled(!settings->dark_theme_enabled_);
+        LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag,
+                lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
+                lv_theme_get_font_title());
+        }
+    }
+
+    
 };

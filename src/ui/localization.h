@@ -53,3 +53,4 @@
 #define LOC_TRUE "True"
 #define LOC_FALSE "False"
 #define LOC_INPUT_TIMEZONE "Select timezone"
+#define LOC_DARK_SWITCH_LABEL "Enable Dark theme"

@@ -39,6 +39,8 @@ public:
     void on_wake_up();
     int8_t get_timezone_id() { return timezone_id; }
     void set_timezone_id(int8_t new_tz_id) { timezone_id = new_tz_id; }
+    bool get_dark_theme_enabled() { return dark_theme_enabled; }
+    void set_dark_theme_enabled(bool value) { dark_theme_enabled = value; }
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);
@@ -63,6 +65,7 @@ private:
     int8_t timezone_id = 0; // Index of the array of timezones in the timezone Roller selector widget
     int wakeup_count = 0; // restarts at zero at each startup
     uint8_t display_brightness = 155; // only until it's first changed
+    bool dark_theme_enabled = false;
     lv_point_t*tile_valid_points = NULL; //this is for tile navigation matrix to allow user navigation in multiple directions
     int tile_valid_points_count = 0; //number of matrix points
 };

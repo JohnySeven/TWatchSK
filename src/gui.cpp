@@ -94,9 +94,12 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
 
             // display_setting is saved to disk through GUI::display_brightness. Retrieve it here:
             displaySettings->set_display_brightness(gui->get_display_brightness());
+
+            // dark_theme_enabled is saved to disk through GUI::dark_theme_enabled. Retrieve it here:
+            displaySettings->set_dark_theme_enabled(gui->get_dark_theme_enabled());
             
-            // Define the callback function (on_close()). If the value of screen_timeout or
-            // display_brightness changed while the Display tile was up, save it.
+            // Define the callback function (on_close()). If the value of any setting
+            // changed while the Display tile was up, save it.
             displaySettings->on_close([displaySettings, gui]() {
                 bool need_to_save = false;
                 int new_timeout = displaySettings->get_screen_timeout();
@@ -111,6 +114,12 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
                     new_brightness > 0)
                 {
                     gui->set_display_brightness(new_brightness);
+                    need_to_save = true;
+                }
+                bool new_dark_theme = displaySettings->get_dark_theme_enabled();
+                if (gui->get_dark_theme_enabled() != new_dark_theme)
+                {
+                    gui->set_dark_theme_enabled(new_dark_theme);
                     need_to_save = true;
                 }
                 if (need_to_save)
@@ -491,8 +500,10 @@ void Gui::load_config_from_file(const JsonObject &json)
     screen_timeout = json["screentimeout"].as<int>();
     timezone_id = json["timezone"].as<int>();
     display_brightness = json["brightness"].as<int>();
+    dark_theme_enabled = json["darktheme"].as<bool>();
 
-    ESP_LOGI("GUI", "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimezoneID=%d, Brightness=%d", time_24hour_format, screen_timeout, timezone_id, display_brightness);
+    ESP_LOGI("GUI", "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimezoneID=%d, Brightness=%d, DarkTheme=%d",
+              time_24hour_format, screen_timeout, timezone_id, display_brightness, dark_theme_enabled);
 }
 
 void Gui::save_config_to_file(JsonObject &json)
@@ -501,4 +512,5 @@ void Gui::save_config_to_file(JsonObject &json)
     json["screentimeout"] = screen_timeout;
     json["timezone"] = timezone_id;
     json["brightness"] = display_brightness;
+    json["darktheme"] = dark_theme_enabled;
 }
