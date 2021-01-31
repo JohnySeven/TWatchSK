@@ -5,6 +5,7 @@
 #include "ui/statusbar.h"
 #include "ui/menubar.h"
 #include "ui/dynamic_gui.h"
+#include "hardware/Hardware.h"
 
 #ifndef __GUI_H
 #define __GUI_H
@@ -16,7 +17,7 @@ public:
     {
         load();
     }
-    void setup_gui(WifiManager *wifi, SignalKSocket *socket);
+    void setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware);
     void update_step_counter(uint32_t counter);
     void update_battery_icon(lv_icon_battery_t index);
     void update_battery_level();
@@ -26,6 +27,7 @@ public:
     void save_config_to_file(JsonObject &json) override;
     WifiManager *get_wifi_manager() { return wifiManager; }
     SignalKSocket *get_sk_socket() { return ws_socket; }
+    Hardware *get_hardware() { return hardware_; }
     bool get_time_24hour_format() { return time_24hour_format; }
     void set_time_24hour_format(bool value) { time_24hour_format = value; }
     void toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden);
@@ -36,7 +38,7 @@ public:
     uint8_t get_display_brightness() { return display_brightness; }
     uint8_t get_adjusted_display_brightness();
     void set_display_brightness(uint8_t value) { display_brightness = value; }
-    void on_wake_up();
+    void on_power_event(PowerCode_t code, uint32_t arg);
     int8_t get_timezone_id() { return timezone_id; }
     void set_timezone_id(int8_t new_tz_id) { timezone_id = new_tz_id; }
 private:
@@ -49,6 +51,7 @@ private:
 
     WifiManager *wifiManager = NULL;
     SignalKSocket *ws_socket = NULL;
+    Hardware *hardware_ = NULL;
     lv_obj_t *mainBar = NULL;
     lv_obj_t *timeLabel = NULL;
     lv_obj_t *timeSuffixLabel = NULL;

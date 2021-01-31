@@ -62,7 +62,6 @@ public:
             lv_roller_set_options(roller_widget_, timezone_option_list_, 0 /*LV_ROLLER_MODE_INFINITE*/); // BS: compiler can't find LV_ROLLER_MODE_INFINITE
         }
         // add more RollerType_t checking here as they are added      
-        
         lv_roller_set_selected(roller_widget_, starting_id_, 1); // BS: 0 should be LV_ANIM_ON or LV_ANIM_OFF
         lv_roller_set_visible_row_count(roller_widget_, 5); // number of rows to make visible in the widget
         lv_obj_set_event_cb(roller_widget_, roller_widget_cb);
