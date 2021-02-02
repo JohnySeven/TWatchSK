@@ -55,7 +55,7 @@ public:
         /*Create a roller and apply the styles*/
         roller_widget_ = lv_roller_create(parent, NULL);
         lv_obj_align(roller_widget_, parent, LV_ALIGN_IN_TOP_MID, 10, 10);
-        lv_obj_add_style(roller_widget_, LV_OBJ_PART_MAIN, &rollerStyle);
+        //lv_obj_add_style(roller_widget_, LV_OBJ_PART_MAIN, &rollerStyle);
         
         if (roller_type_ == RollerType_t::Timezone)
         {

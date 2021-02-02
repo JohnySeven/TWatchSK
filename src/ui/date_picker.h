@@ -14,6 +14,11 @@ public:
         calendar = lv_calendar_create(parent, NULL);
         lv_obj_set_size(calendar, 200, 200);
         lv_obj_align(calendar, parent, LV_ALIGN_CENTER, 0, 0);
+
+        //static lv_style_t dayNumStyle;  // BS: I think this is the right way to do this - but maybe there's a shortcut? And maybe I should copy this style instead of trying to modify it directly?
+        //lv_style_set_text_font(&dayNumStyle, LV_STATE_DEFAULT, &lv_font_montserrat_32);
+
+        //_lv_style_list_add_style(&ext->style_date_nums, LV_OBJ_PART_MAIN, &dayNumStyle);
         auto today = TTGOClass::getWatch()->rtc->getDateTime();
         lv_calendar_date_t date;
         date.year = today.year;

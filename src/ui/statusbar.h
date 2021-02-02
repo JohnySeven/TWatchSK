@@ -55,7 +55,7 @@ public:
 
         _bar = lv_cont_create(_par, NULL);
         lv_obj_set_size(_bar, LV_HOR_RES, _barHeight);
-        lv_obj_add_style(_bar, LV_OBJ_PART_MAIN, &barStyle);
+        //lv_obj_add_style(_bar, LV_OBJ_PART_MAIN, &barStyle);
 
         _icons[0].icon = lv_label_create(_bar, NULL);
         lv_label_set_text(_icons[0].icon, "100%");

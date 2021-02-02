@@ -30,7 +30,7 @@ public:
         container = lv_cont_create(parent, NULL);
         lv_obj_set_size(container, LV_HOR_RES, LV_VER_RES - SETTINGS_TOP_BAR_HEIGHT);
         lv_obj_set_pos(container, 0, SETTINGS_TOP_BAR_HEIGHT);
-        lv_obj_add_style(container, LV_OBJ_PART_MAIN, &plStyle);
+        //lv_obj_add_style(container, LV_OBJ_PART_MAIN, &plStyle);
         lv_cont_set_layout(container, LV_LAYOUT_ROW_TOP);
         
         static lv_style_t barStyle;
@@ -41,7 +41,7 @@ public:
         topBar = lv_cont_create(parent, NULL);
         lv_obj_set_size(topBar, LV_HOR_RES, SETTINGS_TOP_BAR_HEIGHT);
         lv_obj_set_pos(topBar, 0, 0);
-        lv_obj_add_style(topBar, LV_OBJ_PART_MAIN, &barStyle);
+        //lv_obj_add_style(topBar, LV_OBJ_PART_MAIN, &barStyle);
         
         back = lv_imgbtn_create(topBar, NULL);
         lv_imgbtn_set_src(back, LV_BTN_STATE_RELEASED, &exit_32px);

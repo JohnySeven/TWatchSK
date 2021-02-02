@@ -52,7 +52,7 @@ public:
         lv_textarea_set_max_length(ta, 128);
 
         lv_obj_align(ta, parent, LV_ALIGN_IN_TOP_MID, 10, 10);
-        lv_obj_add_style(ta, LV_OBJ_PART_MAIN, &kbStyle);
+        //lv_obj_add_style(ta, LV_OBJ_PART_MAIN, &kbStyle);
         /*Create a keyboard and apply the styles*/
         lv_obj_t *kb = lv_keyboard_create(parent, NULL);
         lv_keyboard_set_cursor_manage(kb, true);
