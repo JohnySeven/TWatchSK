@@ -11,42 +11,44 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
 {
     SignalKSocket *socket = (SignalKSocket *)arg;
     esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)event_data;
-
-    if (event_id == WEBSOCKET_EVENT_ERROR)
+    if (socket->websocket_initialized)
     {
-        ESP_LOGE(WS_TAG, "Web socket error!");
-    }
-    else if (event_id == WEBSOCKET_EVENT_CONNECTED)
-    {
-        ESP_LOGI(WS_TAG, "Web socket connected to server!");
-    }
-    else if (event_id == WEBSOCKET_EVENT_DISCONNECTED)
-    {
-        socket->update_status(WebsocketState_t::WS_Offline);
-        ESP_LOGI(WS_TAG, "Web socket disconnected from server! Wifi enabled=%d", (int)socket->wifi->is_enabled());
-        if (!socket->wifi->is_enabled())
+        if (event_id == WEBSOCKET_EVENT_ERROR)
         {
-            ESP_LOGI(WS_TAG, "Wifi is disabled, disconnecting and destroying WS client.");
-            socket->disconnect();
+            ESP_LOGE(WS_TAG, "Web socket error!");
         }
-    }
-    else if (event_id == WEBSOCKET_EVENT_DATA)
-    {
-        ESP_LOGI(WS_TAG, "WEBSOCKET_EVENT_DATA");
-        ESP_LOGI(WS_TAG, "Received opcode=%d", data->op_code);
-        if (data->op_code == 0x08 && data->data_len == 2)
+        else if (event_id == WEBSOCKET_EVENT_CONNECTED)
         {
-            ESP_LOGW(WS_TAG, "Received closed message with code=%d", 256 * data->data_ptr[0] + data->data_ptr[1]);
+            ESP_LOGI(WS_TAG, "Web socket connected to server!");
         }
-        else
+        else if (event_id == WEBSOCKET_EVENT_DISCONNECTED)
         {
-            if (data->data_len > 0)
+            socket->update_status(WebsocketState_t::WS_Offline);
+            ESP_LOGI(WS_TAG, "Web socket disconnected from server! Wifi enabled=%d", (int)socket->wifi->is_enabled());
+            if (!socket->wifi->is_connected())
             {
-                socket->parse_data(data->data_len, data->data_ptr);
-                ESP_LOGW(WS_TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
+                ESP_LOGI(WS_TAG, "Wifi is disconnected, disconnecting and destroying WS client.");
+                socket->disconnect();
             }
         }
-        ESP_LOGW(WS_TAG, "Total payload length=%d, data_len=%d, current payload offset=%d\r\n", data->payload_len, data->data_len, data->payload_offset);
+        else if (event_id == WEBSOCKET_EVENT_DATA)
+        {
+            ESP_LOGI(WS_TAG, "WEBSOCKET_EVENT_DATA");
+            ESP_LOGI(WS_TAG, "Received opcode=%d", data->op_code);
+            if (data->op_code == 0x08 && data->data_len == 2)
+            {
+                ESP_LOGW(WS_TAG, "Received closed message with code=%d", 256 * data->data_ptr[0] + data->data_ptr[1]);
+            }
+            else
+            {
+                if (data->data_len > 0)
+                {
+                    socket->parse_data(data->data_len, data->data_ptr);
+                    ESP_LOGW(WS_TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
+                }
+            }
+            ESP_LOGW(WS_TAG, "Total payload length=%d, data_len=%d, current payload offset=%d\r\n", data->payload_len, data->data_len, data->payload_offset);
+        }
     }
 }
 
@@ -71,7 +73,10 @@ SignalKSocket::SignalKSocket(WifiManager *wifi) : Configurable("/config/websocke
 bool SignalKSocket::connect()
 {
     bool ret = false;
-    if (value == WS_Offline && server != "")
+
+    ESP_LOGI(WS_TAG, "Connecting socket to server %s:%d", server.c_str(), port);
+
+    if (value == WS_Offline && server != "" && wifi->is_connected())
     {
         char url[256];
         sprintf(url, "/signalk/v1/stream?subscribe=none&token=%s", token.c_str());
@@ -101,6 +106,8 @@ bool SignalKSocket::connect()
 
 bool SignalKSocket::disconnect()
 {
+    auto ret = false;
+
     if (websocket_initialized && websocket != NULL)
     {
         ESP_LOGI(WS_TAG, "Disconnecting websocket...");
@@ -110,13 +117,19 @@ bool SignalKSocket::disconnect()
             esp_websocket_client_stop(websocket);
         }
 
+        delay(100);
+
         if (esp_websocket_client_destroy(websocket) == ESP_OK)
         {
             websocket_initialized = false;
             websocket = NULL;
             ESP_LOGI(WS_TAG, "Websocket destroyed.");
         }
+
+        update_status(WebsocketState_t::WS_Offline);
     }
+
+    return ret;
 }
 
 void SignalKSocket::load_config_from_file(const JsonObject &json)
@@ -374,4 +387,31 @@ void SignalKSocket::handle_power_event(PowerCode_t code, uint32_t arg)
     {
         update_subscriptions();
     }
+}
+
+bool SignalKSocket::reconnect()
+{
+    auto ret = false;
+
+    if (websocket_initialized)
+    {
+        if (esp_websocket_client_is_connected(websocket))
+        {
+            disconnect();
+        }
+
+        ret = connect();
+    }
+    else
+    {
+        ret = connect();
+    }
+
+    return ret;
+}
+
+void SignalKSocket::clear_token()
+{
+    token = "";
+    save();
 }

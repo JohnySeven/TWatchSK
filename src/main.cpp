@@ -29,6 +29,7 @@
 #include <functional>
 using std::placeholders::_1;
 using std::placeholders::_2;
+#include "system/async_dispatcher.h"
 
 const char *TAG = "APP";
 TTGOClass *ttgo;
@@ -78,6 +79,7 @@ void setup()
         ESP_LOGE(TAG, "Failed to initialize SPIFFS!");
     }
     initialize_events();
+    twatchsk::initialize_async();
     //Initialize TWatch
     ttgo->begin();
     //initalize Hardware (power management, sensors and interupts)

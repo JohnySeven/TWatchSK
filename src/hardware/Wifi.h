@@ -24,6 +24,7 @@ public:
     String get_ip() { return ip; }
     WifiState_t get_status() { return value; }
     bool is_enabled() { return enabled; }
+    bool is_connected() { return value == WifiState_t::Wifi_Connected; }
     bool is_configured() { return this->ssid != ""; }
     void set_ip(String ip) { this->ip = ip; }
     void update_status(WifiState_t value) { Observable<WifiState_t>::emit(value); }
