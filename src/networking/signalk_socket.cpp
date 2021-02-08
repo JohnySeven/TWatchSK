@@ -367,3 +367,11 @@ void SignalKSocket::remove_active_notification(String path)
         }
     }
 }
+
+void SignalKSocket::handle_power_event(PowerCode_t code, uint32_t arg)
+{
+    if(code == PowerCode_t::POWER_ENTER_LOW_POWER || code == PowerCode_t::POWER_LEAVE_LOW_POWER)
+    {
+        update_subscriptions();
+    }
+}
