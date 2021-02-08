@@ -24,13 +24,13 @@
 #include "ui/display_settings.h"
 #include "ui/wakeup_settings.h"
 #include "hardware/Hardware.h"
+#include "system/async_dispatcher.h"
 #include <functional>
 /* In order to use std::bind to attach to method we need to use arguments placeholders that will map arguments to final method.
  * So in function setup_gui on line with attach_power_callback we just type _1 or _2 without whole namespace.
  */
 using std::placeholders::_1;
 using std::placeholders::_2;
-
 
 #define RTC_TIME_ZONE "CET-1CEST,M3.5.0,M10.5.0/3" // this doesn't do anything yet. Will it ever be used?
 
@@ -170,7 +170,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
     }
 }
 
-void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware* hardware)
+void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware)
 {
     wifiManager = wifi;
     ws_socket = socket;
@@ -408,15 +408,15 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
         update_gui();
         lv_disp_trig_activity(NULL);
     }
-    else if(code == PowerCode_t::POWER_CHARGING_ON)
+    else if (code == PowerCode_t::POWER_CHARGING_ON)
     {
         update_battery_icon(LV_ICON_CHARGE);
     }
-    else if(code == PowerCode_t::POWER_CHARGING_OFF || code == PowerCode_t::POWER_CHARGING_DONE)
+    else if (code == PowerCode_t::POWER_CHARGING_OFF || code == PowerCode_t::POWER_CHARGING_DONE)
     {
         update_battery_icon(LV_ICON_CALCULATION);
     }
-    else if(code == PowerCode_t::WALK_STEP_COUNTER_UPDATED)
+    else if (code == PowerCode_t::WALK_STEP_COUNTER_UPDATED)
     {
         update_step_counter(arg);
     }
@@ -475,6 +475,16 @@ void Gui::update_gui()
                 lv_msgbox_add_btns(mbox1, btns);
                 lv_obj_set_width(mbox1, 200);
                 lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
+                //vibrate 50 ms on / 100 ms off 4 times
+                twatchsk::run_async("vibrate", [this]() {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        this->hardware_->vibrate(true);
+                        delay(50);
+                        this->hardware_->vibrate(false);
+                        delay(100);
+                    }
+                });
             }
         }
         else if (event.event_type == GuiEventType_t::GUI_SIGNALK_UPDATE)

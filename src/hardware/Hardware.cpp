@@ -9,11 +9,16 @@ EventGroupHandle_t isr_group = NULL;
 #define WATCH_FLAG_AXP_IRQ _BV(4)
 #define WATCH_FLAT_TOUCH_IRQ _BV(5)
 
+#define MOTOR_CHANNEL 1
+#define MOTOR_FREQUENCY 12000
+
 const char *HW_TAG = "HW";
 
 Hardware::Hardware() : Configurable("/config/hardware")
 {
     load();
+    //setup vibrating motor configuration
+    ledcSetup(MOTOR_CHANNEL, MOTOR_FREQUENCY, 8);
 }
 
 void Hardware::load_config_from_file(const JsonObject &json)
@@ -326,4 +331,27 @@ void Hardware::update_bma_wakeup()
 {
     watch_->bma->enableTiltInterrupt(this->tilt_wakeup_);
     watch_->bma->enableWakeupInterrupt(this->double_tap_wakeup_);
+}
+
+void Hardware::vibrate(bool status)
+{
+    if(status != is_vibrating_)
+    {
+        is_vibrating_ = status;
+
+        if(status)
+        {
+            //attach pin to PWM channel 1
+            ledcAttachPin(MOTOR_PIN, 1); 
+            //change channel 1 duty to 128 (50%)       
+            ledcWrite(MOTOR_CHANNEL, 128);
+        }
+        else
+        {
+            //change channel 1 duty to 0
+            ledcWrite(MOTOR_CHANNEL, 0);
+            //detach the PIN from PWM
+            ledcDetachPin(MOTOR_PIN);
+        }
+    }
 }
