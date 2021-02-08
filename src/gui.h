@@ -5,6 +5,7 @@
 #include "ui/statusbar.h"
 #include "ui/menubar.h"
 #include "ui/dynamic_gui.h"
+#include "ui/themes.h"
 #include "hardware/Hardware.h"
 
 #ifndef __GUI_H
@@ -41,6 +42,7 @@ public:
     void on_power_event(PowerCode_t code, uint32_t arg);
     int8_t get_timezone_id() { return timezone_id; }
     void set_timezone_id(int8_t new_tz_id) { timezone_id = new_tz_id; }
+
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);

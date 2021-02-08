@@ -24,16 +24,16 @@ public:
         loaderContainer = lv_cont_create(lv_scr_act(), NULL);
         lv_obj_set_pos(loaderContainer, 0, 0);
         lv_obj_set_size(loaderContainer, LV_HOR_RES, LV_VER_RES);
-        lv_obj_add_style(loaderContainer, LV_OBJ_PART_MAIN, &plStyle);
+        //lv_obj_add_style(loaderContainer, LV_OBJ_PART_MAIN, &plStyle);
         lv_cont_set_layout(loaderContainer, LV_LAYOUT_COLUMN_MID);
 
         lv_obj_t *preload = lv_spinner_create(loaderContainer, NULL);
         lv_obj_set_size(preload, lv_obj_get_width(loaderContainer) / 2, lv_obj_get_height(loaderContainer) / 2);
-        lv_obj_add_style(preload, LV_OBJ_PART_MAIN, &style);
+        //lv_obj_add_style(preload, LV_OBJ_PART_MAIN, &style);
         
         lv_obj_t *label = lv_label_create(loaderContainer, NULL);
         lv_label_set_text(label, text.c_str());
-        lv_obj_add_style(preload, LV_OBJ_PART_MAIN, &style);
+        //lv_obj_add_style(preload, LV_OBJ_PART_MAIN, &style);
         ESP_LOGI("LOADER", "Loader loaded %s", text.c_str());
     }
 

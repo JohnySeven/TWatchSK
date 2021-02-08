@@ -53,6 +53,7 @@
 #define LOC_TRUE "True"
 #define LOC_FALSE "False"
 #define LOC_INPUT_TIMEZONE "Select timezone"
+#define LOC_DARK_SWITCH_LABEL "Enable Dark theme"
 #define LOC_WAKEUP_SETTINGS_MENU "Wakeup settings"
 #define LOC_WAKEUP_TITLE "Select watch wake up options"
 #define LOC_WAKEUP_DOUBLE_TAP "Double tap"

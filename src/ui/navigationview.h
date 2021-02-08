@@ -14,17 +14,11 @@ public:
     NavigationView(char *title, std::function<void()> on_close) : SettingsView(title)
     {
         lv_style_init(&buttonStyle);
-        lv_style_set_bg_color(&buttonStyle, LV_STATE_DEFAULT, LV_COLOR_WHITE);
-        lv_style_set_bg_opa(&buttonStyle, LV_STATE_DEFAULT, LV_OPA_0);
         lv_style_set_border_width(&buttonStyle, LV_STATE_DEFAULT, 1);
-        lv_style_set_text_color(&buttonStyle, LV_STATE_DEFAULT, LV_COLOR_WHITE);
         lv_style_set_margin_all(&buttonStyle, LV_STATE_DEFAULT, 2);
 
         lv_style_init(&pageStyle);
-        lv_style_set_bg_color(&pageStyle, LV_STATE_DEFAULT, LV_COLOR_WHITE);
-        lv_style_set_bg_opa(&pageStyle, LV_STATE_DEFAULT, LV_OPA_0);
         lv_style_set_border_width(&pageStyle, LV_STATE_DEFAULT, 0);
-        lv_style_set_text_color(&pageStyle, LV_STATE_DEFAULT, LV_COLOR_WHITE);
         lv_style_set_margin_all(&pageStyle, LV_STATE_DEFAULT, 0);
         this->on_close(on_close);
     }

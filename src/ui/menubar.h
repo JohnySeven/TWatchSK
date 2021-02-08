@@ -59,14 +59,14 @@ public:
         _cont = lv_cont_create(lv_scr_act(), NULL);
         lv_obj_set_size(_cont, LV_HOR_RES, LV_VER_RES - 30);
         lv_obj_align(_cont, NULL, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
-        lv_obj_add_style(_cont, LV_OBJ_PART_MAIN, &menuStyle);
+        //lv_obj_add_style(_cont, LV_OBJ_PART_MAIN, &menuStyle);
 
         _view = lv_tileview_create(_cont, NULL);
         lv_tileview_set_valid_positions(_view, _vp, count);
         lv_tileview_set_edge_flash(_view, false);
         lv_obj_align(_view, NULL, LV_ALIGN_CENTER, 0, 0);
         lv_page_set_scrlbar_mode(_view, LV_SCRLBAR_MODE_OFF);
-        lv_obj_add_style(_view, LV_OBJ_PART_MAIN, &menuStyle);
+        //lv_obj_add_style(_view, LV_OBJ_PART_MAIN, &menuStyle);
 
         lv_coord_t _w = lv_obj_get_width(_view);
         lv_coord_t _h = lv_obj_get_height(_view);
