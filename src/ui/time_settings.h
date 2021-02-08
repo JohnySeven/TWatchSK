@@ -103,19 +103,17 @@ protected:
         lv_obj_set_pos(timeLabel, 4, 4);
         static lv_style_t buttonStyle;
         lv_style_init(&buttonStyle);
-        lv_style_set_radius(&buttonStyle, LV_STATE_DEFAULT, 0);
-        lv_style_set_radius(&buttonStyle, LV_STATE_PRESSED, 0);
-        lv_style_set_radius(&buttonStyle, LV_STATE_DISABLED, 0);
+        lv_style_set_radius(&buttonStyle, LV_STATE_DEFAULT, 10);
 
         hourButton = lv_btn_create(parent, NULL);
-        //lv_obj_add_style(hourButton, LV_OBJ_PART_MAIN, &buttonStyle);
+        lv_obj_add_style(hourButton, LV_OBJ_PART_MAIN, &buttonStyle);
         hourLabel = lv_label_create(hourButton, NULL);
         lv_obj_set_event_cb(hourButton, TimeSettings::hour_button_callback);
         lv_obj_align(hourButton, timeLabel, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 4);
         lv_obj_set_width(hourButton, 40);
 
         minuteButton = lv_btn_create(parent, NULL);
-        //lv_obj_add_style(minuteButton, LV_OBJ_PART_MAIN, &buttonStyle);
+        lv_obj_add_style(minuteButton, LV_OBJ_PART_MAIN, &buttonStyle);
         minuteLabel = lv_label_create(minuteButton, NULL);
 
         lv_obj_set_event_cb(minuteButton, TimeSettings::minute_button_callback);
@@ -123,7 +121,7 @@ protected:
         lv_obj_set_width(minuteButton, 40);
 
         timeModeButton = lv_btn_create(parent, NULL);
-        //lv_obj_add_style(timeModeButton, LV_OBJ_PART_MAIN, &buttonStyle);
+        lv_obj_add_style(timeModeButton, LV_OBJ_PART_MAIN, &buttonStyle);
         timeModeLabel = lv_label_create(timeModeButton, NULL);
 
         lv_obj_set_event_cb(timeModeButton, TimeSettings::toggle_am_pm_callback);
@@ -131,7 +129,7 @@ protected:
         lv_obj_set_width(timeModeButton, 40);
 
         dateButton = lv_btn_create(parent, NULL);
-        //lv_obj_add_style(dateButton, LV_OBJ_PART_MAIN, &buttonStyle);
+        lv_obj_add_style(dateButton, LV_OBJ_PART_MAIN, &buttonStyle);
         dateLabel = lv_label_create(dateButton, NULL);
         lv_obj_align(dateButton, timeModeButton, LV_ALIGN_OUT_RIGHT_MID, 4, 0);
         lv_obj_set_event_cb(dateButton, TimeSettings::date_button_callback);
@@ -142,7 +140,7 @@ protected:
         lv_label_set_text(timezoneTextLabel, LOC_TIMEZONE);
         timezone_button = lv_btn_create(parent, NULL);
         lv_obj_align(timezone_button, timezoneTextLabel, LV_ALIGN_OUT_RIGHT_MID, 10, 0);
-        //lv_obj_add_style(timezone_button, LV_OBJ_PART_MAIN, &buttonStyle);
+        lv_obj_add_style(timezone_button, LV_OBJ_PART_MAIN, &buttonStyle);
         timezone_label = lv_label_create(timezone_button, NULL);
         lv_label_set_text_fmt(timezone_label, "%s", get_timezone_string(timezone_id).c_str());
         lv_obj_set_event_cb(timezone_button, timezone_button_callback);

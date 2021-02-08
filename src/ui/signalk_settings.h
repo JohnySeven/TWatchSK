@@ -16,10 +16,15 @@ public:
 protected:
     virtual void show_internal(lv_obj_t *parent) override
     {
+        static lv_style_t buttonStyle;
+        lv_style_init(&buttonStyle);
+        lv_style_set_radius(&buttonStyle, LV_STATE_DEFAULT, 10);
+        
         lv_cont_set_layout(parent, LV_LAYOUT_COLUMN_LEFT);
         configuredServer = lv_label_create(parent, NULL);
         status = lv_label_create(parent, NULL);
         scanButton = lv_btn_create(parent, NULL);
+        lv_obj_add_style(scanButton, LV_OBJ_PART_MAIN, &buttonStyle);
         scanButtonLabel = lv_label_create(scanButton, NULL);
         lv_label_set_text(scanButtonLabel, LOC_SIGNALK_FIND_SERVER);
         lv_obj_align(scanButton, parent, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
