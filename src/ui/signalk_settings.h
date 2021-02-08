@@ -7,6 +7,7 @@
 #include "ui_ticker.h"
 #include "mdns.h"
 #include "system/async_dispatcher.h"
+#include "system/events.h"
 
 class SignalKSettings : public SettingsView
 {
@@ -178,8 +179,6 @@ private:
                 const char *service_name = "signalk-ws";
                 const char *service_proto = "tcp";
                 mdns_result_t *results = NULL;
-                
-
                 if (mdns_init() == ESP_OK)
                 {
                     ESP_LOGI(SETTINGS_TAG, "Query PTR: %s.%s.local", service_name, service_proto);
@@ -202,11 +201,13 @@ private:
                         else
                         {
                             ESP_LOGW(SETTINGS_TAG, "No results found!");
+                            post_gui_warning(String(LOC_SIGNALK_MDNS_NOT_FOUND));
                         }
                     }
                     else
                     {
                         ESP_LOGE(SETTINGS_TAG, "mDNS SK query failed with %d", (int)err);
+                        post_gui_warning(String(LOC_SIGNALK_MDNS_ERORR));
                     }
 
                     mdns_free();

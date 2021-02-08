@@ -31,6 +31,8 @@
 #define LOC_SIGNALK_FIND_SERVER "Find SK Server"
 #define LOC_SIGNALK_FINDING_SERVER "Detecting SK server..."
 #define LOC_SIGNALK_SYNC_TIME "Sync time with SK Server"
+#define LOC_SIGNALK_MDNS_NOT_FOUND "Unable to find SK server!"
+#define LOC_SIGNALK_MDNS_ERORR "Unable to initialize mDNS service!"
 #define LOC_TIME_SETTINGS "Watch time"
 #define LOC_TIME "Time"
 #define LOC_DATE "Date"
