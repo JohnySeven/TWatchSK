@@ -60,14 +60,6 @@ public:
         display_brightness_ = value; 
     }
 
-    /*
-    bool get_dark_theme_enabled() { return dark_theme_enabled_; }
-    void set_dark_theme_enabled(bool value)
-    {
-        dark_theme_enabled_ = value;
-    }
-    */
-
 protected:
     virtual void show_internal(lv_obj_t *parent) override
     {
@@ -76,11 +68,9 @@ protected:
         static lv_style_t buttonStyle;
         lv_style_init(&buttonStyle);
         lv_style_set_radius(&buttonStyle, LV_STATE_DEFAULT, 10);
-        //lv_style_set_radius(&buttonStyle, LV_STATE_PRESSED, 0);  // BS: I don't think these two are necessary, because these buttons never stay
-        //lv_style_set_radius(&buttonStyle, LV_STATE_DISABLED, 0); // displayed after they're pressed, and they're never disabled.
         
         screenTimeoutLabel_ = lv_label_create(parent, NULL);
-        lv_obj_set_pos(screenTimeoutLabel_, 4, 4);
+        lv_obj_set_pos(screenTimeoutLabel_, 4, 10);
         lv_label_set_text(screenTimeoutLabel_, LOC_SCREEN_TIMEOUT);
         timeoutButton_ = lv_btn_create(parent, NULL);
         lv_obj_add_style(timeoutButton_, LV_OBJ_PART_MAIN, &buttonStyle);
@@ -140,7 +130,6 @@ private:
     lv_obj_t* brightnessButton_;
     lv_obj_t* brightnessLabel_;
     uint8_t display_brightness_;
-    //bool dark_theme_enabled_;
     lv_obj_t* dark_switch_;
     lv_obj_t* dark_switch_label_;
 

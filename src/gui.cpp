@@ -51,16 +51,14 @@ LV_IMG_DECLARE(display_48px);
 LV_IMG_DECLARE(setting);
 LV_IMG_DECLARE(on);
 LV_IMG_DECLARE(off);
-//LV_IMG_DECLARE(iexit); // is this correct? iexit? I don't think so - it compiles and runs fine without this declaration. BS.
 
-//static lv_style_t settingStyle; //BS: this doesn't seem to do anything
 const char *GUI_TAG = "GUI";
 
 static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
 {
     Gui *gui = (Gui *)obj->user_data;
     if (event == LV_EVENT_SHORT_CLICKED)
-    { //!  Event callback Is in here
+    { //!  Event callback is in here
         gui->toggle_main_bar(true);
         NavigationView *setupMenu = NULL;
         setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]() {
@@ -184,27 +182,12 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware* hardware
 {
     wifiManager = wifi;
     ws_socket = socket;
-
-    //lv_style_init(&settingStyle); //BS: this style is never used. Should it be?
-    //lv_style_set_radius(&settingStyle, LV_OBJ_PART_MAIN, 0);
-    //lv_style_set_bg_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-    //lv_style_set_bg_opa(&settingStyle, LV_OBJ_PART_MAIN, LV_OPA_0);
-    //lv_style_set_border_width(&settingStyle, LV_OBJ_PART_MAIN, 0);
-    //lv_style_set_text_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-    //lv_style_set_image_recolor(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
   
     hardware_ = hardware;
     //attach power events to GUI
     hardware->attach_power_callback(std::bind(&Gui::on_power_event, this, _1, _2));
     //Hardware class needs to know what is the screen timeout, wire it to Gui::get_screen_timeout func
     hardware->set_screen_timeout_func(std::bind(&Gui::get_screen_timeout, this));
-    lv_style_init(&settingStyle);
-    lv_style_set_radius(&settingStyle, LV_OBJ_PART_MAIN, 0);
-    lv_style_set_bg_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-    lv_style_set_bg_opa(&settingStyle, LV_OBJ_PART_MAIN, LV_OPA_0);
-    lv_style_set_border_width(&settingStyle, LV_OBJ_PART_MAIN, 0);
-    lv_style_set_text_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-    lv_style_set_image_recolor(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
 
     //Create wallpaper
     lv_obj_t *scr = lv_scr_act();
