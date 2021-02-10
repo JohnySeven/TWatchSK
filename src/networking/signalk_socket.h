@@ -24,6 +24,8 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
         SignalKSocket(WifiManager*wifi);
         bool connect();
         bool disconnect();
+        bool reconnect();
+        void clear_token();
         void parse_data(int length, const char*data);
         esp_websocket_client_handle_t get_ws() { return websocket; }
         void update_status(WebsocketState_t status)
@@ -44,6 +46,12 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
         void update_subscriptions();
         ///This is intended to be wired with Hardware class power events
         void handle_power_event(PowerCode_t code, uint32_t arg);
+        ///Updates server configuration (address and port)
+        void set_server(String server_address, int port)
+        {
+            server = server_address;
+            this->port = port;
+        }
     private:
         static void ws_event_handler(void *arg, esp_event_base_t event_base,
                              int32_t event_id, void *event_data);

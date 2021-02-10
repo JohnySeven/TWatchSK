@@ -56,6 +56,7 @@ public:
     {
         get_screen_timeout_ = func;
     }
+    void vibrate(bool status);
 private:
     std::vector<low_power_callback> power_callbacks_;
     std::function<uint32_t(void)> get_screen_timeout_;
@@ -64,6 +65,7 @@ private:
     TTGOClass *watch_;
     bool lenergy_ = false;
     bool light_sleep_ = false;
+    bool is_vibrating_ = false;
     void low_energy();
     void invoke_power_callbacks(PowerCode_t code, uint32_t arg);
     void update_bma_wakeup();

@@ -52,7 +52,7 @@ protected:
         lv_label_set_text(tilt_label_, LOC_WAKEUP_TILT);
         lv_obj_align(tilt_label_, tilt_switch_, LV_ALIGN_OUT_RIGHT_MID, padding, 0);
         tilt_switch_->user_data = this;
-        lv_obj_set_event_cb(tilt_switch_, WakeupSettings::double_tap_switch_callback);
+        lv_obj_set_event_cb(tilt_switch_, WakeupSettings::tilt_switch_callback);
     }
 
     virtual bool hide_internal() override
