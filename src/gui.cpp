@@ -48,10 +48,6 @@ LV_IMG_DECLARE(info_48px);
 LV_IMG_DECLARE(time_48px);
 LV_IMG_DECLARE(display_48px);
 
-LV_IMG_DECLARE(setting);
-LV_IMG_DECLARE(on);
-LV_IMG_DECLARE(off);
-
 const char *GUI_TAG = "GUI";
 
 static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
@@ -66,7 +62,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             gui->toggle_main_bar(false);
         });
 
-        setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, [gui]() {
+        setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, false, [gui]() {
             auto timeSetting = new TimeSettings(TTGOClass::getWatch(), gui->get_sk_socket());
             timeSetting->set_24hour_format(gui->get_time_24hour_format());
             timeSetting->set_timezone_id(gui->get_timezone_id());
@@ -93,7 +89,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             timeSetting->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, [gui]() {
+        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, false, [gui]() {
             auto displaySettings = new DisplaySettings(TTGOClass::getWatch());
 
             // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
@@ -127,8 +123,8 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
                 }
                 if(twatchsk::dark_theme_enabled != current_dark_theme_enabled) // dark_theme flag changed while in Display tile
                 {
-                    //twatchsk::update_imgbtn_color(displaySettings->back); BS: this doesn't work here - won't compile
                     need_to_save = true;
+                    ESP_LOGI("GUI_TAG", "Dark theme changed to %d", twatchsk::dark_theme_enabled);
                 }
                 if (need_to_save)
                 {
@@ -142,7 +138,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             displaySettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_WIFI_SETTINGS_MENU, &wifi_48px, [gui]() {
+        setupMenu->add_tile(LOC_WIFI_SETTINGS_MENU, &wifi_48px, false, [gui]() {
             auto wifiSettings = new WifiSettings(gui->get_wifi_manager());
             wifiSettings->on_close([wifiSettings]() {
                 delete wifiSettings;
@@ -150,7 +146,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             wifiSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_SIGNALK_SETTING_MENU, &signalk_48px, [gui]() {
+        setupMenu->add_tile(LOC_SIGNALK_SETTING_MENU, &signalk_48px, true, [gui]() {
             auto skSettings = new SignalKSettings(gui->get_sk_socket());
             skSettings->on_close([skSettings]() {
                 delete skSettings;
@@ -158,7 +154,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             skSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &display_48px, [gui]() {
+        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &display_48px, false, [gui]() {
             auto wakeupSettings = new WakeupSettings(gui, gui->get_hardware());
             wakeupSettings->on_close([wakeupSettings]() {
                 delete wakeupSettings;
@@ -166,7 +162,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             wakeupSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_WATCH_INFO_MENU, &info_48px, [gui]() {
+        setupMenu->add_tile(LOC_WATCH_INFO_MENU, &info_48px, false, [gui]() {
             auto watchInfo = new WatchInfo(gui);
             watchInfo->on_close([watchInfo]() {
                 delete watchInfo;

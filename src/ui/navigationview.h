@@ -4,6 +4,7 @@
 struct LinkData_t
 {
     const lv_img_dsc_t *img;
+    bool color_img;
     char*title;
     std::function<void(void)> callback;
 };
@@ -23,10 +24,11 @@ public:
         this->on_close(on_close);
     }
 
-    void add_tile(char* title, const lv_img_dsc_t *img, std::function<void(void)> callback)
+    void add_tile(char* title, const lv_img_dsc_t *img, bool img_is_color, std::function<void(void)> callback)
     {
         LinkData_t newTile;
         newTile.img = img;
+        newTile.color_img = img_is_color;
         newTile.callback = callback;
         newTile.title = title;
         tiles.push_back(newTile);
@@ -39,9 +41,14 @@ public:
         list = lv_list_create(parent, NULL);
         lv_obj_set_size(list, LV_HOR_RES, lv_obj_get_height(parent));
         lv_page_set_edge_flash(list, true); 
-        for (auto it = tiles.begin(); it != tiles.end();it++)
+        for (auto it = tiles.begin(); it != tiles.end(); it++)
         {
             auto btn = lv_list_add_btn(list, it.base()->img, it.base()->title);
+            auto img = lv_list_get_btn_img(btn);
+            if (it.base()->color_img == false)
+            {
+                twatchsk::update_imgbtn_color(img); // make the tile's icon be the correct color depending on LIGHT/DARK setting
+            }
             btn->user_data = it.base();
             lv_obj_set_event_cb(btn, NavigationView::tile_event); 
         }
