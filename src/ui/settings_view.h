@@ -22,10 +22,7 @@ public:
     {
         static lv_style_t plStyle;
         lv_style_init(&plStyle);
-        lv_style_set_radius(&plStyle, LV_OBJ_PART_MAIN, 0);
-        lv_style_set_bg_color(&plStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-        lv_style_set_border_width(&plStyle, LV_OBJ_PART_MAIN, 0);
-        lv_style_set_text_color(&plStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
+        lv_style_set_radius(&plStyle, LV_OBJ_PART_MAIN, 10);
 
         container = lv_cont_create(parent, NULL);
         lv_obj_set_size(container, LV_HOR_RES, LV_VER_RES - SETTINGS_TOP_BAR_HEIGHT);
@@ -35,19 +32,18 @@ public:
         
         static lv_style_t barStyle;
         lv_style_copy(&barStyle, &plStyle);
-        lv_style_set_bg_color(&plStyle, LV_OBJ_PART_MAIN, LV_COLOR_BLACK);
-        lv_style_set_bg_opa(&plStyle, LV_OBJ_PART_MAIN, LV_OPA_50);
 
         topBar = lv_cont_create(parent, NULL);
         lv_obj_set_size(topBar, LV_HOR_RES, SETTINGS_TOP_BAR_HEIGHT);
         lv_obj_set_pos(topBar, 0, 0);
-        lv_obj_add_style(topBar, LV_OBJ_PART_MAIN, &barStyle);
+        lv_obj_add_style(topBar, LV_OBJ_PART_MAIN, &barStyle); //BS: barStyle is currently just a copy of plStyle
         
         back = lv_imgbtn_create(topBar, NULL);
         lv_imgbtn_set_src(back, LV_BTN_STATE_RELEASED, &exit_32px);
         lv_imgbtn_set_src(back, LV_BTN_STATE_PRESSED, &exit_32px);
         lv_imgbtn_set_src(back, LV_BTN_STATE_CHECKED_RELEASED, &exit_32px);
         lv_imgbtn_set_src(back, LV_BTN_STATE_CHECKED_PRESSED, &exit_32px);
+        twatchsk::update_imgbtn_color(back);
         
         lv_obj_set_click(back, true);
         lv_obj_set_ext_click_area(back, 0, 20, 0, 20);
@@ -89,9 +85,9 @@ protected:
     virtual bool hide_internal() { return true; }
     lv_obj_t *container;
     lv_obj_t *topBar;
+    lv_obj_t *back;
 private:
     lv_obj_t *title;
-    lv_obj_t *back;
     char *titleText;
     std::function<void()> callback;
 
@@ -101,6 +97,7 @@ private:
         {
             auto view = (SettingsView *)obj->user_data;
             ESP_LOGI("SETTINGS", "Closing view %s", view->titleText);
+            twatchsk::update_imgbtn_color(view->back); // BS: I'm not sure this is doing anything here
             view->hide();
         }
     }

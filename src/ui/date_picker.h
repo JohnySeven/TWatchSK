@@ -1,6 +1,8 @@
 #include "settings_view.h"
 #include "config.h"
 
+LV_FONT_DECLARE(lv_font_montserrat_14);
+
 class DatePicker : public SettingsView
 {
 public:
@@ -14,6 +16,8 @@ public:
         calendar = lv_calendar_create(parent, NULL);
         lv_obj_set_size(calendar, 200, 200);
         lv_obj_align(calendar, parent, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_set_style_local_text_font(calendar, LV_CALENDAR_PART_DATE, LV_STATE_DEFAULT, &lv_font_montserrat_14);
+
         auto today = TTGOClass::getWatch()->rtc->getDateTime();
         lv_calendar_date_t date;
         date.year = today.year;

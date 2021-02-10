@@ -37,7 +37,7 @@ public:
         _listCont = lv_list_create(parent, NULL);
         lv_obj_set_pos(_listCont, 0, 0);
         lv_obj_set_size(_listCont, lv_obj_get_width(parent), lv_obj_get_height(parent));
-        lv_obj_add_style(_listCont, LV_OBJ_PART_MAIN, &listStyle);
+        //lv_obj_add_style(_listCont, LV_OBJ_PART_MAIN, &listStyle);
     }
 
     virtual bool hide_internal() override

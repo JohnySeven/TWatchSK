@@ -47,20 +47,15 @@ LV_IMG_DECLARE(wifi_48px);
 LV_IMG_DECLARE(info_48px);
 LV_IMG_DECLARE(time_48px);
 LV_IMG_DECLARE(display_48px);
+LV_IMG_DECLARE(wakeup_48px);
 
-LV_IMG_DECLARE(setting);
-LV_IMG_DECLARE(on);
-LV_IMG_DECLARE(off);
-LV_IMG_DECLARE(iexit);
-
-static lv_style_t settingStyle;
 const char *GUI_TAG = "GUI";
 
 static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
 {
     Gui *gui = (Gui *)obj->user_data;
     if (event == LV_EVENT_SHORT_CLICKED)
-    { //!  Event callback Is in here
+    { //!  Event callback is in here
         gui->toggle_main_bar(true);
         NavigationView *setupMenu = NULL;
         setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]() {
@@ -68,7 +63,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             gui->toggle_main_bar(false);
         });
 
-        setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, [gui]() {
+        setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, false, [gui]() {
             auto timeSetting = new TimeSettings(TTGOClass::getWatch(), gui->get_sk_socket());
             timeSetting->set_24hour_format(gui->get_time_24hour_format());
             timeSetting->set_timezone_id(gui->get_timezone_id());
@@ -95,7 +90,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             timeSetting->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, [gui]() {
+        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, false, [gui]() {
             auto displaySettings = new DisplaySettings(TTGOClass::getWatch());
 
             // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
@@ -104,9 +99,14 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             // display_setting is saved to disk through GUI::display_brightness. Retrieve it here:
             displaySettings->set_display_brightness(gui->get_display_brightness());
 
-            // Define the callback function (on_close()). If the value of screen_timeout or
-            // display_brightness changed while the Display tile was up, save it.
-            displaySettings->on_close([displaySettings, gui]() {
+            // dark_theme_enabled is saved to disk through GUI::dark_theme_enabled. Retrieve it here:
+            // displaySettings->set_dark_theme_enabled(gui->get_dark_theme_enabled());
+            // Save the value of dark_theme_enabled before going into Display tile
+            bool current_dark_theme_enabled = twatchsk::dark_theme_enabled;
+            
+            // Define the callback function (on_close()). If the value of any setting
+            // changed while the Display tile was up, save it.
+            displaySettings->on_close([displaySettings, gui, current_dark_theme_enabled]() {
                 bool need_to_save = false;
                 int new_timeout = displaySettings->get_screen_timeout();
                 if (gui->get_screen_timeout() != new_timeout &&
@@ -122,6 +122,11 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
                     gui->set_display_brightness(new_brightness);
                     need_to_save = true;
                 }
+                if(twatchsk::dark_theme_enabled != current_dark_theme_enabled) // dark_theme flag changed while in Display tile
+                {
+                    need_to_save = true;
+                    ESP_LOGI("GUI_TAG", "Dark theme changed to %d", twatchsk::dark_theme_enabled);
+                }
                 if (need_to_save)
                 {
                     gui->save();
@@ -134,7 +139,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             displaySettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_WIFI_SETTINGS_MENU, &wifi_48px, [gui]() {
+        setupMenu->add_tile(LOC_WIFI_SETTINGS_MENU, &wifi_48px, false, [gui]() {
             auto wifiSettings = new WifiSettings(gui->get_wifi_manager());
             wifiSettings->on_close([wifiSettings]() {
                 delete wifiSettings;
@@ -142,7 +147,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             wifiSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_SIGNALK_SETTING_MENU, &signalk_48px, [gui]() {
+        setupMenu->add_tile(LOC_SIGNALK_SETTING_MENU, &signalk_48px, true, [gui]() {
             auto skSettings = new SignalKSettings(gui->get_sk_socket());
             skSettings->on_close([skSettings]() {
                 delete skSettings;
@@ -150,7 +155,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             skSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &display_48px, [gui]() {
+        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &wakeup_48px, false, [gui]() {
             auto wakeupSettings = new WakeupSettings(gui, gui->get_hardware());
             wakeupSettings->on_close([wakeupSettings]() {
                 delete wakeupSettings;
@@ -158,7 +163,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             wakeupSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_WATCH_INFO_MENU, &info_48px, [gui]() {
+        setupMenu->add_tile(LOC_WATCH_INFO_MENU, &info_48px, false, [gui]() {
             auto watchInfo = new WatchInfo(gui);
             watchInfo->on_close([watchInfo]() {
                 delete watchInfo;
@@ -174,24 +179,28 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
 {
     wifiManager = wifi;
     ws_socket = socket;
+  
     hardware_ = hardware;
     //attach power events to GUI
     hardware->attach_power_callback(std::bind(&Gui::on_power_event, this, _1, _2));
     //Hardware class needs to know what is the screen timeout, wire it to Gui::get_screen_timeout func
     hardware->set_screen_timeout_func(std::bind(&Gui::get_screen_timeout, this));
-    lv_style_init(&settingStyle);
-    lv_style_set_radius(&settingStyle, LV_OBJ_PART_MAIN, 0);
-    lv_style_set_bg_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-    lv_style_set_bg_opa(&settingStyle, LV_OBJ_PART_MAIN, LV_OPA_0);
-    lv_style_set_border_width(&settingStyle, LV_OBJ_PART_MAIN, 0);
-    lv_style_set_text_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-    lv_style_set_image_recolor(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
 
     //Create wallpaper
     lv_obj_t *scr = lv_scr_act();
     lv_obj_t *img_bin = lv_img_create(scr, NULL); /*Create an image object*/
     lv_img_set_src(img_bin, &bg_default);
     lv_obj_align(img_bin, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    // set the theme
+    uint32_t flag = LV_THEME_MATERIAL_FLAG_LIGHT; // Create a theme flag and set it to the MATERIAL_LIGHT theme
+    if (twatchsk::dark_theme_enabled)             // If the dark theme is enabled...
+    {
+        flag = LV_THEME_MATERIAL_FLAG_DARK;       // ... change the flag to MATERIAL_DARK
+    }
+    LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag,        // Initiate the theme
+                lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
+                lv_theme_get_font_title());
 
     bar = new StatusBar();
     //! bar
@@ -211,12 +220,7 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     //! main
     static lv_style_t mainStyle;
     lv_style_init(&mainStyle);
-    lv_style_set_radius(&mainStyle, LV_OBJ_PART_MAIN, 0);
-    lv_style_set_bg_color(&mainStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-    lv_style_set_bg_opa(&mainStyle, LV_OBJ_PART_MAIN, LV_OPA_0);
-    lv_style_set_border_width(&mainStyle, LV_OBJ_PART_MAIN, 0);
-    lv_style_set_text_color(&mainStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-    lv_style_set_image_recolor(&mainStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
+    lv_style_set_radius(&mainStyle, LV_OBJ_PART_MAIN, 10);
 
     mainBar = lv_tileview_create(scr, NULL);
     lv_obj_add_style(mainBar, LV_OBJ_PART_MAIN, &mainStyle);
@@ -245,20 +249,13 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
 
     update_time();
 
-    //! menu
-    static lv_style_t style_pr;
-
-    lv_style_init(&style_pr);
-    lv_style_set_image_recolor(&style_pr, LV_OBJ_PART_MAIN, LV_COLOR_BLACK);
-    lv_style_set_text_color(&style_pr, LV_OBJ_PART_MAIN, lv_color_hex3(0xaaa));
-
     menuBtn = lv_imgbtn_create(watch_face, NULL);
 
     lv_imgbtn_set_src(menuBtn, LV_BTN_STATE_RELEASED, &menu);
     lv_imgbtn_set_src(menuBtn, LV_BTN_STATE_PRESSED, &menu);
     lv_imgbtn_set_src(menuBtn, LV_BTN_STATE_CHECKED_RELEASED, &menu);
     lv_imgbtn_set_src(menuBtn, LV_BTN_STATE_CHECKED_PRESSED, &menu);
-    lv_obj_add_style(menuBtn, LV_OBJ_PART_MAIN, &style_pr);
+    twatchsk::update_imgbtn_color(menuBtn); // make the four little squares be the correct color for the theme
 
     lv_obj_align(menuBtn, watch_face, LV_ALIGN_OUT_BOTTOM_MID, 0, -70);
     menuBtn->user_data = this;
@@ -431,6 +428,7 @@ void Gui::lv_update_task(struct _lv_task_t *data)
 void Gui::update_gui()
 {
     update_time();
+    twatchsk::update_imgbtn_color(menuBtn); // make the four little squares be the correct color for the theme
 
     if (wifiManager->get_status() == WifiState_t::Wifi_Off)
     {
@@ -545,8 +543,10 @@ void Gui::load_config_from_file(const JsonObject &json)
     screen_timeout = json["screentimeout"].as<int>();
     timezone_id = json["timezone"].as<int>();
     display_brightness = json["brightness"].as<int>();
+    twatchsk::dark_theme_enabled = json["darktheme"].as<bool>();
 
-    ESP_LOGI("GUI", "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimezoneID=%d, Brightness=%d", time_24hour_format, screen_timeout, timezone_id, display_brightness);
+    ESP_LOGI("GUI", "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimezoneID=%d, Brightness=%d, DarkTheme=%d",
+              time_24hour_format, screen_timeout, timezone_id, display_brightness, twatchsk::dark_theme_enabled);
 }
 
 void Gui::save_config_to_file(JsonObject &json)
@@ -555,4 +555,5 @@ void Gui::save_config_to_file(JsonObject &json)
     json["screentimeout"] = screen_timeout;
     json["timezone"] = timezone_id;
     json["brightness"] = display_brightness;
+    json["darktheme"] = twatchsk::dark_theme_enabled;
 }

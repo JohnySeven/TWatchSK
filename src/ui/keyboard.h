@@ -33,17 +33,6 @@ public:
     virtual void show_internal(lv_obj_t *parent) override
     {
         lv_cont_set_layout(parent, LV_LAYOUT_OFF);
-
-        static lv_style_t kbStyle;
-
-        lv_style_init(&kbStyle);
-        lv_style_set_radius(&kbStyle, LV_OBJ_PART_MAIN, 0);
-        lv_style_set_bg_color(&kbStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-        lv_style_set_bg_opa(&kbStyle, LV_OBJ_PART_MAIN, LV_OPA_100);
-        lv_style_set_border_width(&kbStyle, LV_OBJ_PART_MAIN, 0);
-        lv_style_set_text_color(&kbStyle, LV_OBJ_PART_MAIN, LV_COLOR_BLACK);
-        lv_style_set_image_recolor(&kbStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-
         lv_obj_t *ta = lv_textarea_create(parent, NULL);
         lv_obj_set_height(ta, 40);
         lv_textarea_set_one_line(ta, true);
@@ -52,8 +41,6 @@ public:
         lv_textarea_set_max_length(ta, 128);
 
         lv_obj_align(ta, parent, LV_ALIGN_IN_TOP_MID, 10, 10);
-        lv_obj_add_style(ta, LV_OBJ_PART_MAIN, &kbStyle);
-        /*Create a keyboard and apply the styles*/
         lv_obj_t *kb = lv_keyboard_create(parent, NULL);
         lv_keyboard_set_cursor_manage(kb, true);
         lv_keyboard_set_textarea(kb, ta);

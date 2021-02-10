@@ -35,7 +35,12 @@ protected:
 
         status = lv_label_create(parent, NULL);
 
+        static lv_style_t buttonStyle;
+        lv_style_init(&buttonStyle);
+        lv_style_set_radius(&buttonStyle, LV_STATE_DEFAULT, 10);
+
         scanButton = lv_btn_create(parent, NULL);
+        lv_obj_add_style(scanButton, LV_OBJ_PART_MAIN, &buttonStyle);
         scanButtonLabel = lv_label_create(scanButton, NULL);
         lv_label_set_text(scanButtonLabel, LOC_WIFI_SCAN_LABEL);
         lv_obj_align(scanButton, parent, LV_ALIGN_IN_BOTTOM_MID, 0, 0);

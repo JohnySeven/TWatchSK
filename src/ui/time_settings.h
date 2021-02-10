@@ -103,9 +103,7 @@ protected:
         lv_obj_set_pos(timeLabel, 4, 4);
         static lv_style_t buttonStyle;
         lv_style_init(&buttonStyle);
-        lv_style_set_radius(&buttonStyle, LV_STATE_DEFAULT, 0);
-        lv_style_set_radius(&buttonStyle, LV_STATE_PRESSED, 0);
-        lv_style_set_radius(&buttonStyle, LV_STATE_DISABLED, 0);
+        lv_style_set_radius(&buttonStyle, LV_STATE_DEFAULT, 10);
 
         hourButton = lv_btn_create(parent, NULL);
         lv_obj_add_style(hourButton, LV_OBJ_PART_MAIN, &buttonStyle);
