@@ -44,7 +44,7 @@
 #define LOC_24HOUR_TIME "Show 24 hour time"
 #define LOC_DISPLAY_SETTINGS "Display settings"
 #define LOC_SCREEN_TIMEOUT "Screen\ntimeout: "
-#define LOC_INPUT_SCREEN_TIMEOUT "Scrn timeout (5-120 sec.)"
+#define LOC_INPUT_SCREEN_TIMEOUT "Scrn timeout (>=5 sec.)"
 #define LOC_WAKEUP_COUNT "Wakeup count: %d"
 #define LOC_DISPLAY_BRIGHTNESS "Display brightness: "
 #define LOC_INPUT_DISPLAY_BRIGHTNESS "Disp brightness (1 to 5)"
