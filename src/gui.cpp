@@ -47,6 +47,7 @@ LV_IMG_DECLARE(wifi_48px);
 LV_IMG_DECLARE(info_48px);
 LV_IMG_DECLARE(time_48px);
 LV_IMG_DECLARE(display_48px);
+LV_IMG_DECLARE(wakeup_48px);
 
 const char *GUI_TAG = "GUI";
 
@@ -154,7 +155,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             skSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &display_48px, false, [gui]() {
+        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &wakeup_48px, false, [gui]() {
             auto wakeupSettings = new WakeupSettings(gui, gui->get_hardware());
             wakeupSettings->on_close([wakeupSettings]() {
                 delete wakeupSettings;
