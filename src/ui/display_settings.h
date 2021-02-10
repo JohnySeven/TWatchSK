@@ -42,12 +42,6 @@ public:
         ESP_LOGI(SETTINGS_TAG, "User set display brightness to %d", display_brightness_);
     }
 
-    void update_dark_theme(bool new_dark_theme) // for when user changes the dark theme value
-    {
-        twatchsk::dark_theme_enabled = new_dark_theme;
-        ESP_LOGI(SETTINGS_TAG, "User set dark theme to %d", new_dark_theme);
-    }
-
     int get_screen_timeout() { return screen_timeout_; }
     void set_screen_timeout(int value)
     {
@@ -60,14 +54,6 @@ public:
         display_brightness_ = value; 
     }
 
-    /*
-    bool get_dark_theme_enabled() { return dark_theme_enabled_; }
-    void set_dark_theme_enabled(bool value)
-    {
-        dark_theme_enabled_ = value;
-    }
-    */
-
 protected:
     virtual void show_internal(lv_obj_t *parent) override
     {
@@ -76,11 +62,9 @@ protected:
         static lv_style_t buttonStyle;
         lv_style_init(&buttonStyle);
         lv_style_set_radius(&buttonStyle, LV_STATE_DEFAULT, 10);
-        //lv_style_set_radius(&buttonStyle, LV_STATE_PRESSED, 0);  // BS: I don't think these two are necessary, because these buttons never stay
-        //lv_style_set_radius(&buttonStyle, LV_STATE_DISABLED, 0); // displayed after they're pressed, and they're never disabled.
         
         screenTimeoutLabel_ = lv_label_create(parent, NULL);
-        lv_obj_set_pos(screenTimeoutLabel_, 4, 4);
+        lv_obj_set_pos(screenTimeoutLabel_, 4, 10);
         lv_label_set_text(screenTimeoutLabel_, LOC_SCREEN_TIMEOUT);
         timeoutButton_ = lv_btn_create(parent, NULL);
         lv_obj_add_style(timeoutButton_, LV_OBJ_PART_MAIN, &buttonStyle);
@@ -140,7 +124,6 @@ private:
     lv_obj_t* brightnessButton_;
     lv_obj_t* brightnessLabel_;
     uint8_t display_brightness_;
-    //bool dark_theme_enabled_;
     lv_obj_t* dark_switch_;
     lv_obj_t* dark_switch_label_;
 
@@ -200,6 +183,8 @@ private:
                 lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
                 lv_theme_get_font_title());
             twatchsk::update_imgbtn_color(settings->back);
+            uint8_t new_brightness_level = (twatchsk::dark_theme_enabled == true ? 1 : 5);
+            settings->update_brightness(new_brightness_level);
         }
         
     }

@@ -47,20 +47,15 @@ LV_IMG_DECLARE(wifi_48px);
 LV_IMG_DECLARE(info_48px);
 LV_IMG_DECLARE(time_48px);
 LV_IMG_DECLARE(display_48px);
+LV_IMG_DECLARE(wakeup_48px);
 
-LV_IMG_DECLARE(setting);
-LV_IMG_DECLARE(on);
-LV_IMG_DECLARE(off);
-//LV_IMG_DECLARE(iexit); // is this correct? iexit? I don't think so - it compiles and runs fine without this declaration. BS.
-
-//static lv_style_t settingStyle; //BS: this doesn't seem to do anything
 const char *GUI_TAG = "GUI";
 
 static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
 {
     Gui *gui = (Gui *)obj->user_data;
     if (event == LV_EVENT_SHORT_CLICKED)
-    { //!  Event callback Is in here
+    { //!  Event callback is in here
         gui->toggle_main_bar(true);
         NavigationView *setupMenu = NULL;
         setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]() {
@@ -68,7 +63,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             gui->toggle_main_bar(false);
         });
 
-        setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, [gui]() {
+        setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, false, [gui]() {
             auto timeSetting = new TimeSettings(TTGOClass::getWatch(), gui->get_sk_socket());
             timeSetting->set_24hour_format(gui->get_time_24hour_format());
             timeSetting->set_timezone_id(gui->get_timezone_id());
@@ -95,7 +90,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             timeSetting->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, [gui]() {
+        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, false, [gui]() {
             auto displaySettings = new DisplaySettings(TTGOClass::getWatch());
 
             // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
@@ -129,8 +124,8 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
                 }
                 if(twatchsk::dark_theme_enabled != current_dark_theme_enabled) // dark_theme flag changed while in Display tile
                 {
-                    //twatchsk::update_imgbtn_color(displaySettings->back); BS: this doesn't work here - won't compile
                     need_to_save = true;
+                    ESP_LOGI("GUI_TAG", "Dark theme changed to %d", twatchsk::dark_theme_enabled);
                 }
                 if (need_to_save)
                 {
@@ -144,7 +139,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             displaySettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_WIFI_SETTINGS_MENU, &wifi_48px, [gui]() {
+        setupMenu->add_tile(LOC_WIFI_SETTINGS_MENU, &wifi_48px, false, [gui]() {
             auto wifiSettings = new WifiSettings(gui->get_wifi_manager());
             wifiSettings->on_close([wifiSettings]() {
                 delete wifiSettings;
@@ -152,7 +147,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             wifiSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_SIGNALK_SETTING_MENU, &signalk_48px, [gui]() {
+        setupMenu->add_tile(LOC_SIGNALK_SETTING_MENU, &signalk_48px, true, [gui]() {
             auto skSettings = new SignalKSettings(gui->get_sk_socket());
             skSettings->on_close([skSettings]() {
                 delete skSettings;
@@ -160,7 +155,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             skSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &display_48px, [gui]() {
+        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &wakeup_48px, false, [gui]() {
             auto wakeupSettings = new WakeupSettings(gui, gui->get_hardware());
             wakeupSettings->on_close([wakeupSettings]() {
                 delete wakeupSettings;
@@ -168,7 +163,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             wakeupSettings->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_WATCH_INFO_MENU, &info_48px, [gui]() {
+        setupMenu->add_tile(LOC_WATCH_INFO_MENU, &info_48px, false, [gui]() {
             auto watchInfo = new WatchInfo(gui);
             watchInfo->on_close([watchInfo]() {
                 delete watchInfo;
@@ -184,27 +179,12 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware* hardware
 {
     wifiManager = wifi;
     ws_socket = socket;
-
-    //lv_style_init(&settingStyle); //BS: this style is never used. Should it be?
-    //lv_style_set_radius(&settingStyle, LV_OBJ_PART_MAIN, 0);
-    //lv_style_set_bg_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-    //lv_style_set_bg_opa(&settingStyle, LV_OBJ_PART_MAIN, LV_OPA_0);
-    //lv_style_set_border_width(&settingStyle, LV_OBJ_PART_MAIN, 0);
-    //lv_style_set_text_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-    //lv_style_set_image_recolor(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
   
     hardware_ = hardware;
     //attach power events to GUI
     hardware->attach_power_callback(std::bind(&Gui::on_power_event, this, _1, _2));
     //Hardware class needs to know what is the screen timeout, wire it to Gui::get_screen_timeout func
     hardware->set_screen_timeout_func(std::bind(&Gui::get_screen_timeout, this));
-    lv_style_init(&settingStyle);
-    lv_style_set_radius(&settingStyle, LV_OBJ_PART_MAIN, 0);
-    lv_style_set_bg_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-    lv_style_set_bg_opa(&settingStyle, LV_OBJ_PART_MAIN, LV_OPA_0);
-    lv_style_set_border_width(&settingStyle, LV_OBJ_PART_MAIN, 0);
-    lv_style_set_text_color(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-    lv_style_set_image_recolor(&settingStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
 
     //Create wallpaper
     lv_obj_t *scr = lv_scr_act();
