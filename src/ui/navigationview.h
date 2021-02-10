@@ -1,6 +1,9 @@
 #include "settings_view.h"
 #include <functional>
 #include <vector>
+
+LV_FONT_DECLARE(lv_font_montserrat_28);
+
 struct LinkData_t
 {
     const lv_img_dsc_t *img;
@@ -14,13 +17,6 @@ class NavigationView : public SettingsView
 public:
     NavigationView(char *title, std::function<void()> on_close) : SettingsView(title)
     {
-        lv_style_init(&buttonStyle);
-        lv_style_set_border_width(&buttonStyle, LV_STATE_DEFAULT, 1);
-        lv_style_set_margin_all(&buttonStyle, LV_STATE_DEFAULT, 2);
-
-        lv_style_init(&pageStyle);
-        lv_style_set_border_width(&pageStyle, LV_STATE_DEFAULT, 0);
-        lv_style_set_margin_all(&pageStyle, LV_STATE_DEFAULT, 0);
         this->on_close(on_close);
     }
 
@@ -40,14 +36,18 @@ public:
         lv_cont_set_layout(parent, LV_LAYOUT_OFF);
         list = lv_list_create(parent, NULL);
         lv_obj_set_size(list, LV_HOR_RES, lv_obj_get_height(parent));
+        static lv_style_t tileStyle;
+        lv_style_init(&tileStyle);
+        lv_style_set_text_font(&tileStyle, LV_STATE_DEFAULT, &lv_font_montserrat_28);
+        lv_obj_add_style(list, LV_OBJ_PART_MAIN, &tileStyle);
         lv_page_set_edge_flash(list, true); 
         for (auto it = tiles.begin(); it != tiles.end(); it++)
         {
             auto btn = lv_list_add_btn(list, it.base()->img, it.base()->title);
             auto img = lv_list_get_btn_img(btn);
-            if (it.base()->color_img == false)
+            if (it.base()->color_img == false) // if the tile's icon is a monochrome image
             {
-                twatchsk::update_imgbtn_color(img); // make the tile's icon be the correct color depending on LIGHT/DARK setting
+                twatchsk::update_imgbtn_color(img); // make it the correct color depending on LIGHT/DARK setting
             }
             btn->user_data = it.base();
             lv_obj_set_event_cb(btn, NavigationView::tile_event); 
