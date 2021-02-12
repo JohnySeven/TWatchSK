@@ -1,8 +1,0 @@
-{
-    "cmake.configureOnOpen": false,
-    "files.associations": {
-        "vector": "cpp",
-        "*.ipp": "cpp",
-        "functional": "cpp"
-    }
-}
