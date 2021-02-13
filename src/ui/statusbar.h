@@ -1,7 +1,7 @@
 #pragma once
 #include "config.h"
 #include "system/observable.h"
-#include "system/systemobject.h"
+#include "ui/themes.h"
 
 LV_IMG_DECLARE(step);
 LV_IMG_DECLARE(sk_statusbar_icon);
@@ -43,19 +43,11 @@ public:
     {
         _par = par;
 
-        static lv_style_t barStyle;
-
-        lv_style_init(&barStyle);
-        lv_style_set_radius(&barStyle, LV_OBJ_PART_MAIN, 0);
-        lv_style_set_bg_color(&barStyle, LV_OBJ_PART_MAIN, LV_COLOR_GRAY);
-        lv_style_set_bg_opa(&barStyle, LV_OBJ_PART_MAIN, LV_OPA_20);
-        lv_style_set_border_width(&barStyle, LV_OBJ_PART_MAIN, 0);
-        lv_style_set_text_color(&barStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-        lv_style_set_image_recolor(&barStyle, LV_OBJ_PART_MAIN, LV_COLOR_WHITE);
-
         _bar = lv_cont_create(_par, NULL);
         lv_obj_set_size(_bar, LV_HOR_RES, _barHeight);
-        //lv_obj_add_style(_bar, LV_OBJ_PART_MAIN, &barStyle);
+        lv_obj_set_style_local_radius(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, 0);
+        lv_obj_set_style_local_border_width(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, 2);
+        lv_obj_set_style_local_border_side(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_BORDER_SIDE_BOTTOM);
 
         _icons[0].icon = lv_label_create(_bar, NULL);
         lv_label_set_text(_icons[0].icon, "100%");
@@ -79,6 +71,7 @@ public:
         lv_obj_align(_icons[5].icon, _icons[4].icon, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
 
         refresh();
+        theme_updated();
     }
 
     void setStepCounter(uint32_t counter)
@@ -116,6 +109,12 @@ public:
             lv_obj_set_hidden(_icons[icon].icon, true);
             refresh();
         }
+    }
+
+    void theme_updated()
+    {
+        twatchsk::update_imgbtn_color(_icons[3].icon);
+        twatchsk::update_imgbtn_color(_icons[4].icon);
     }
 
     uint8_t height()

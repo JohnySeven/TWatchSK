@@ -39,7 +39,7 @@ LV_FONT_DECLARE(Ubuntu);
 LV_FONT_DECLARE(roboto80);
 LV_FONT_DECLARE(roboto60);
 LV_FONT_DECLARE(roboto40);
-LV_IMG_DECLARE(bg_default);
+//LV_IMG_DECLARE(bg_default);
 LV_IMG_DECLARE(sk_status);
 LV_IMG_DECLARE(signalk_48px);
 LV_IMG_DECLARE(menu);
@@ -90,7 +90,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             timeSetting->show(lv_scr_act());
         });
 
-        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, false, [gui]() {
+        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, false, [gui, setupMenu]() {
             auto displaySettings = new DisplaySettings(TTGOClass::getWatch());
 
             // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
@@ -106,7 +106,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             
             // Define the callback function (on_close()). If the value of any setting
             // changed while the Display tile was up, save it.
-            displaySettings->on_close([displaySettings, gui, current_dark_theme_enabled]() {
+            displaySettings->on_close([displaySettings, gui, current_dark_theme_enabled, setupMenu]() {
                 bool need_to_save = false;
                 int new_timeout = displaySettings->get_screen_timeout();
                 if (gui->get_screen_timeout() != new_timeout &&
@@ -126,6 +126,10 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
                 {
                     need_to_save = true;
                     ESP_LOGI("GUI_TAG", "Dark theme changed to %d", twatchsk::dark_theme_enabled);
+                    //update themes on GUI objects
+                    setupMenu->theme_updated();
+                    gui->theme_updated();
+                    
                 }
                 if (need_to_save)
                 {
@@ -185,12 +189,13 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     hardware->attach_power_callback(std::bind(&Gui::on_power_event, this, _1, _2));
     //Hardware class needs to know what is the screen timeout, wire it to Gui::get_screen_timeout func
     hardware->set_screen_timeout_func(std::bind(&Gui::get_screen_timeout, this));
-
-    //Create wallpaper
     lv_obj_t *scr = lv_scr_act();
-    lv_obj_t *img_bin = lv_img_create(scr, NULL); /*Create an image object*/
+    //Create wallpaper
+    //JD: For now we don't use wallpaper will use it later
+    /*
+    lv_obj_t *img_bin = lv_img_create(scr, NULL);
     lv_img_set_src(img_bin, &bg_default);
-    lv_obj_align(img_bin, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(img_bin, NULL, LV_ALIGN_CENTER, 0, 0);*/
 
     // set the theme
     uint32_t flag = LV_THEME_MATERIAL_FLAG_LIGHT; // Create a theme flag and set it to the MATERIAL_LIGHT theme
@@ -220,7 +225,8 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     //! main
     static lv_style_t mainStyle;
     lv_style_init(&mainStyle);
-    lv_style_set_radius(&mainStyle, LV_OBJ_PART_MAIN, 10);
+    lv_style_set_radius(&mainStyle, LV_OBJ_PART_MAIN, 0);
+    lv_style_set_border_width(&mainStyle, LV_OBJ_PART_MAIN, 0);
 
     mainBar = lv_tileview_create(scr, NULL);
     lv_obj_add_style(mainBar, LV_OBJ_PART_MAIN, &mainStyle);
@@ -556,4 +562,9 @@ void Gui::save_config_to_file(JsonObject &json)
     json["timezone"] = timezone_id;
     json["brightness"] = display_brightness;
     json["darktheme"] = twatchsk::dark_theme_enabled;
+}
+
+void Gui::theme_updated()
+{
+    bar->theme_updated();
 }

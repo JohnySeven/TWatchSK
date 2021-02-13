@@ -22,16 +22,19 @@ public:
     {
         static lv_style_t plStyle;
         lv_style_init(&plStyle);
-        lv_style_set_radius(&plStyle, LV_OBJ_PART_MAIN, 10);
-
+        lv_style_set_radius(&plStyle, LV_OBJ_PART_MAIN, 0);
+        lv_style_set_border_width(&plStyle, LV_OBJ_PART_MAIN, 0);
         container = lv_cont_create(parent, NULL);
         lv_obj_set_size(container, LV_HOR_RES, LV_VER_RES - SETTINGS_TOP_BAR_HEIGHT);
         lv_obj_set_pos(container, 0, SETTINGS_TOP_BAR_HEIGHT);
         lv_obj_add_style(container, LV_OBJ_PART_MAIN, &plStyle);
         lv_cont_set_layout(container, LV_LAYOUT_ROW_TOP);
-        
+
+        //define style of top bar - do not change colors - these are theme defined!        
         static lv_style_t barStyle;
         lv_style_copy(&barStyle, &plStyle);
+        lv_style_set_border_width(&barStyle, LV_OBJ_PART_MAIN, 2);
+        lv_style_set_border_side(&barStyle, LV_OBJ_PART_MAIN, LV_BORDER_SIDE_BOTTOM);
 
         topBar = lv_cont_create(parent, NULL);
         lv_obj_set_size(topBar, LV_HOR_RES, SETTINGS_TOP_BAR_HEIGHT);

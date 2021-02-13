@@ -42,6 +42,11 @@ public:
     void on_power_event(PowerCode_t code, uint32_t arg);
     int8_t get_timezone_id() { return timezone_id; }
     void set_timezone_id(int8_t new_tz_id) { timezone_id = new_tz_id; }
+    StatusBar *get_bar()
+    {
+        return bar;
+    }
+    void theme_updated();
 
 private:
     static void lv_update_task(struct _lv_task_t *);
