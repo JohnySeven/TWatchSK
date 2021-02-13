@@ -30,10 +30,14 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         manager->update_status(Wifi_Disconnected);
-        if(manager->is_enabled())
+        if (!manager->disconnecting)
         {
-            post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED);
+            if (manager->is_enabled())
+            {
+                post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED);
+            }
         }
+        manager->disconnecting = false;
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
@@ -142,7 +146,7 @@ void WifiManager::off()
     {
         enabled = false;
         disable_wifi();
-        ESP_LOGI(WIFI_TAG, "WiFi has been disabled.");        
+        ESP_LOGI(WIFI_TAG, "WiFi has been disabled.");
         this->update_status(WifiState_t::Wifi_Off);
     }
 }
@@ -153,19 +157,47 @@ void WifiManager::save_config_to_file(JsonObject &json)
     json["enabled"] = enabled;
     json["ssid"] = ssid;
     json["password"] = password;
+    JsonArray knownList = json.createNestedArray("known");
+    for (int i = 0; i < known_wifi_list_.size(); i++)
+    {
+        JsonObject known = knownList.createNestedObject();
+        auto wifiInfo = known_wifi_list_.at(i);
+        known["ssid"] = wifiInfo.ssid;
+        known["password"] = wifiInfo.password;
+    }
 }
 
 void WifiManager::load_config_from_file(const JsonObject &json)
-{    
+{
     enabled = json["enabled"].as<bool>();
     setup(json["ssid"].as<String>(), json["password"].as<String>());
+
+    if (json.containsKey("known"))
+    {
+        JsonArray knownList = json["known"].as<JsonArray>();
+
+        for (JsonObject known : knownList)
+        {
+            KnownWifi_t wifiInfo;
+            wifiInfo.ssid = known["ssid"].as<String>();
+            wifiInfo.password = known["password"].as<String>();
+            known_wifi_list_.push_back(wifiInfo);
+        }
+    }
 }
 
 void WifiManager::setup(String ssid, String password)
 {
-        this->ssid = ssid;
-        this->password = password;
-        ESP_LOGI(WIFI_TAG, "SSID has been updated to %s with password ******.", ssid.c_str());
+    this->ssid = ssid;
+    this->password = password;
+    ESP_LOGI(WIFI_TAG, "SSID has been updated to %s with password ******.", ssid.c_str());
+    if (!is_known_wifi(ssid))
+    {
+        KnownWifi_t wifi;
+        wifi.ssid = ssid;
+        wifi.password = password;
+        known_wifi_list_.push_back(wifi);
+    }
 }
 
 bool WifiManager::scan_wifi()
@@ -194,4 +226,60 @@ bool WifiManager::scan_wifi()
 const wifi_ap_record_t WifiManager::get_found_wifi(int index)
 {
     return ap_info[index];
+}
+
+void WifiManager::connect()
+{
+    if (ssid != "")
+    {
+        //if wifi is off enable it
+        if (get_status() == WifiState_t::Wifi_Off)
+        {
+            on();
+        }
+        else if (get_status() == WifiState_t::Wifi_Disconnected)
+        {
+            wifi_enable(ssid.c_str(), password.c_str());
+        }
+        else if (get_status() == WifiState_t::Wifi_Connecting || get_status() == WifiState_t::Wifi_Connected)
+        {
+            disconnecting = true;
+            disable_wifi();
+            delay(250); //let the driver stop wifi
+            wifi_enable(ssid.c_str(), password.c_str());
+        }
+    }
+}
+
+bool WifiManager::is_known_wifi(const String ssid)
+{
+    bool ret = false;
+
+    for (KnownWifi_t wifi : known_wifi_list_)
+    {
+        if (wifi.ssid == ssid)
+        {
+            ret = true;
+            break;
+        }
+    }
+
+    return ret;
+}
+
+bool WifiManager::get_known_wifi_password(const String ssid, String &password)
+{
+    bool ret = false;
+
+    for (KnownWifi_t wifi : known_wifi_list_)
+    {
+        if (wifi.ssid == ssid)
+        {
+            password = wifi.password;
+            ret = true;
+            break;
+        }
+    }
+
+    return ret;
 }

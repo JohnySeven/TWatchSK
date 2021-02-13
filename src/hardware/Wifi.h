@@ -15,13 +15,24 @@ enum WifiState_t
     Wifi_Connected = 3
 };
 
+struct KnownWifi_t
+{
+    String ssid;
+    String password;
+};
+
 class WifiManager : public Configurable, public SystemObject, public Observable<WifiState_t>
 {
 public:
     WifiManager();
     void on();
     void off();
+    void connect();
     String get_ip() { return ip; }
+    String get_configured_ssid ()
+    {
+        return ssid;
+    }
     WifiState_t get_status() { return value; }
     bool is_enabled() { return enabled; }
     bool is_connected() { return value == WifiState_t::Wifi_Connected; }
@@ -34,6 +45,8 @@ public:
     bool is_scan_complete();
     int found_wifi_count();
     const wifi_ap_record_t get_found_wifi(int index);
+    bool is_known_wifi(const String ssid);
+    bool get_known_wifi_password(const String ssid, String &password);
 private:
     void initialize();
     virtual void load_config_from_file(const JsonObject &json) override final;
@@ -44,7 +57,9 @@ private:
     bool enabled = false;
     bool connected = false;
     bool initialized = false;
+    bool disconnecting = false;
     static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                    int32_t event_id, void *event_data);
     void clear_wifi_list();
+    std::vector<KnownWifi_t> known_wifi_list_;
 };
