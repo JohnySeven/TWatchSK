@@ -118,6 +118,7 @@ private:
 
     void enable_switch_updated()
     {
+        ESP_LOGI(SETTINGS_TAG, "Wifi enable switch value changed!");
         if (lv_switch_get_state(enable_switch_))
         {
             wifi_manager_->on();
@@ -160,7 +161,7 @@ private:
             for (int i = 0; i < wifi_manager_->found_wifi_count(); i++)
             {
                 auto ap = wifi_manager_->get_found_wifi(i);
-                auto isknown = wifi_manager_->is_known_wifi(String((char*)ap.ssid));
+                auto isknown = wifi_manager_->is_known_wifi(String((char *)ap.ssid));
                 wifiList->add_ssid((char *)ap.ssid, isknown ? (void *)LV_SYMBOL_SAVE : (void *)LV_SYMBOL_WIFI);
             }
 
@@ -242,11 +243,24 @@ private:
         ESP_LOGI(SETTINGS_TAG, "WiFi settings saved!");
     }
 
+    void check_enabled_if_not()
+    {
+        if (!lv_switch_get_state(enable_switch_))
+        {
+            //we need to bypass enable switch callback
+            lv_obj_set_event_cb(enable_switch_, NULL);
+            lv_switch_on(enable_switch_, LV_ANIM_ON);
+            lv_obj_set_event_cb(enable_switch_, __enable_switch_event);
+        }
+    }
+
     static void __connect_event(lv_obj_t *obj, lv_event_t event)
     {
         if (event == LV_EVENT_CLICKED)
         {
-            ((WifiSettings *)obj->user_data)->wifi_manager_->connect();
+            auto settings = ((WifiSettings *)obj->user_data);
+            settings->check_enabled_if_not();
+            settings->wifi_manager_->connect();
         }
     }
 };
