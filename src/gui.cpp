@@ -435,14 +435,14 @@ void Gui::update_gui()
 {
     update_time();
     twatchsk::update_imgbtn_color(menuBtn); // make the four little squares be the correct color for the theme
-
-    if (wifiManager->get_status() == WifiState_t::Wifi_Off)
+    auto wifiStatus = wifiManager->get_status();
+    if (wifiStatus == WifiState_t::Wifi_Connected || wifiStatus == WifiState_t::Wifi_Connecting)
     {
-        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, true);
+        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, false);
     }
     else
     {
-        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, false);
+        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, true);
     }
 
     if (ws_socket->get_state() == WebsocketState_t::WS_Connected)
