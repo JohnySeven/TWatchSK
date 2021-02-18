@@ -12,7 +12,7 @@
 class WakeupSettings : public SettingsView
 {
 public:
-    WakeupSettings(Gui *gui, Hardware *hardware) : SettingsView(LOC_WAKEUP_SETTINGS_MENU)
+    WakeupSettings(Gui *gui, Hardware *hardware) : SettingsView(LOC_WAKEUP_SETTINGS)
     {
         gui_ = gui;
         hardware_ = hardware;
