@@ -408,6 +408,20 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
         update_battery_level();
         update_battery_icon(LV_ICON_CALCULATION);
         increment_wakeup_count();
+        switch (arg)
+        {
+            case WAKEUP_BUTTON:
+                clear_temporary_screen_timeout(); // waking up with a button press - if the last timeout was temporary, clear it
+                break;
+            case WAKEUP_ACCELEROMETER: // waking up with double tap or tilt
+                set_temporary_screen_timeout(2);
+                break;
+            //case WAKEUP_TOUCH:                   // not yet implemented
+            //    set_temporary_screen_timeout(2); // change this when it is implemented
+            //    break;
+            default:
+                 clear_temporary_screen_timeout();
+        }
         update_gui();
         lv_disp_trig_activity(NULL);
     }
@@ -567,4 +581,23 @@ void Gui::save_config_to_file(JsonObject &json)
 void Gui::theme_updated()
 {
     bar->theme_updated();
+}
+
+void Gui::set_temporary_screen_timeout(int value)
+{
+    if (!screen_timeout_is_temporary)
+    {
+        saved_screen_timeout = screen_timeout;
+        screen_timeout = value;
+        screen_timeout_is_temporary = true;
+    }
+}
+
+void Gui::clear_temporary_screen_timeout()
+{
+    if (screen_timeout_is_temporary)
+    {
+        screen_timeout = saved_screen_timeout;
+        screen_timeout_is_temporary = false;
+    }
 }

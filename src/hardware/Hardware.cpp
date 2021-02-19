@@ -3,11 +3,11 @@
 
 EventGroupHandle_t isr_group = NULL;
 
-#define WATCH_FLAG_SLEEP_MODE _BV(1)
-#define WATCH_FLAG_SLEEP_EXIT _BV(2)
-#define WATCH_FLAG_BMA_IRQ _BV(3)
-#define WATCH_FLAG_AXP_IRQ _BV(4)
-#define WATCH_FLAT_TOUCH_IRQ _BV(5)
+#define WATCH_FLAG_SLEEP_MODE _BV(1) // in sleep mode
+#define WATCH_FLAG_SLEEP_EXIT _BV(2) // leaving sleep mode because of any kind of interrupt
+#define WATCH_FLAG_BMA_IRQ _BV(3) // leaving sleep mode because of double tap or tilt
+#define WATCH_FLAG_AXP_IRQ _BV(4) // leaving sleep mode because of external button press or any other power management interrupt
+#define WATCH_FLAT_TOUCH_IRQ _BV(5) // leaving sleep mode because of touch (not yet implemented)
 
 #define MOTOR_CHANNEL 1
 #define MOTOR_FREQUENCY 12000
@@ -140,12 +140,16 @@ void Hardware::invoke_power_callbacks(PowerCode_t code, uint32_t arg)
 
 /**
  * This function drives low_energy states.
- * If watch is in normal power mode l_energy_ == false it will power enter low power mode and send power callback.
- * If watch is in low power mode it waits until event is received via isr_group, if event is received it will wakeup watch and send power callback
+ * If watch is in normal power mode, lenergy_ == false, it will enter low power mode and invoke_power_callback with POWER_ENTER_LOW_POWER.
+ * If watch is in low power mode it waits until event is received via isr_group, if event is received it will wakeup watch
+ * and invoke_power_callback with POWER_LEAVE_LOW_POWER.
  */
 void Hardware::low_energy()
 {
-    if (!lenergy_)
+    EventBits_t isr_bits = xEventGroupGetBits(isr_group);
+    EventBits_t app_bits = xEventGroupGetBits(g_app_state);
+
+    if (!lenergy_) // watch is not in low power mode, so set it to low power mode now
     {
         watch_->closeBL();
         watch_->stopLvglTick();
@@ -175,9 +179,6 @@ void Hardware::low_energy()
         light_sleep_ = false;
         ESP_LOGI(HW_TAG, "Entering light sleep.");
 
-        EventBits_t isr_bits = xEventGroupGetBits(isr_group);
-        EventBits_t app_bits = xEventGroupGetBits(g_app_state);
-
         while (!(isr_bits & WATCH_FLAG_SLEEP_EXIT) && !(app_bits & G_APP_STATE_WAKE_UP))
         {
             delay(500);
@@ -194,7 +195,7 @@ void Hardware::low_energy()
         ESP_LOGI(HW_TAG, "Wakeup request from sleep. System isr=%d,app=%d", isr_bits, app_bits);
         //}
     }
-    else
+    else // watch is in low power mode, so wake it up now
     {
         //set events in events.cpp
         set_low_power(false);
@@ -208,8 +209,13 @@ void Hardware::low_energy()
         watch_->rtc->syncToSystem();
         //enable display backlight
         watch_->openBL();
+        WakeupSource_t source = WAKEUP_BUTTON; // must be initialized to something
+        if (isr_bits & WATCH_FLAG_BMA_IRQ) // wakeup came from double tap or tilt
+        {
+            source = WAKEUP_ACCELEROMETER;
+        }
         //notify everyone we are leaving low power mode
-        invoke_power_callbacks(PowerCode_t::POWER_LEAVE_LOW_POWER, 0);
+        invoke_power_callbacks(PowerCode_t::POWER_LEAVE_LOW_POWER, source);
         watch_->bma->enableStepCountInterrupt();
     }
 }

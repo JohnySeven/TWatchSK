@@ -34,6 +34,8 @@ public:
     void toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden);
     int get_screen_timeout() { return screen_timeout; }
     void set_screen_timeout(int value) { screen_timeout = value; }
+    void set_temporary_screen_timeout(int value);
+    void clear_temporary_screen_timeout();
     int get_wakeup_count() { return wakeup_count; }
     void increment_wakeup_count() { wakeup_count++; }
     uint8_t get_display_brightness() { return display_brightness; }
@@ -70,6 +72,8 @@ private:
 
     bool time_24hour_format = false;
     int screen_timeout = 10; // only until it's first changed
+    int saved_screen_timeout = 10;
+    bool screen_timeout_is_temporary = false;
     int8_t timezone_id = 0; // Index of the array of timezones in the timezone Roller selector widget
     int wakeup_count = 0; // restarts at zero at each startup
     uint8_t display_brightness = 155; // only until it's first changed
