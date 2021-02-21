@@ -62,6 +62,7 @@ private:
     lv_obj_t *mainBar = NULL;
     lv_obj_t *timeLabel = NULL;
     lv_obj_t *timeSuffixLabel = NULL;
+    lv_obj_t *secondsLabel = NULL;
     lv_obj_t *menuBtn = NULL;
     lv_obj_t *watch_face = NULL;
     MenuBar *menuBars = NULL;
