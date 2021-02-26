@@ -53,6 +53,7 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
             this->port = port;
         }
     private:
+        const int reconnect_count_ = 3;
         static void ws_event_handler(void *arg, esp_event_base_t event_base,
                              int32_t event_id, void *event_data);
         String server = "";
@@ -66,6 +67,7 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
         bool token_request_pending = false;
         String pending_token_request_id = "";
         esp_websocket_client_handle_t websocket;
+        int reconnect_counter_ = reconnect_count_;
         bool websocket_initialized = false;
         std::map<String,SignalKSubscription*> subscriptions;
         std::vector<String> activeNotifications;

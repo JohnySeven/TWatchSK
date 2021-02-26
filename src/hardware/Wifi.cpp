@@ -11,6 +11,7 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 #include "system/events.h"
+#include "system/async_dispatcher.h"
 
 const char *WIFI_TAG = "WIFI";
 static bool scan_done = false;
@@ -29,15 +30,36 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-        manager->update_status(Wifi_Disconnected);
+        wifi_event_sta_disconnected_t *disconnect_event = (wifi_event_sta_disconnected_t *)event_data;
+        auto status = manager->value;
+        ESP_LOGI(WIFI_TAG, "Wifi disconnected with reason=%d, status=%d", disconnect_event->reason, status);
         if (!manager->disconnecting)
         {
             if (manager->is_enabled())
             {
-                post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED);
+                if (manager->value == WifiState_t::Wifi_Connecting)
+                {
+                    post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_CONNECTION_FAILED);
+                }
+                else
+                {
+                    post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED);
+                }
+
+                //this needs to be run async out of wifi task
+                twatchsk::run_async("Wifi off", [manager]
+                {
+                    manager->off();
+                });
+
+                
             }
+
         }
+
+        manager->update_status(Wifi_Disconnected);
         manager->disconnecting = false;
+        
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
@@ -47,6 +69,14 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
         sprintf(buff, IPSTR, IP2STR(&event->ip_info.ip));
         manager->set_ip(String(buff));
         manager->update_status(Wifi_Connected);
+
+        if (!manager->is_known_wifi(manager->ssid)) //add wifi to know list - we need to save it later on
+        {
+            KnownWifi_t wifi;
+            wifi.ssid = manager->ssid;
+            wifi.password = manager->password;
+            manager->known_wifi_list_.push_back(wifi);
+        }
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_SCAN_DONE)
     {
@@ -191,13 +221,6 @@ void WifiManager::setup(String ssid, String password)
     this->ssid = ssid;
     this->password = password;
     ESP_LOGI(WIFI_TAG, "SSID has been updated to %s with password ******.", ssid.c_str());
-    if (!is_known_wifi(ssid))
-    {
-        KnownWifi_t wifi;
-        wifi.ssid = ssid;
-        wifi.password = password;
-        known_wifi_list_.push_back(wifi);
-    }
 }
 
 bool WifiManager::scan_wifi()
@@ -235,6 +258,8 @@ void WifiManager::connect()
         //if wifi is off enable it
         if (get_status() == WifiState_t::Wifi_Off)
         {
+            disable_wifi();
+            delay(250);
             on();
         }
         else if (get_status() == WifiState_t::Wifi_Disconnected)

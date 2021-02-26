@@ -75,8 +75,6 @@ public:
 
     static void __kb_event_cb(lv_obj_t *kb, lv_event_t event)
     {
-        ESP_LOGI("KEYBOARD", "EVENT=%d", event);
-
         if (event == LV_EVENT_VALUE_CHANGED || event == LV_EVENT_LONG_PRESSED_REPEAT)
         {
             lv_keyboard_ext_t *ext = (lv_keyboard_ext_t *)lv_obj_get_ext_attr(kb);
@@ -84,7 +82,6 @@ public:
             const char *txt = lv_btnmatrix_get_active_btn_text(kb);
             if (txt != NULL)
             {
-                ESP_LOGI("KEYBOARD", "Keypress=%s", txt);
                 static int index = 0;
                 if (strcmp(txt, LV_SYMBOL_OK) == 0)
                 {
@@ -138,7 +135,15 @@ private:
     void close_and_result(bool is_success)
     {
         _isSuccess = is_success;
+        
         hide();
+        lv_async_call(async_hide, this);
+    }
+
+    static void async_hide(void*arg)
+    {
+        auto keyboard = (Keyboard*)arg;
+        keyboard->hide();
     }
 };
 

@@ -20,6 +20,8 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
         else if (event_id == WEBSOCKET_EVENT_CONNECTED)
         {
             ESP_LOGI(WS_TAG, "Web socket connected to server!");
+            socket->reconnect_counter_ = socket->reconnect_count_; //restore reconnect counter to 3
+            socket->delta_counter = 0; //clear the socket delta counter
         }
         else if (event_id == WEBSOCKET_EVENT_DISCONNECTED)
         {
@@ -29,6 +31,20 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
             {
                 ESP_LOGI(WS_TAG, "Wifi is disconnected, disconnecting and destroying WS client.");
                 socket->disconnect();
+            }
+            else
+            {
+                ESP_LOGI(WS_TAG, "Unexpected disconnection. Will try reconnect for %d times.", socket->reconnect_counter_);
+
+                if (socket->reconnect_counter_ == 0)
+                {
+                    post_gui_warning(GuiMessageCode_t::GUI_WARN_SK_LOST_CONNECTION);
+                    socket->disconnect();
+                }
+                else
+                {
+                    socket->reconnect_counter_--;
+                }
             }
         }
         else if (event_id == WEBSOCKET_EVENT_DATA)
@@ -59,8 +75,7 @@ SignalKSocket::SignalKSocket(WifiManager *wifi) : Configurable("/config/websocke
     {
         clientId = UUID::new_id();
     }
-    server = "pi.boat";
-    port = 3000;
+
     wifi->attach(this);
     this->wifi = wifi;
 
@@ -85,11 +100,12 @@ bool SignalKSocket::connect()
             .path = url};
         ws_cfg.port = port;
 
+        reconnect_counter_ = reconnect_count_; //restore reconnect counter
+
         ESP_LOGI(WS_TAG, "Initializing websocket ws://%s:%d%s...", ws_cfg.host, ws_cfg.port, url);
 
         websocket = esp_websocket_client_init(&ws_cfg);
         websocket_initialized = true;
-        delta_counter = 0;
 
         if (esp_websocket_register_events(websocket, WEBSOCKET_EVENT_ANY, ws_event_handler, this) == ESP_OK)
         {
@@ -118,15 +134,20 @@ bool SignalKSocket::disconnect()
         }
 
         delay(100);
-
-        if (esp_websocket_client_destroy(websocket) == ESP_OK)
+        auto clenaup = esp_websocket_client_destroy(websocket);
+        if (clenaup == ESP_OK)
         {
             websocket_initialized = false;
             websocket = NULL;
             ESP_LOGI(WS_TAG, "Websocket destroyed.");
         }
+        else
+        {
+            ESP_LOGE(WS_TAG, "Failed to cleanup websocket with error %d", clenaup);
+        }
 
         update_status(WebsocketState_t::WS_Offline);
+        ret = true;
     }
 
     return ret;
@@ -153,11 +174,12 @@ void SignalKSocket::save_config_to_file(JsonObject &json)
 
 void SignalKSocket::parse_data(int length, const char *data)
 {
-    DynamicJsonDocument doc(2048);
+    DynamicJsonDocument doc(4096);
 
     auto result = deserializeJson(doc, data, length);
     if (result.code() == DeserializationError::Ok)
     {
+        delta_counter++;
         String messageType = "Unknown";
 
         if (doc.containsKey("name"))
@@ -269,14 +291,19 @@ void SignalKSocket::notify_change(const WifiState_t &wifiState)
 
     if (wifiState == Wifi_Connected && value == WebsocketState_t::WS_Offline)
     {
-        if (this->connect())
+        if (connect())
         {
-            ESP_LOGI(WS_TAG, "Auto connect OK!");
+            ESP_LOGI(WS_TAG, "Wifi is connected! Auto connect OK!");
         }
         else
         {
             ESP_LOGW(WS_TAG, "Auto connect ERROR!");
         }
+    }
+    else if (wifiState == WifiState_t::Wifi_Disconnected || wifiState == WifiState_t::Wifi_Off)
+    {
+        //just make reconnect counter = 0
+        reconnect_counter_ = 0;
     }
 }
 
@@ -383,7 +410,7 @@ void SignalKSocket::remove_active_notification(String path)
 
 void SignalKSocket::handle_power_event(PowerCode_t code, uint32_t arg)
 {
-    if(code == PowerCode_t::POWER_ENTER_LOW_POWER || code == PowerCode_t::POWER_LEAVE_LOW_POWER)
+    if (code == PowerCode_t::POWER_ENTER_LOW_POWER || code == PowerCode_t::POWER_LEAVE_LOW_POWER)
     {
         update_subscriptions();
     }

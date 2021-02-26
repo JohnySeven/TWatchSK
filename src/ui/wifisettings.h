@@ -17,7 +17,7 @@ public:
 protected:
     virtual void show_internal(lv_obj_t *parent) override
     {
-        lv_cont_set_layout(parent, LV_LAYOUT_COLUMN_LEFT);
+        lv_cont_set_layout(parent, LV_LAYOUT_OFF);
         //Create on / off switch for WiFi control
         enable_switch_ = lv_switch_create(topBar, NULL);
         lv_obj_align(enable_switch_, topBar, LV_ALIGN_IN_RIGHT_MID, -6, 0);
@@ -37,21 +37,26 @@ protected:
         //show configured wifi name
         wifi_name_ = lv_label_create(parent, NULL);
         lv_label_set_text_fmt(wifi_name_, LOC_WIFI_CONFIG_SSID_FMT, wifi_manager_->get_configured_ssid());
+        lv_obj_set_pos(wifi_name_, spacing, spacing);
         //show wifi current status
         status_ = lv_label_create(parent, NULL);
+        lv_obj_align(status_, wifi_name_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, spacing);
         //show current IP address (if any)
         wifi_ip_ = lv_label_create(parent, NULL);
+        lv_obj_align(wifi_ip_, status_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, spacing);
         //connect button - visible only if not connected - just guide for user to enable wifi
         connect_button_ = lv_btn_create(parent, NULL);
+        lv_obj_align_y(connect_button_, wifi_ip_, LV_ALIGN_OUT_BOTTOM_LEFT, spacing);//first align the top with label above + 4pix
+        lv_obj_align_x(connect_button_, parent, LV_ALIGN_IN_BOTTOM_MID, 0); //then center the button in parent
         auto connectLabel = lv_label_create(connect_button_, NULL);
         lv_label_set_text(connectLabel, LOC_WIFI_CONNECT);
         connect_button_->user_data = this;
         lv_obj_set_event_cb(connect_button_, __connect_event);
         //scan button
         scan_button_ = lv_btn_create(parent, NULL);
+        lv_obj_align(scan_button_, connect_button_, LV_ALIGN_OUT_BOTTOM_MID, 0, spacing);
         auto scanLabel = lv_label_create(scan_button_, NULL);
         lv_label_set_text(scanLabel, LOC_WIFI_SCAN_LABEL);
-        lv_obj_align(scan_button_, parent, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
         scan_button_->user_data = this;
         lv_obj_set_event_cb(scan_button_, __scan_event);
 
@@ -118,7 +123,6 @@ private:
 
     void enable_switch_updated()
     {
-        ESP_LOGI(SETTINGS_TAG, "Wifi enable switch value changed!");
         if (lv_switch_get_state(enable_switch_))
         {
             wifi_manager_->on();
@@ -206,34 +210,39 @@ private:
 
     void update_wifi_info()
     {
+        static WifiState_t lastState = WifiState_t::Wifi_Off;
         auto wifiStatus = wifi_manager_->get_status();
 
-        if (wifiStatus == WifiState_t::Wifi_Connected)
+        if (lastState != wifiStatus) //just update the UI if status has been changed
         {
-            lv_label_set_text_fmt(status_, LOC_WIFI_CONNECTED);
-            lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, wifi_manager_->get_ip().c_str());
-            lv_obj_set_hidden(this->connect_button_, true);
-        }
-        else if (wifiStatus == WifiState_t::Wifi_Disconnected)
-        {
-            lv_label_set_text(status_, LOC_WIFI_DISCONNECTED);
-            lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, "--");
-            lv_obj_set_hidden(this->connect_button_, false);
-        }
-        else if (wifiStatus == WifiState_t::Wifi_Connecting)
-        {
-            lv_label_set_text(status_, LOC_WIFI_CONNECTING);
-            lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, "--");
-            lv_obj_set_hidden(this->connect_button_, true);
-        }
-        else if (wifiStatus == WifiState_t::Wifi_Off)
-        {
-            lv_label_set_text(status_, LOC_WIFI_OFF);
-            lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, "--");
-            lv_obj_set_hidden(this->connect_button_, false);
-        }
+            lastState = wifiStatus;
+            if (wifiStatus == WifiState_t::Wifi_Connected)
+            {
+                lv_label_set_text_fmt(status_, LOC_WIFI_CONNECTED);
+                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, wifi_manager_->get_ip().c_str());
+                lv_obj_set_hidden(this->connect_button_, true);
+            }
+            else if (wifiStatus == WifiState_t::Wifi_Disconnected)
+            {
+                lv_label_set_text(status_, LOC_WIFI_DISCONNECTED);
+                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, "--");
+                lv_obj_set_hidden(this->connect_button_, !(wifi_manager_->get_configured_ssid() != "")); //if wifi isn't configured connect will not happen
+            }
+            else if (wifiStatus == WifiState_t::Wifi_Connecting)
+            {
+                lv_label_set_text(status_, LOC_WIFI_CONNECTING);
+                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, "--");
+                lv_obj_set_hidden(this->connect_button_, true);
+            }
+            else if (wifiStatus == WifiState_t::Wifi_Off)
+            {
+                lv_label_set_text(status_, LOC_WIFI_OFF);
+                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, "--");
+                lv_obj_set_hidden(this->connect_button_, !(wifi_manager_->get_configured_ssid() != "")); //if wifi isn't configured connect will not happen
+            }
 
-        ESP_LOGI("WIFI", "Status update %d", wifiStatus);
+            ESP_LOGI("WIFI", "Status update %d", wifiStatus);
+        }
     }
 
     void save_wifi_settings()
