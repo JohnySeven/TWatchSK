@@ -36,9 +36,11 @@ using std::placeholders::_2;
 
 LV_FONT_DECLARE(Geometr);
 LV_FONT_DECLARE(Ubuntu);
-LV_FONT_DECLARE(roboto80);
-LV_FONT_DECLARE(roboto60);
-LV_FONT_DECLARE(roboto40);
+// LV_FONT_DECLARE(roboto80); //BS: delete these fonts if they're not used after adding seconds to the display
+LV_FONT_DECLARE(roboto70);
+//LV_FONT_DECLARE(roboto60);
+//LV_FONT_DECLARE(roboto40);
+LV_FONT_DECLARE(roboto30);
 //LV_IMG_DECLARE(bg_default);
 LV_IMG_DECLARE(sk_status);
 LV_IMG_DECLARE(signalk_48px);
@@ -239,19 +241,25 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     lv_tileview_add_element(mainBar, watch_face);
 
     //! Time
-    static lv_style_t timeStyle;
+    static lv_style_t timeStyle; // for minutes and hours
     lv_style_copy(&timeStyle, &mainStyle);
-    lv_style_set_text_font(&timeStyle, LV_STATE_DEFAULT, &roboto80);
+    lv_style_set_text_font(&timeStyle, LV_STATE_DEFAULT, &roboto70);
 
     timeLabel = lv_label_create(watch_face, NULL);
+    lv_obj_set_hidden(timeLabel, true); // BS: this should hide timeLabel until it's properly aligned, but it's not doing that
     lv_obj_add_style(timeLabel, LV_OBJ_PART_MAIN, &timeStyle);
 
-    static lv_style_t timeSuffixStyle;
+    static lv_style_t timeSuffixStyle; // for am/pm and seconds
     lv_style_copy(&timeSuffixStyle, &mainStyle);
-    lv_style_set_text_font(&timeSuffixStyle, LV_STATE_DEFAULT, &roboto40);
+    lv_style_set_text_font(&timeSuffixStyle, LV_STATE_DEFAULT, &roboto30);
 
     timeSuffixLabel = lv_label_create(watch_face, NULL);
+    lv_obj_set_hidden(timeSuffixLabel, true); // BS: this should hide timeSuffixLabel until it's properly aligned, but it's not doing that
     lv_obj_add_style(timeSuffixLabel, LV_OBJ_PART_MAIN, &timeSuffixStyle);
+
+    secondsLabel = lv_label_create(watch_face, NULL);
+    lv_obj_set_hidden(secondsLabel, true); // BS: this should hide secondsLabel until it's properly aligned, but it's not doing that
+    lv_obj_add_style(secondsLabel, LV_OBJ_PART_MAIN, &timeSuffixStyle);
 
     update_time();
 
@@ -318,6 +326,7 @@ void Gui::update_step_counter(uint32_t counter)
 
 void Gui::update_time()
 {
+    lv_obj_set_hidden(timeSuffixLabel, true);
     time_t now;
     struct tm info;
     char buf[64];
@@ -326,24 +335,31 @@ void Gui::update_time()
     if (time_24hour_format)
     {
         strftime(buf, sizeof(buf), "%H:%M", &info);
-        lv_label_set_text(timeSuffixLabel, "");
+        lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 15);
+        lv_obj_set_hidden(timeLabel, false);
     }
     else
     {
         strftime(buf, sizeof(buf), "%I:%M", &info);
+        lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, -20, 15);
+        lv_obj_set_hidden(timeLabel, false);
         if (info.tm_hour > 12)
         {
             lv_label_set_text(timeSuffixLabel, "pm");
+            lv_obj_align(timeSuffixLabel, timeLabel, LV_ALIGN_OUT_RIGHT_MID, 2, 9);
+            lv_obj_set_hidden(timeSuffixLabel, false);
         }
         else
         {
             lv_label_set_text(timeSuffixLabel, "am");
+            lv_obj_align(timeSuffixLabel, timeLabel, LV_ALIGN_OUT_RIGHT_MID, 2, -15);
+            lv_obj_set_hidden(timeSuffixLabel, false);
         }
     }
-
     lv_label_set_text(this->timeLabel, buf);
-    lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 5);
-    lv_obj_align(timeSuffixLabel, timeLabel, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, -20);
+    lv_obj_align(secondsLabel, timeLabel, LV_ALIGN_OUT_BOTTOM_MID, 30, -10);
+    lv_label_set_text_fmt(secondsLabel, ":%.2d", info.tm_sec);
+    lv_obj_set_hidden(secondsLabel, false);
 }
 
 void Gui::update_battery_level()
@@ -412,6 +428,20 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
         update_battery_level();
         update_battery_icon(LV_ICON_CALCULATION);
         increment_wakeup_count();
+        switch (arg)
+        {
+            case WAKEUP_BUTTON:
+                clear_temporary_screen_timeout(); // waking up with a button press - if the last timeout was temporary, clear it
+                break;
+            case WAKEUP_ACCELEROMETER: // waking up with double tap or tilt
+                set_temporary_screen_timeout(2);
+                break;
+            //case WAKEUP_TOUCH:                   // not yet implemented
+            //    set_temporary_screen_timeout(2); // change this when it is implemented
+            //    break;
+            default:
+                 clear_temporary_screen_timeout();
+        }
         update_gui();
         lv_disp_trig_activity(NULL);
     }
@@ -571,4 +601,23 @@ void Gui::save_config_to_file(JsonObject &json)
 void Gui::theme_updated()
 {
     bar->theme_updated();
+}
+
+void Gui::set_temporary_screen_timeout(int value)
+{
+    if (!screen_timeout_is_temporary)
+    {
+        saved_screen_timeout = screen_timeout;
+        screen_timeout = value;
+        screen_timeout_is_temporary = true;
+    }
+}
+
+void Gui::clear_temporary_screen_timeout()
+{
+    if (screen_timeout_is_temporary)
+    {
+        screen_timeout = saved_screen_timeout;
+        screen_timeout_is_temporary = false;
+    }
 }

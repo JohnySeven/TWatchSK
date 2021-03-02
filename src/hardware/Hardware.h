@@ -14,6 +14,13 @@ enum PowerCode_t
     WALK_STEP_COUNTER_UPDATED,
 };
 
+enum WakeupSource_t
+{
+    WAKEUP_BUTTON,
+    WAKEUP_ACCELEROMETER,
+    WAKEUP_TOUCH
+};
+
 typedef std::function<void(PowerCode_t, uint32_t)> low_power_callback;
 /**
  * @brief Hardware class purpose is to handle all hardware features of the watch, power managment setup, power event callbacks and BMA interuptions, sound & vibrate stuff (comming soon)
