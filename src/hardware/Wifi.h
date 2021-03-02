@@ -47,6 +47,7 @@ public:
     const wifi_ap_record_t get_found_wifi(int index);
     bool is_known_wifi(const String ssid);
     bool get_known_wifi_password(const String ssid, String &password);
+    int get_wifi_rssi();
 private:
     void initialize();
     virtual void load_config_from_file(const JsonObject &json) override final;

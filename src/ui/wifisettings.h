@@ -60,7 +60,7 @@ protected:
         scan_button_->user_data = this;
         lv_obj_set_event_cb(scan_button_, __scan_event);
 
-        update_wifi_info();
+        update_wifi_info(true);
 
         status_update_ticker_ = new UITicker(1000, [this]() {
             if (!this->scanning_wifi_)
@@ -208,36 +208,40 @@ private:
         }
     }
 
-    void update_wifi_info()
+    void update_wifi_info(bool force = false)
     {
         static WifiState_t lastState = WifiState_t::Wifi_Off;
         auto wifiStatus = wifi_manager_->get_status();
 
-        if (lastState != wifiStatus) //just update the UI if status has been changed
+        if(wifiStatus == WifiState_t::Wifi_Connected) //update IP and RSSI regardless of the other values
+        {
+            lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, wifi_manager_->get_ip().c_str(), wifi_manager_->get_wifi_rssi());
+        }
+
+        if (lastState != wifiStatus || force) //just update the UI if status has been changed
         {
             lastState = wifiStatus;
             if (wifiStatus == WifiState_t::Wifi_Connected)
             {
                 lv_label_set_text_fmt(status_, LOC_WIFI_CONNECTED);
-                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, wifi_manager_->get_ip().c_str());
                 lv_obj_set_hidden(this->connect_button_, true);
             }
             else if (wifiStatus == WifiState_t::Wifi_Disconnected)
             {
                 lv_label_set_text(status_, LOC_WIFI_DISCONNECTED);
-                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, "--");
+                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, "--", 0);
                 lv_obj_set_hidden(this->connect_button_, !(wifi_manager_->get_configured_ssid() != "")); //if wifi isn't configured connect will not happen
             }
             else if (wifiStatus == WifiState_t::Wifi_Connecting)
             {
                 lv_label_set_text(status_, LOC_WIFI_CONNECTING);
-                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, "--");
+                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, "--", 0);
                 lv_obj_set_hidden(this->connect_button_, true);
             }
             else if (wifiStatus == WifiState_t::Wifi_Off)
             {
                 lv_label_set_text(status_, LOC_WIFI_OFF);
-                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_FMT, "--");
+                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, "--", 0);
                 lv_obj_set_hidden(this->connect_button_, !(wifi_manager_->get_configured_ssid() != "")); //if wifi isn't configured connect will not happen
             }
 
