@@ -238,7 +238,7 @@ private:
             {
                 if (!sk_socket_->get_token_request_pending())
                 {
-                    lv_label_set_text(status_label_, LOC_SIGNALK_CONNECTED);
+                    lv_label_set_text_fmt(status_label_, LOC_SIGNALK_CONNECTED_FMT, sk_socket_->get_handled_delta_count());
                 }
                 else
                 {

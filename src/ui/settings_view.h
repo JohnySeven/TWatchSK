@@ -89,6 +89,7 @@ protected:
     lv_obj_t *container;
     lv_obj_t *topBar;
     lv_obj_t *back;
+    const int spacing = 6; //defines default spacing between elements in layout, to make all spacing same on every page
 private:
     lv_obj_t *title;
     char *titleText;

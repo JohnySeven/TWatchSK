@@ -397,6 +397,10 @@ char *Gui::message_from_code(GuiMessageCode_t code)
         return LOC_SIGNALK_REQUEST_REJECTED;
     case GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED:
         return LOC_WIFI_LOST_CONNECTION;
+    case GuiMessageCode_t::GUI_WARN_WIFI_CONNECTION_FAILED:
+        return LOC_WIFI_ASSOC_FAIL;
+    case GuiMessageCode_t::GUI_WARN_SK_LOST_CONNECTION:
+        return LOC_SIGNALK_CONNECTION_LOST;
     default:
         return NULL;
     };
