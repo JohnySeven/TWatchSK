@@ -6,7 +6,7 @@
 #define LOC_WIFI_CONNECTED "Connected"
 #define LOC_WIFI_CONNECT "Connect"
 #define LOC_WIFI_CONFIG_SSID_FMT "Wifi: %s"
-#define LOC_WIFI_IP_FMT "IP: %s"
+#define LOC_WIFI_IP_RSSI_FMT "IP: %s, RSSI: %d dB"
 #define LOC_WIFI_CONNECTING "Connecting"
 #define LOC_WIFI_DISCONNECTED "Disconnected"
 #define LOC_WIFI_OFF "Off"

@@ -308,3 +308,15 @@ bool WifiManager::get_known_wifi_password(const String ssid, String &password)
 
     return ret;
 }
+
+int WifiManager::get_wifi_rssi()
+{
+    int ret = 0;
+    wifi_ap_record_t info;
+    if(esp_wifi_sta_get_ap_info(&info) == ESP_OK)
+    {
+        ret = info.rssi;
+    }
+
+    return ret;
+}
