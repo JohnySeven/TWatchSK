@@ -42,6 +42,7 @@ LV_FONT_DECLARE(roboto70);
 //LV_FONT_DECLARE(roboto40);
 LV_FONT_DECLARE(roboto30);
 //LV_IMG_DECLARE(bg_default);
+LV_FONT_DECLARE(lv_font_montserrat_22);
 LV_IMG_DECLARE(sk_status);
 LV_IMG_DECLARE(signalk_48px);
 LV_IMG_DECLARE(menu);
@@ -246,7 +247,6 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     lv_style_set_text_font(&timeStyle, LV_STATE_DEFAULT, &roboto70);
 
     timeLabel = lv_label_create(watch_face, NULL);
-    lv_obj_set_hidden(timeLabel, true); // BS: this should hide timeLabel until it's properly aligned, but it's not doing that
     lv_obj_add_style(timeLabel, LV_OBJ_PART_MAIN, &timeStyle);
 
     static lv_style_t timeSuffixStyle; // for am/pm and seconds
@@ -254,12 +254,12 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     lv_style_set_text_font(&timeSuffixStyle, LV_STATE_DEFAULT, &roboto30);
 
     timeSuffixLabel = lv_label_create(watch_face, NULL);
-    lv_obj_set_hidden(timeSuffixLabel, true); // BS: this should hide timeSuffixLabel until it's properly aligned, but it's not doing that
     lv_obj_add_style(timeSuffixLabel, LV_OBJ_PART_MAIN, &timeSuffixStyle);
 
     secondsLabel = lv_label_create(watch_face, NULL);
-    lv_obj_set_hidden(secondsLabel, true); // BS: this should hide secondsLabel until it's properly aligned, but it's not doing that
     lv_obj_add_style(secondsLabel, LV_OBJ_PART_MAIN, &timeSuffixStyle);
+
+    dayDateLabel = lv_label_create(watch_face, NULL);
 
     update_time();
 
@@ -271,8 +271,9 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     lv_imgbtn_set_src(menuBtn, LV_BTN_STATE_CHECKED_PRESSED, &menu);
     twatchsk::update_imgbtn_color(menuBtn); // make the four little squares be the correct color for the theme
 
-    lv_obj_align(menuBtn, watch_face, LV_ALIGN_OUT_BOTTOM_MID, 0, -70);
+    lv_obj_align(menuBtn, watch_face, LV_ALIGN_OUT_BOTTOM_MID, 0, -100);
     menuBtn->user_data = this;
+
     lv_obj_set_event_cb(menuBtn, main_menu_event_cb);
 
     auto update_task = lv_task_create(lv_update_task, 1000, LV_TASK_PRIO_LOWEST, NULL);
@@ -326,40 +327,41 @@ void Gui::update_step_counter(uint32_t counter)
 
 void Gui::update_time()
 {
-    lv_obj_set_hidden(timeSuffixLabel, true);
     time_t now;
     struct tm info;
     char buf[64];
+    char day_date_buf[32];
     time(&now);
     localtime_r(&now, &info);
+
+    lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, -23, 15);
+
     if (time_24hour_format)
     {
-        strftime(buf, sizeof(buf), "%H:%M", &info);
-        lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 15);
-        lv_obj_set_hidden(timeLabel, false);
+        strftime(buf, sizeof(buf), "%H:%M", &info); // see http://www.cplusplus.com/reference/ctime/strftime/
+        strftime(day_date_buf, sizeof(day_date_buf), "%a %e %b, %G", &info); // day/month format
     }
     else
     {
         strftime(buf, sizeof(buf), "%I:%M", &info);
-        lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, -20, 15);
-        lv_obj_set_hidden(timeLabel, false);
+        strftime(day_date_buf, sizeof(day_date_buf), "%a %b %e, %G", &info); // month/day format
         if (info.tm_hour > 12)
         {
-            lv_label_set_text(timeSuffixLabel, "pm");
-            lv_obj_align(timeSuffixLabel, timeLabel, LV_ALIGN_OUT_RIGHT_MID, 2, 9);
-            lv_obj_set_hidden(timeSuffixLabel, false);
+            lv_label_set_text(timeSuffixLabel, "pm");;
         }
         else
         {
             lv_label_set_text(timeSuffixLabel, "am");
-            lv_obj_align(timeSuffixLabel, timeLabel, LV_ALIGN_OUT_RIGHT_MID, 2, -15);
-            lv_obj_set_hidden(timeSuffixLabel, false);
         }
+        lv_obj_align(timeSuffixLabel, timeLabel, LV_ALIGN_OUT_RIGHT_MID, 3, -22);
     }
     lv_label_set_text(this->timeLabel, buf);
-    lv_obj_align(secondsLabel, timeLabel, LV_ALIGN_OUT_BOTTOM_MID, 30, -10);
+    lv_obj_align(secondsLabel, timeLabel, LV_ALIGN_OUT_RIGHT_MID, 4, 13);
     lv_label_set_text_fmt(secondsLabel, ":%.2d", info.tm_sec);
-    lv_obj_set_hidden(secondsLabel, false);
+
+    lv_obj_set_style_local_text_font(dayDateLabel, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_22);
+    lv_obj_align(dayDateLabel, watch_face, LV_ALIGN_OUT_BOTTOM_MID, 0, -30);
+    lv_label_set_text(dayDateLabel, day_date_buf);
 }
 
 void Gui::update_battery_level()
