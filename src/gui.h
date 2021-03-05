@@ -67,6 +67,7 @@ private:
     lv_obj_t *secondsLabel = NULL;
     lv_obj_t *menuBtn = NULL;
     lv_obj_t *watch_face = NULL;
+    lv_obj_t *dayDateLabel = NULL;
     MenuBar *menuBars = NULL;
     StatusBar *bar = NULL;
     DynamicGui*dynamic_gui = NULL;
