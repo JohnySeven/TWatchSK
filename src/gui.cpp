@@ -340,6 +340,7 @@ void Gui::update_time()
     {
         strftime(buf, sizeof(buf), "%H:%M", &info); // see http://www.cplusplus.com/reference/ctime/strftime/
         strftime(day_date_buf, sizeof(day_date_buf), "%a %e %b, %G", &info); // day/month format
+        lv_obj_set_hidden(timeSuffixLabel, true); //hide the suffix label as it's not needed
     }
     else
     {
