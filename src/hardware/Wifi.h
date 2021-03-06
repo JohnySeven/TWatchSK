@@ -17,8 +17,8 @@ enum WifiState_t
 
 struct KnownWifi_t
 {
-    String ssid;
-    String password;
+    String known_ssid;
+    String known_password;
 };
 
 class WifiManager : public Configurable, public SystemObject, public Observable<WifiState_t>
@@ -31,12 +31,12 @@ public:
     String get_ip() { return ip; }
     String get_configured_ssid ()
     {
-        return ssid;
+        return ssid_;
     }
     WifiState_t get_status() { return value; }
     bool is_enabled() { return enabled; }
     bool is_connected() { return value == WifiState_t::Wifi_Connected; }
-    bool is_configured() { return this->ssid != ""; }
+    bool is_configured() { return this->ssid_ != ""; }
     void set_ip(String ip) { this->ip = ip; }
     void update_status(WifiState_t value) { Observable<WifiState_t>::emit(value); }
     void setup(String ssid, String password);
@@ -52,8 +52,8 @@ private:
     void initialize();
     virtual void load_config_from_file(const JsonObject &json) override final;
     virtual void save_config_to_file(JsonObject &json) override final;
-    String ssid;
-    String password;
+    String ssid_;
+    String password_;
     String ip = "";
     bool enabled = false;
     bool connected = false;

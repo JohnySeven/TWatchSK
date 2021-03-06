@@ -70,11 +70,11 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
         manager->set_ip(String(buff));
         manager->update_status(Wifi_Connected);
 
-        if (!manager->is_known_wifi(manager->ssid)) //add wifi to know list - we need to save it later on
+        if (!manager->is_known_wifi(manager->ssid_)) //add wifi to know list - we need to save it later on
         {
             KnownWifi_t wifi;
-            wifi.ssid = manager->ssid;
-            wifi.password = manager->password;
+            wifi.known_ssid = manager->ssid_;
+            wifi.known_password = manager->password_;
             manager->known_wifi_list_.push_back(wifi);
         }
     }
@@ -156,11 +156,11 @@ WifiManager::WifiManager() : Configurable("/config/wifi"), SystemObject("wifi"),
 
 void WifiManager::on()
 {
-    if (!ssid.isEmpty())
+    if (!ssid_.isEmpty())
     {
         enabled = true;
-        wifi_enable(ssid.c_str(), password.c_str());
-        ESP_LOGI(WIFI_TAG, "WiFi has been enabled, SSID=%s.", ssid.c_str());
+        wifi_enable(ssid_.c_str(), password_.c_str());
+        ESP_LOGI(WIFI_TAG, "WiFi has been enabled, SSID=%s", ssid_.c_str());
         update_status(Wifi_Connecting);
     }
     else
@@ -183,17 +183,17 @@ void WifiManager::off()
 
 void WifiManager::save_config_to_file(JsonObject &json)
 {
-    ESP_LOGI(WIFI_TAG, "Storing SSID %s to JSON.", ssid.c_str());
+    ESP_LOGI(WIFI_TAG, "Storing SSID %s to JSON.", ssid_.c_str());
     json["enabled"] = enabled;
-    json["ssid"] = ssid;
-    json["password"] = password;
+    json["ssid"] = ssid_;
+    json["password"] = password_;
     JsonArray knownList = json.createNestedArray("known");
     for (int i = 0; i < known_wifi_list_.size(); i++)
     {
         JsonObject known = knownList.createNestedObject();
         auto wifiInfo = known_wifi_list_.at(i);
-        known["ssid"] = wifiInfo.ssid;
-        known["password"] = wifiInfo.password;
+        known["ssid"] = wifiInfo.known_ssid;
+        known["password"] = wifiInfo.known_password;
     }
 }
 
@@ -209,8 +209,8 @@ void WifiManager::load_config_from_file(const JsonObject &json)
         for (JsonObject known : knownList)
         {
             KnownWifi_t wifiInfo;
-            wifiInfo.ssid = known["ssid"].as<String>();
-            wifiInfo.password = known["password"].as<String>();
+            wifiInfo.known_ssid = known["ssid"].as<String>();
+            wifiInfo.known_password = known["password"].as<String>();
             known_wifi_list_.push_back(wifiInfo);
         }
     }
@@ -218,8 +218,8 @@ void WifiManager::load_config_from_file(const JsonObject &json)
 
 void WifiManager::setup(String ssid, String password)
 {
-    this->ssid = ssid;
-    this->password = password;
+    this->ssid_ = ssid;
+    this->password_ = password;
     ESP_LOGI(WIFI_TAG, "SSID has been updated to %s with password ******.", ssid.c_str());
 }
 
@@ -253,7 +253,7 @@ const wifi_ap_record_t WifiManager::get_found_wifi(int index)
 
 void WifiManager::connect()
 {
-    if (ssid != "")
+    if (ssid_ != "")
     {
         //if wifi is off enable it
         if (get_status() == WifiState_t::Wifi_Off)
@@ -264,14 +264,14 @@ void WifiManager::connect()
         }
         else if (get_status() == WifiState_t::Wifi_Disconnected)
         {
-            wifi_enable(ssid.c_str(), password.c_str());
+            wifi_enable(ssid_.c_str(), password_.c_str());
         }
         else if (get_status() == WifiState_t::Wifi_Connecting || get_status() == WifiState_t::Wifi_Connected)
         {
             disconnecting = true;
             disable_wifi();
             delay(250); //let the driver stop wifi
-            wifi_enable(ssid.c_str(), password.c_str());
+            wifi_enable(ssid_.c_str(), password_.c_str());
         }
     }
 }
@@ -282,7 +282,7 @@ bool WifiManager::is_known_wifi(const String ssid)
 
     for (KnownWifi_t wifi : known_wifi_list_)
     {
-        if (wifi.ssid == ssid)
+        if (wifi.known_ssid == ssid)
         {
             ret = true;
             break;
@@ -298,9 +298,9 @@ bool WifiManager::get_known_wifi_password(const String ssid, String &password)
 
     for (KnownWifi_t wifi : known_wifi_list_)
     {
-        if (wifi.ssid == ssid)
+        if (wifi.known_ssid == ssid)
         {
-            password = wifi.password;
+            password = wifi.known_password;
             ret = true;
             break;
         }
