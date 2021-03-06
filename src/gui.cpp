@@ -338,11 +338,13 @@ void Gui::update_time()
 
     if (time_24hour_format)
     {
+        lv_obj_set_hidden(timeSuffixLabel, true);
         strftime(buf, sizeof(buf), "%H:%M", &info); // see http://www.cplusplus.com/reference/ctime/strftime/
         strftime(day_date_buf, sizeof(day_date_buf), "%a %e %b, %G", &info); // day/month format
     }
     else
     {
+        lv_obj_set_hidden(timeSuffixLabel, false);
         strftime(buf, sizeof(buf), "%I:%M", &info);
         strftime(day_date_buf, sizeof(day_date_buf), "%a %b %e, %G", &info); // month/day format
         if (info.tm_hour > 12)
