@@ -87,7 +87,6 @@ void setup()
     hardware->initialize(ttgo);
     //Initialize lvgl
     ttgo->lvgl_begin();
-
     ESP_LOGI(TAG, "LVGL initialized!");
     //Synchronize time to system time
     ttgo->rtc->syncToSystem();

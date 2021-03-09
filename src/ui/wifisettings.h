@@ -5,6 +5,14 @@
 #include "loader.h"
 #include "wifilist.h"
 #include "ui_ticker.h"
+#include "system/async_dispatcher.h"
+
+enum WifiSettingsState_t
+{
+    WiS_Normal,          //showing status
+    WiS_WifiScan,        //showing loader with scanning wifi
+    WiS_ConnectingToWifi //connecting to wifi network
+};
 
 class WifiSettings : public SettingsView
 {
@@ -25,11 +33,11 @@ protected:
 
         if (wifi_manager_->get_status() == WifiState_t::Wifi_Off)
         {
-            lv_switch_off(enable_switch_, false);
+            lv_switch_off(enable_switch_, LV_ANIM_OFF);
         }
         else
         {
-            lv_switch_on(enable_switch_, false);
+            lv_switch_on(enable_switch_, LV_ANIM_OFF);
         }
 
         lv_obj_set_event_cb(enable_switch_, __enable_switch_event);
@@ -46,8 +54,8 @@ protected:
         lv_obj_align(wifi_ip_, status_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, spacing);
         //connect button - visible only if not connected - just guide for user to enable wifi
         connect_button_ = lv_btn_create(parent, NULL);
-        lv_obj_align_y(connect_button_, wifi_ip_, LV_ALIGN_OUT_BOTTOM_LEFT, spacing);//first align the top with label above + 4pix
-        lv_obj_align_x(connect_button_, parent, LV_ALIGN_IN_BOTTOM_MID, 0); //then center the button in parent
+        lv_obj_align_y(connect_button_, wifi_ip_, LV_ALIGN_OUT_BOTTOM_LEFT, spacing * 2); //first align the top with label above + 4pix
+        lv_obj_align_x(connect_button_, parent, LV_ALIGN_IN_BOTTOM_MID, 0);               //then center the button in parent
         auto connectLabel = lv_label_create(connect_button_, NULL);
         lv_label_set_text(connectLabel, LOC_WIFI_CONNECT);
         connect_button_->user_data = this;
@@ -63,13 +71,17 @@ protected:
         update_wifi_info(true);
 
         status_update_ticker_ = new UITicker(1000, [this]() {
-            if (!this->scanning_wifi_)
+            if (state_ == WifiSettingsState_t::WiS_Normal)
             {
-                this->update_wifi_info();
+                update_wifi_info();
             }
-            else
+            else if (state_ == WifiSettingsState_t::WiS_WifiScan)
             {
-                this->scan_wifi_check();
+                scan_wifi_check();
+            }
+            else if (state_ == WifiSettingsState_t::WiS_ConnectingToWifi)
+            {
+                wifi_connect_check();
             }
         });
     }
@@ -78,7 +90,10 @@ protected:
     {
         delete status_update_ticker_;
         status_update_ticker_ = NULL;
-        save_wifi_settings();
+        if(wifi_changed_)
+        {
+            save_wifi_settings();
+        }
         return true;
     }
 
@@ -88,13 +103,21 @@ protected:
         lv_label_set_text_fmt(wifi_name_, LOC_WIFI_CONFIG_SSID_FMT, ssid);
     }
 
-    void set_password(const char *password)
+    void set_password_and_connect(const char *password)
     {
-        strcpy(password_, password);
-        wifi_changed_ = true;
+        if (state_ != WifiSettingsState_t::WiS_ConnectingToWifi) //JD: Workaround, something is wrong as this is called 2x, will fix that later
+        {
+            strcpy(password_, password);
+            wifi_changed_ = true;
 
-        wifi_manager_->setup(String(selected_ap_), String(password));
-        wifi_manager_->connect();
+            ESP_LOGI(SETTINGS_TAG, "Connecting to wifi %s", selected_ap_);
+
+            wifi_manager_->setup(String(selected_ap_), String(password));
+            wifi_manager_->connect();
+
+            state_ = WifiSettingsState_t::WiS_ConnectingToWifi;
+            loader_ = new Loader(LOC_WIFI_CONNECTING);
+        }
     }
 
 private:
@@ -106,12 +129,12 @@ private:
     lv_obj_t *status_;
     lv_obj_t *connect_button_;
     lv_obj_t *scan_button_;
-    Loader *wifi_scan_loader_;
+    Loader *loader_;
     UITicker *status_update_ticker_;
     char selected_ap_[64];
     char password_[64];
-    bool scanning_wifi_ = false;
     bool wifi_changed_ = false;
+    WifiSettingsState_t state_ = WifiSettingsState_t::WiS_Normal;
 
     static void __enable_switch_event(lv_obj_t *obj, lv_event_t event)
     {
@@ -145,8 +168,8 @@ private:
     {
         if (wifi_manager_->scan_wifi())
         {
-            wifi_scan_loader_ = new Loader(LOC_WIFI_SCANNING_PROGRESS);
-            scanning_wifi_ = true;
+            loader_ = new Loader(LOC_WIFI_SCANNING_PROGRESS);
+            state_ = WifiSettingsState_t::WiS_WifiScan;
         }
     }
 
@@ -154,9 +177,9 @@ private:
     {
         if (wifi_manager_->is_scan_complete())
         {
-            delete wifi_scan_loader_;
-            wifi_scan_loader_ = NULL;
-            scanning_wifi_ = false;
+            delete loader_;
+            loader_ = NULL;
+            state_ = WifiSettingsState_t::WiS_Normal;
             ESP_LOGI(SETTINGS_TAG, "Scan completed with %d found WiFi APs", wifi_manager_->found_wifi_count());
 
             auto wifiList = new WifiList();
@@ -180,7 +203,7 @@ private:
                     String password;
                     if (wifi_manager_->get_known_wifi_password(ssid, password))
                     {
-                        set_password(password.c_str());
+                        set_password_and_connect(password.c_str());
                     }
                     else
                     {
@@ -189,7 +212,7 @@ private:
                             if (passwordPicker->is_success())
                             {
                                 ESP_LOGI(SETTINGS_TAG, "User password input.");
-                                set_password(passwordPicker->get_text());
+                                set_password_and_connect(passwordPicker->get_text());
                             }
                             else
                             {
@@ -208,41 +231,86 @@ private:
         }
     }
 
+    void wifi_connect_check()
+    {
+        auto wifi_status = wifi_manager_->get_status();
+        ESP_LOGI(SETTINGS_TAG, "Connecting to Wifi status=%d", (int)wifi_status);
+
+        if (wifi_status != WifiState_t::Wifi_Connecting)
+        {
+            delete loader_;
+            loader_ = NULL;
+            state_ = WifiSettingsState_t::WiS_Normal;
+
+            if (wifi_status == WifiState_t::Wifi_Connected)
+            {
+                show_message(LOC_WIFI_CONNECT_SUCCESS);
+            }
+            else
+            {
+                //erase wifi settings
+                wifi_manager_->setup("", "");
+            }
+        }
+    }
+
     void update_wifi_info(bool force = false)
     {
         static WifiState_t lastState = WifiState_t::Wifi_Off;
         auto wifiStatus = wifi_manager_->get_status();
+        auto isConfigured = wifi_manager_->is_configured();
 
-        if(wifiStatus == WifiState_t::Wifi_Connected) //update IP and RSSI regardless of the other values
+        if (wifiStatus == WifiState_t::Wifi_Connected) //update IP and RSSI regardless of the other values
         {
             lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, wifi_manager_->get_ip().c_str(), wifi_manager_->get_wifi_rssi());
         }
 
-        if (lastState != wifiStatus || force) //just update the UI if status has been changed
+        if (lastState != wifiStatus || force) //just update the UI if status has been changed or force = true
         {
+            ESP_LOGI(SETTINGS_TAG, "Wifi status update %d=>%d (force:%d)", lastState, wifiStatus, force);
+
             lastState = wifiStatus;
             if (wifiStatus == WifiState_t::Wifi_Connected)
             {
                 lv_label_set_text_fmt(status_, LOC_WIFI_CONNECTED);
                 lv_obj_set_hidden(this->connect_button_, true);
+                lv_obj_set_hidden(this->scan_button_, false);
+                update_silently_enable_switch(true);
             }
             else if (wifiStatus == WifiState_t::Wifi_Disconnected)
             {
                 lv_label_set_text(status_, LOC_WIFI_DISCONNECTED);
                 lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, "--", 0);
-                lv_obj_set_hidden(this->connect_button_, !(wifi_manager_->get_configured_ssid() != "")); //if wifi isn't configured connect will not happen
+                lv_obj_set_hidden(this->connect_button_, !isConfigured); //if wifi isn't configured connect will not happen
+                lv_obj_set_hidden(this->scan_button_, false);
+                update_silently_enable_switch(true);
             }
             else if (wifiStatus == WifiState_t::Wifi_Connecting)
             {
                 lv_label_set_text(status_, LOC_WIFI_CONNECTING);
                 lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, "--", 0);
                 lv_obj_set_hidden(this->connect_button_, true);
+                lv_obj_set_hidden(this->scan_button_, true); //if Wifi is connecting to AP it's not allowed to do scan at all
+                update_silently_enable_switch(true);
             }
             else if (wifiStatus == WifiState_t::Wifi_Off)
             {
-                lv_label_set_text(status_, LOC_WIFI_OFF);
-                lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, "--", 0);
-                lv_obj_set_hidden(this->connect_button_, !(wifi_manager_->get_configured_ssid() != "")); //if wifi isn't configured connect will not happen
+                if (isConfigured)
+                {
+                    lv_label_set_text(status_, LOC_WIFI_OFF);
+                    lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, "--", 0);
+                    lv_obj_set_hidden(this->connect_button_, !(wifi_manager_->get_configured_ssid() != "")); //if wifi isn't configured connect will not happen
+                    lv_obj_set_hidden(this->scan_button_, true);
+                    update_silently_enable_switch(false);
+                }
+                else
+                {
+                    lv_label_set_text(status_, LOC_WIFI_NO_CONFIG);
+                    lv_label_set_text(wifi_ip_, LOC_WIFI_PLEASE_CONFIGURE);
+                    lv_obj_set_hidden(this->connect_button_, false); //if wifi isn't configured connect will not happen
+                    lv_obj_set_hidden(this->scan_button_, true);
+                    update_silently_enable_switch(false);
+                }
             }
 
             ESP_LOGI("WIFI", "Status update %d", wifiStatus);
@@ -251,18 +319,30 @@ private:
 
     void save_wifi_settings()
     {
-        ESP_LOGI(SETTINGS_TAG, "Saving WiFi settings...");
-        wifi_manager_->save();
-        ESP_LOGI(SETTINGS_TAG, "WiFi settings saved!");
+        twatchsk::run_async("Wifi save", [this]() {
+            ESP_LOGI(SETTINGS_TAG, "Saving WiFi settings...");
+            this->wifi_manager_->save();
+            ESP_LOGI(SETTINGS_TAG, "WiFi settings saved!");
+        });
     }
 
-    void check_enabled_if_not()
+    /**
+     * Updates Enable switch to value, for update time it disables callback (will not trigger on or off on wifi manager)
+     **/
+    void update_silently_enable_switch(bool value)
     {
-        if (!lv_switch_get_state(enable_switch_))
+        if (lv_switch_get_state(enable_switch_) != value)
         {
             //we need to bypass enable switch callback
             lv_obj_set_event_cb(enable_switch_, NULL);
-            lv_switch_on(enable_switch_, LV_ANIM_ON);
+            if (value)
+            {
+                lv_switch_on(enable_switch_, LV_ANIM_ON);
+            }
+            else
+            {
+                lv_switch_off(enable_switch_, LV_ANIM_OFF);
+            }
             lv_obj_set_event_cb(enable_switch_, __enable_switch_event);
         }
     }
@@ -272,8 +352,14 @@ private:
         if (event == LV_EVENT_CLICKED)
         {
             auto settings = ((WifiSettings *)obj->user_data);
-            settings->check_enabled_if_not();
-            settings->wifi_manager_->connect();
+            if (settings->wifi_manager_->is_configured())
+            {
+                settings->wifi_manager_->connect();
+            }
+            else
+            {
+                settings->scan_wifi_list();
+            }
         }
     }
 };

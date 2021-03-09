@@ -3,7 +3,7 @@
 #include "functional"
 #define SETTINGS_TOP_BAR_HEIGHT 42
 LV_IMG_DECLARE(exit_32px);
-const char * SETTINGS_TAG = "SETTINGS";
+const char *SETTINGS_TAG = "SETTINGS";
 
 class SettingsView : View
 {
@@ -30,7 +30,7 @@ public:
         lv_obj_add_style(container, LV_OBJ_PART_MAIN, &plStyle);
         lv_cont_set_layout(container, LV_LAYOUT_ROW_TOP);
 
-        //define style of top bar - do not change colors - these are theme defined!        
+        //define style of top bar - do not change colors - these are theme defined!
         static lv_style_t barStyle;
         lv_style_copy(&barStyle, &plStyle);
         lv_style_set_border_width(&barStyle, LV_OBJ_PART_MAIN, 2);
@@ -40,14 +40,14 @@ public:
         lv_obj_set_size(topBar, LV_HOR_RES, SETTINGS_TOP_BAR_HEIGHT);
         lv_obj_set_pos(topBar, 0, 0);
         lv_obj_add_style(topBar, LV_OBJ_PART_MAIN, &barStyle); //BS: barStyle is currently just a copy of plStyle
-        
+
         back = lv_imgbtn_create(topBar, NULL);
         lv_imgbtn_set_src(back, LV_BTN_STATE_RELEASED, &exit_32px);
         lv_imgbtn_set_src(back, LV_BTN_STATE_PRESSED, &exit_32px);
         lv_imgbtn_set_src(back, LV_BTN_STATE_CHECKED_RELEASED, &exit_32px);
         lv_imgbtn_set_src(back, LV_BTN_STATE_CHECKED_PRESSED, &exit_32px);
         twatchsk::update_imgbtn_color(back);
-        
+
         lv_obj_set_click(back, true);
         lv_obj_set_ext_click_area(back, 0, 20, 0, 20);
         lv_obj_align(back, topBar, LV_ALIGN_IN_LEFT_MID, 6, 0);
@@ -86,6 +86,23 @@ public:
 protected:
     virtual void show_internal(lv_obj_t *parent){};
     virtual bool hide_internal() { return true; }
+
+    /**
+     * shows message box with message and if close_delay != 0 it will auto dismiss the message box in miliseconds.
+     */
+    void show_message(const char *message, int close_delay = 0)
+    {
+        static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
+        lv_obj_t *mbox = lv_msgbox_create(lv_scr_act(), NULL);
+        lv_msgbox_set_text(mbox, message);
+        lv_msgbox_add_btns(mbox, btns);
+        if(close_delay > 0)
+        {
+            lv_msgbox_start_auto_close(mbox, close_delay);
+        }
+        lv_obj_set_width(mbox, 200);
+        lv_obj_align(mbox, NULL, LV_ALIGN_CENTER, 0, 0);
+    }
     lv_obj_t *container;
     lv_obj_t *topBar;
     lv_obj_t *back;

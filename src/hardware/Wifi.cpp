@@ -47,19 +47,14 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
                 }
 
                 //this needs to be run async out of wifi task
-                twatchsk::run_async("Wifi off", [manager]
-                {
+                twatchsk::run_async("Wifi off", [manager] {
                     manager->off();
                 });
-
-                
             }
-
         }
 
         manager->update_status(Wifi_Disconnected);
         manager->disconnecting = false;
-        
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
@@ -160,23 +155,24 @@ void WifiManager::on()
     {
         enabled = true;
         wifi_enable(ssid.c_str(), password.c_str());
-        ESP_LOGI(WIFI_TAG, "WiFi has been enabled, SSID=%s.", ssid.c_str());
+        ESP_LOGI(WIFI_TAG, "Wifi has been enabled, SSID=%s.", ssid.c_str());
         update_status(Wifi_Connecting);
     }
     else
     {
         ESP_LOGW(WIFI_TAG, "No SSID is configured!");
         this->off();
+        this->configured = false;
     }
 }
 
-void WifiManager::off()
+void WifiManager::off(bool force)
 {
-    if (enabled)
+    if (enabled || force)
     {
         enabled = false;
         disable_wifi();
-        ESP_LOGI(WIFI_TAG, "WiFi has been disabled.");
+        ESP_LOGI(WIFI_TAG, "Wifi has been disabled.");
         this->update_status(WifiState_t::Wifi_Off);
     }
 }
@@ -221,6 +217,7 @@ void WifiManager::setup(String ssid, String password)
     this->ssid = ssid;
     this->password = password;
     ESP_LOGI(WIFI_TAG, "SSID has been updated to %s with password ******.", ssid.c_str());
+    this->configured = !ssid.isEmpty();
 }
 
 bool WifiManager::scan_wifi()
@@ -255,24 +252,18 @@ void WifiManager::connect()
 {
     if (ssid != "")
     {
-        //if wifi is off enable it
-        if (get_status() == WifiState_t::Wifi_Off)
-        {
-            disable_wifi();
-            delay(250);
-            on();
-        }
-        else if (get_status() == WifiState_t::Wifi_Disconnected)
-        {
-            wifi_enable(ssid.c_str(), password.c_str());
-        }
-        else if (get_status() == WifiState_t::Wifi_Connecting || get_status() == WifiState_t::Wifi_Connected)
+        if (get_status() == WifiState_t::Wifi_Connecting || get_status() == WifiState_t::Wifi_Connected)
         {
             disconnecting = true;
-            disable_wifi();
-            delay(250); //let the driver stop wifi
-            wifi_enable(ssid.c_str(), password.c_str());
         }
+
+        off(true); //let's force calling disable wifi
+        delay(100); //let the driver stop wifi
+        on();
+    }
+    else
+    {
+        configured = false;
     }
 }
 

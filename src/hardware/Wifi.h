@@ -9,10 +9,10 @@
 
 enum WifiState_t
 {
-    Wifi_Off = 0,
-    Wifi_Disconnected = 1,
-    Wifi_Connecting = 2,
-    Wifi_Connected = 3
+    Wifi_Off,
+    Wifi_Disconnected,
+    Wifi_Connecting,
+    Wifi_Connected
 };
 
 struct KnownWifi_t
@@ -26,7 +26,7 @@ class WifiManager : public Configurable, public SystemObject, public Observable<
 public:
     WifiManager();
     void on();
-    void off();
+    void off(bool force = false);
     void connect();
     String get_ip() { return ip; }
     String get_configured_ssid ()
@@ -36,11 +36,10 @@ public:
     WifiState_t get_status() { return value; }
     bool is_enabled() { return enabled; }
     bool is_connected() { return value == WifiState_t::Wifi_Connected; }
-    bool is_configured() { return this->ssid != ""; }
     void set_ip(String ip) { this->ip = ip; }
     void update_status(WifiState_t value) { Observable<WifiState_t>::emit(value); }
     void setup(String ssid, String password);
-
+    bool is_configured() { return configured; }
     bool scan_wifi();
     bool is_scan_complete();
     int found_wifi_count();
@@ -59,6 +58,7 @@ private:
     bool connected = false;
     bool initialized = false;
     bool disconnecting = false;
+    bool configured = false;
     static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                    int32_t event_id, void *event_data);
     void clear_wifi_list();
