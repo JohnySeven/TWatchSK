@@ -44,7 +44,7 @@ protected:
 
         //show configured wifi name
         wifi_name_ = lv_label_create(parent, NULL);
-        lv_label_set_text_fmt(wifi_name_, LOC_WIFI_CONFIG_SSID_FMT, wifi_manager_->get_configured_ssid());
+        lv_label_set_text_fmt(wifi_name_, LOC_WIFI_CONFIG_SSID_FMT, wifi_manager_->get_configured_ssid().c_str());
         lv_obj_set_pos(wifi_name_, spacing, spacing);
         //show wifi current status
         status_ = lv_label_create(parent, NULL);
