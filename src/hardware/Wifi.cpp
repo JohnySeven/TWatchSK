@@ -154,8 +154,8 @@ void WifiManager::on()
     if (!ssid_.isEmpty())
     {
         enabled = true;
-        wifi_enable(ssid.c_str(), password.c_str());
-        ESP_LOGI(WIFI_TAG, "Wifi has been enabled, SSID=%s.", ssid.c_str());
+        wifi_enable(ssid_.c_str(), password_.c_str());
+        ESP_LOGI(WIFI_TAG, "Wifi has been enabled, SSID=%s.", ssid_.c_str());
         update_status(Wifi_Connecting);
     }
     else

@@ -19,7 +19,7 @@
 #define LOC_KEYBOARD_DEL "Del"
 #define LOC_WIFI_PASSWORD_PROMPT "Type password"
 #define LOC_WIFI_LOST_CONNECTION "Wifi has lost connection to AP!"
-#define LOC_WIFI_ASSOC_FAIL "Unable to connect to Wifi Your password was incorrect or Wifi is out of the range."
+#define LOC_WIFI_ASSOC_FAIL "Can't connect to Wifi. Incorrect password, or out of range."
 #define LOC_MESSAGEBOX_OK "OK"
 #define LOC_SETTINGS_MENU "Watch settings"
 #define LOC_SIGNALK_SETTINGS "Signal K settings"
