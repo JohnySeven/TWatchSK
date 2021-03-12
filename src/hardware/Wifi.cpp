@@ -214,10 +214,10 @@ void WifiManager::load_config_from_file(const JsonObject &json)
 
 void WifiManager::setup(String ssid, String password)
 {
-    this->ssid_ = ssid;
-    this->password_ = password;
+    ssid_ = ssid;
+    password_ = password;
     ESP_LOGI(WIFI_TAG, "SSID has been updated to %s with password ******.", ssid.c_str());
-    this->configured = !ssid.isEmpty();
+    configured = !ssid.isEmpty();
 }
 
 bool WifiManager::scan_wifi()
@@ -229,11 +229,22 @@ bool WifiManager::scan_wifi()
         initialize();
         clear_wifi_list();
         scan_done = false;
-        ESP_LOGI(WIFI_TAG, "Scanning nearby wifi...");
-        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-        ESP_ERROR_CHECK(esp_wifi_start());
-        ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, false));
-        ret = true;
+        ESP_LOGI(WIFI_TAG, "Scanning nearby Wifi state=%d...", (int)value);
+        if (value == WifiState_t::Wifi_Connected)
+        {
+            ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, false));
+            ret = true;
+        }
+        else if (value == WifiState_t::Wifi_Disconnected || value == WifiState_t::Wifi_Off)
+        {
+            ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+            ESP_ERROR_CHECK(esp_wifi_start());
+            delay(150);
+            ESP_ERROR_CHECK(esp_wifi_disconnect());
+            delay(150);
+            ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, false));
+            ret = true;
+        }
     }
     else
     {
@@ -257,7 +268,7 @@ void WifiManager::connect()
             disconnecting = true;
         }
 
-        off(true); //let's force calling disable wifi
+        off(true);  //let's force calling disable wifi
         delay(100); //let the driver stop wifi
         on();
     }
@@ -304,7 +315,7 @@ int WifiManager::get_wifi_rssi()
 {
     int ret = 0;
     wifi_ap_record_t info;
-    if(esp_wifi_sta_get_ap_info(&info) == ESP_OK)
+    if (esp_wifi_sta_get_ap_info(&info) == ESP_OK)
     {
         ret = info.rssi;
     }

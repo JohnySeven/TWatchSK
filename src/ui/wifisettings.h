@@ -250,6 +250,9 @@ private:
             {
                 //erase wifi settings
                 wifi_manager_->setup("", "");
+                set_ssid("");
+                strcpy(password_, "");
+                update_wifi_info(true);
             }
         }
     }
@@ -273,24 +276,24 @@ private:
             if (wifiStatus == WifiState_t::Wifi_Connected)
             {
                 lv_label_set_text_fmt(status_, LOC_WIFI_CONNECTED);
-                lv_obj_set_hidden(this->connect_button_, true);
-                lv_obj_set_hidden(this->scan_button_, false);
+                lv_obj_set_hidden(connect_button_, true);
+                lv_obj_set_hidden(scan_button_, false);
                 update_silently_enable_switch(true);
             }
             else if (wifiStatus == WifiState_t::Wifi_Disconnected)
             {
                 lv_label_set_text(status_, LOC_WIFI_DISCONNECTED);
                 lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, "--", 0);
-                lv_obj_set_hidden(this->connect_button_, !isConfigured); //if wifi isn't configured connect will not happen
-                lv_obj_set_hidden(this->scan_button_, false);
+                lv_obj_set_hidden(connect_button_, !isConfigured); //if wifi isn't configured connect will not happen
+                lv_obj_set_hidden(scan_button_, false);
                 update_silently_enable_switch(true);
             }
             else if (wifiStatus == WifiState_t::Wifi_Connecting)
             {
                 lv_label_set_text(status_, LOC_WIFI_CONNECTING);
                 lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, "--", 0);
-                lv_obj_set_hidden(this->connect_button_, true);
-                lv_obj_set_hidden(this->scan_button_, true); //if Wifi is connecting to AP it's not allowed to do scan at all
+                lv_obj_set_hidden(connect_button_, true);
+                lv_obj_set_hidden(scan_button_, true); //if Wifi is connecting to AP it's not allowed to do scan at all
                 update_silently_enable_switch(true);
             }
             else if (wifiStatus == WifiState_t::Wifi_Off)
@@ -299,16 +302,16 @@ private:
                 {
                     lv_label_set_text(status_, LOC_WIFI_OFF);
                     lv_label_set_text_fmt(wifi_ip_, LOC_WIFI_IP_RSSI_FMT, "--", 0);
-                    lv_obj_set_hidden(this->connect_button_, !(wifi_manager_->get_configured_ssid() != "")); //if wifi isn't configured connect will not happen
-                    lv_obj_set_hidden(this->scan_button_, true);
+                    lv_obj_set_hidden(connect_button_, false); //if wifi isn't configured connect will not happen
+                    lv_obj_set_hidden(scan_button_, false);
                     update_silently_enable_switch(false);
                 }
                 else
                 {
                     lv_label_set_text(status_, LOC_WIFI_NO_CONFIG);
                     lv_label_set_text(wifi_ip_, LOC_WIFI_PLEASE_CONFIGURE);
-                    lv_obj_set_hidden(this->connect_button_, false); //if wifi isn't configured connect will not happen
-                    lv_obj_set_hidden(this->scan_button_, true);
+                    lv_obj_set_hidden(connect_button_, false); //if wifi isn't configured connect will not happen
+                    lv_obj_set_hidden(scan_button_, true);
                     update_silently_enable_switch(false);
                 }
             }
