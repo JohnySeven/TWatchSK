@@ -163,7 +163,7 @@ const char *Keyboard::btnm_mapplus[10][23] = {
      "g", "h", "i", "\n",
      LV_SYMBOL_OK, LOC_KEYBOARD_DEL, LV_SYMBOL_LEFT, LV_SYMBOL_RIGHT, ""},
     {"j", "k", "l", "\n",
-     "n", "m", "o", "\n",
+     "m", "n", "o", "\n",
      "p", "q", "r", "\n",
      LV_SYMBOL_OK, LOC_KEYBOARD_DEL, LV_SYMBOL_LEFT, LV_SYMBOL_RIGHT, ""},
     {"s", "t", "u", "\n",

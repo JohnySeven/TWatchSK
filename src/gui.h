@@ -49,6 +49,8 @@ public:
         return bar;
     }
     void theme_updated();
+    const char* get_watch_name() { return watch_name; }
+    void set_watch_name(const char *new_name) { strcpy(watch_name, new_name); }
 
 private:
     static void lv_update_task(struct _lv_task_t *);
@@ -81,5 +83,6 @@ private:
     uint8_t display_brightness = 155; // only until it's first changed
     lv_point_t*tile_valid_points = NULL; //this is for tile navigation matrix to allow user navigation in multiple directions
     int tile_valid_points_count = 0; //number of matrix points
+    char watch_name[16] = "";
 };
 #endif /*__GUI_H */

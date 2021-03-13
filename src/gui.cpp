@@ -172,9 +172,27 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
 
         setupMenu->add_tile(LOC_WATCH_INFO_MENU, &info_48px, false, [gui]() {
             auto watchInfo = new WatchInfo(gui);
-            watchInfo->on_close([watchInfo]() {
+
+            // watch_name is saved to disk through GUI::watch_name. Retrieve it here:
+            watchInfo->set_watch_name(gui->get_watch_name());
+
+            // Define the callback function (on_close()). If the watch name
+            // changed while the Watch Info tile was up, save it.
+            watchInfo->on_close([watchInfo, gui]() {
+                
+                char* new_watch_name = watchInfo->get_watch_name();
+                if (strcmp(new_watch_name, "") != 0 // new_watch_name isn't blank
+                    &&            
+                    strcmp(gui->get_watch_name(), new_watch_name) != 0)  // and it has changed
+                {
+                    gui->set_watch_name(new_watch_name);
+                    gui->save();
+                }
                 delete watchInfo;
             });
+
+            // show() does a few things, then calls show_internal(), which defines
+            // the way this tile looks and acts.
             watchInfo->show(lv_scr_act());
         });
 
@@ -588,9 +606,18 @@ void Gui::load_config_from_file(const JsonObject &json)
     timezone_id = json["timezone"].as<int>();
     display_brightness = json["brightness"].as<int>();
     twatchsk::dark_theme_enabled = json["darktheme"].as<bool>();
+    char watchname[16] = "";
+    if (strcmp(watchname, json["watchname"].as<String>().c_str()) != 0) // saved name is not blank
+    {
+        strcpy(watch_name, json["watchname"].as<String>().c_str());
+    }
+    else
+    {
+        strcpy(watch_name, "Set watch name");
+    }    
 
-    ESP_LOGI("GUI", "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimezoneID=%d, Brightness=%d, DarkTheme=%d",
-              time_24hour_format, screen_timeout, timezone_id, display_brightness, twatchsk::dark_theme_enabled);
+    ESP_LOGI("GUI", "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimezoneID=%d, Brightness=%d, DarkTheme=%d, WatchName=%s",
+              time_24hour_format, screen_timeout, timezone_id, display_brightness, twatchsk::dark_theme_enabled, watch_name);
 }
 
 void Gui::save_config_to_file(JsonObject &json)
@@ -600,6 +627,7 @@ void Gui::save_config_to_file(JsonObject &json)
     json["timezone"] = timezone_id;
     json["brightness"] = display_brightness;
     json["darktheme"] = twatchsk::dark_theme_enabled;
+    json["watchname"] = watch_name;
 }
 
 void Gui::theme_updated()
