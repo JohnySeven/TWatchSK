@@ -42,6 +42,7 @@ LV_FONT_DECLARE(roboto70);
 //LV_FONT_DECLARE(roboto40);
 LV_FONT_DECLARE(roboto30);
 //LV_IMG_DECLARE(bg_default);
+LV_FONT_DECLARE(lv_font_montserrat_16);
 LV_FONT_DECLARE(lv_font_montserrat_22);
 LV_IMG_DECLARE(sk_status);
 LV_IMG_DECLARE(signalk_48px);
@@ -264,6 +265,9 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     lv_style_copy(&timeStyle, &mainStyle);
     lv_style_set_text_font(&timeStyle, LV_STATE_DEFAULT, &roboto70);
 
+    watchNameLabel = lv_label_create(watch_face, NULL);
+    lv_obj_set_style_local_text_font(watchNameLabel, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_16);
+
     timeLabel = lv_label_create(watch_face, NULL);
     lv_obj_add_style(timeLabel, LV_OBJ_PART_MAIN, &timeStyle);
 
@@ -352,7 +356,10 @@ void Gui::update_time()
     time(&now);
     localtime_r(&now, &info);
 
-    lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, -23, 15);
+    lv_obj_align(watchNameLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 3);
+    lv_label_set_text(watchNameLabel, get_watch_name());
+
+    lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, -23, 25); //BS: was -23, 15 before adding Watch Name above it. -23, 30 with montserrate_22 for WatchName
 
     if (time_24hour_format)
     {
