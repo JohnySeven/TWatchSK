@@ -47,9 +47,15 @@ protected:
         find_button_label_ = lv_label_create(find_button_, NULL);
         lv_label_set_text(find_button_label_, LOC_SIGNALK_FIND_SERVER);
         lv_obj_align(find_button_, parent, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
-        //lv_obj_set_hidden(find_button_, true);
         find_button_->user_data = this;
         lv_obj_set_event_cb(find_button_, __scan_event);
+        //reset token button - only visible if token is present
+        token_reset_button_ = lv_btn_create(parent, NULL);
+        lv_obj_align(token_reset_button_, find_button_, LV_ALIGN_OUT_TOP_MID, 0, -5);
+        auto resetLabel = lv_label_create(token_reset_button_, NULL);
+        lv_label_set_text(resetLabel, LOC_SIGNALK_TOKEN_RESET);
+        token_reset_button_->user_data = this;
+        lv_obj_set_event_cb(token_reset_button_, __token_reset_event);
         //update current configuration to class variables
         server_address_ = sk_socket_->get_server_address();
         server_port_ = sk_socket_->get_server_port();
@@ -116,6 +122,7 @@ private:
     lv_obj_t *server_address_label_;
     lv_obj_t *server_port_button_;
     lv_obj_t *server_port_label_;
+    lv_obj_t *token_reset_button_;
     bool server_search_running_ = false;
     bool server_search_completed_ = false;
     Loader *search_loader_ = NULL;
@@ -167,6 +174,15 @@ private:
         {
             auto settings = ((SignalKSettings *)obj->user_data);
             settings->find_sk_server();
+        }
+    }
+
+    static void __token_reset_event(lv_obj_t *obj, lv_event_t event)
+    {
+        if (event == LV_EVENT_CLICKED)
+        {
+            auto settings = ((SignalKSettings *)obj->user_data);
+            settings->clear_token();
         }
     }
 
@@ -242,26 +258,28 @@ private:
                 if (!sk_socket_->get_token_request_pending())
                 {
                     lv_label_set_text_fmt(status_label_, LOC_SIGNALK_CONNECTED_FMT, sk_socket_->get_handled_delta_count());
+                    lv_obj_set_hidden(token_reset_button_, false);
                 }
                 else
                 {
                     lv_label_set_text(status_label_, LOC_SIGNALK_TOKEN_PENDING);
+                    lv_obj_set_hidden(token_reset_button_, true);
                 }
 
                 lv_label_set_text_fmt(server_label_, LOC_SIGNALK_SERVER_INFO, sk_socket_->get_server_name().c_str(), sk_socket_->get_server_version().c_str());
-
-                //lv_obj_set_hidden(find_button_, true);
             }
             else if (socketStatus == WebsocketState_t::WS_Offline)
             {
                 lv_obj_set_hidden(find_button_, false);
                 lv_label_set_text(status_label_, LOC_SIGNALK_DISCONNECTED);
                 lv_label_set_text_fmt(server_label_, LOC_SIGNALK_SERVER_INFO, "--", "--");
+                lv_obj_set_hidden(token_reset_button_, false);
             }
             else if (socketStatus == WebsocketState_t::WS_Connecting)
             {
                 lv_label_set_text(status_label_, LOC_SIGNALK_CONNECTING);
                 lv_label_set_text_fmt(server_label_, LOC_SIGNALK_SERVER_INFO, "--", "--");
+                lv_obj_set_hidden(token_reset_button_, false);
             }
 
             ESP_LOGI(SETTINGS_TAG, "Status update %d", (int)socketStatus);
@@ -292,6 +310,14 @@ private:
                 sk_socket_->connect();
             }
         }
-        //TODO:
+    }
+
+    void clear_token()
+    {
+        ESP_LOGI(SETTINGS_TAG, "User is reseting SK authorization token.");
+        sk_socket_->clear_token();
+        ESP_LOGI(SETTINGS_TAG, "Initiating SK reconnection.");
+        auto result = sk_socket_->reconnect();
+        ESP_LOGI(SETTINGS_TAG, "SK reconnection result=%d", result);
     }
 };

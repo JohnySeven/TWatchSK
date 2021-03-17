@@ -29,6 +29,7 @@
 #define LOC_SIGNALK_TOKEN_OK "Token OK"
 #define LOC_SIGNALK_TOKEN_NONE "No token!"
 #define LOC_SIGNALK_TOKEN_PENDING "Pending authorization"
+#define LOC_SIGNALK_TOKEN_RESET "Reset token"
 #define LOC_SIGNALK_REQUEST_REJECTED "Signal K server rejected authorization!"
 #define LOC_SIGNALK_CONNECTION_LOST "Signal K server connection lost! Please reconnect manually!"
 #define LOC_SIGNALK_SERVER_INFO "Server: %s, %s"
