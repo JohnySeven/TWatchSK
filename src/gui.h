@@ -16,6 +16,8 @@ class Gui : public Configurable
 public:
     Gui() : Configurable("/config/gui")
     {
+        //set default name
+        strcpy(watch_name, "TWatchSK");
         load();
     }
     void setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware);

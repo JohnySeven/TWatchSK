@@ -102,10 +102,12 @@ void setup()
     gui = new Gui();
     //Setup GUI
     gui->setup_gui(wifiManager, sk_socket, hardware);
+    //set SK socket pointer to device name in gui
+    sk_socket->set_device_name(gui->get_watch_name());
     //Clear lvgl counter
     lv_disp_trig_activity(NULL);
     //When the initialization is complete, turn on the backlight
-    ttgo->openBL();
+    ttgo->openBL(); 
     ttgo->bl->adjust(gui->get_adjusted_display_brightness());
 
 #if CONFIG_PM_ENABLE

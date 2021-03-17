@@ -331,7 +331,14 @@ void SignalKSocket::send_token_permission()
     requestJson["requestId"] = requestId;
     auto accessRequest = requestJson.createNestedObject("accessRequest");
     accessRequest["clientId"] = clientId;
-    accessRequest["description"] = "TWatchSK";
+    if(device_name_ == NULL)
+    {
+        accessRequest["description"] = "TWatchSK";
+    }
+    else
+    {
+        accessRequest["description"] = device_name_;
+    }
     accessRequest["permissions"] = "admin";
     send_json(requestJson.as<JsonObject>());
 }

@@ -52,10 +52,16 @@ class SignalKSocket : public Configurable, public SystemObject, public Observabl
             server = server_address;
             this->port = port;
         }
+
+        void set_device_name(const char* device_name_ptr)
+        {
+            device_name_ = device_name_ptr;
+        }
     private:
         const int reconnect_count_ = 3;
         static void ws_event_handler(void *arg, esp_event_base_t event_base,
                              int32_t event_id, void *event_data);
+        const char* device_name_ = NULL;
         String server = "";
         int port = 0;
         uint delta_counter = 0;
