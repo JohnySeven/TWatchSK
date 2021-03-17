@@ -47,19 +47,14 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
                 }
 
                 //this needs to be run async out of wifi task
-                twatchsk::run_async("Wifi off", [manager]
-                {
+                twatchsk::run_async("Wifi off", [manager] {
                     manager->off();
                 });
-
-                
             }
-
         }
 
         manager->update_status(Wifi_Disconnected);
         manager->disconnecting = false;
-        
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
@@ -160,23 +155,24 @@ void WifiManager::on()
     {
         enabled = true;
         wifi_enable(ssid_.c_str(), password_.c_str());
-        ESP_LOGI(WIFI_TAG, "WiFi has been enabled, SSID=%s", ssid_.c_str());
+        ESP_LOGI(WIFI_TAG, "Wifi has been enabled, SSID=%s.", ssid_.c_str());
         update_status(Wifi_Connecting);
     }
     else
     {
         ESP_LOGW(WIFI_TAG, "No SSID is configured!");
         this->off();
+        this->configured = false;
     }
 }
 
-void WifiManager::off()
+void WifiManager::off(bool force)
 {
-    if (enabled)
+    if (enabled || force)
     {
         enabled = false;
         disable_wifi();
-        ESP_LOGI(WIFI_TAG, "WiFi has been disabled.");
+        ESP_LOGI(WIFI_TAG, "Wifi has been disabled.");
         this->update_status(WifiState_t::Wifi_Off);
     }
 }
@@ -218,9 +214,10 @@ void WifiManager::load_config_from_file(const JsonObject &json)
 
 void WifiManager::setup(String ssid, String password)
 {
-    this->ssid_ = ssid;
-    this->password_ = password;
+    ssid_ = ssid;
+    password_ = password;
     ESP_LOGI(WIFI_TAG, "SSID has been updated to %s with password ******.", ssid.c_str());
+    configured = !ssid.isEmpty();
 }
 
 bool WifiManager::scan_wifi()
@@ -232,11 +229,22 @@ bool WifiManager::scan_wifi()
         initialize();
         clear_wifi_list();
         scan_done = false;
-        ESP_LOGI(WIFI_TAG, "Scanning nearby wifi...");
-        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-        ESP_ERROR_CHECK(esp_wifi_start());
-        ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, false));
-        ret = true;
+        ESP_LOGI(WIFI_TAG, "Scanning nearby Wifi state=%d...", (int)value);
+        if (value == WifiState_t::Wifi_Connected)
+        {
+            ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, false));
+            ret = true;
+        }
+        else if (value == WifiState_t::Wifi_Disconnected || value == WifiState_t::Wifi_Off)
+        {
+            ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+            ESP_ERROR_CHECK(esp_wifi_start());
+            delay(150);
+            ESP_ERROR_CHECK(esp_wifi_disconnect());
+            delay(150);
+            ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, false));
+            ret = true;
+        }
     }
     else
     {
@@ -255,24 +263,18 @@ void WifiManager::connect()
 {
     if (ssid_ != "")
     {
-        //if wifi is off enable it
-        if (get_status() == WifiState_t::Wifi_Off)
-        {
-            disable_wifi();
-            delay(250);
-            on();
-        }
-        else if (get_status() == WifiState_t::Wifi_Disconnected)
-        {
-            wifi_enable(ssid_.c_str(), password_.c_str());
-        }
-        else if (get_status() == WifiState_t::Wifi_Connecting || get_status() == WifiState_t::Wifi_Connected)
+        if (get_status() == WifiState_t::Wifi_Connecting || get_status() == WifiState_t::Wifi_Connected)
         {
             disconnecting = true;
-            disable_wifi();
-            delay(250); //let the driver stop wifi
-            wifi_enable(ssid_.c_str(), password_.c_str());
         }
+
+        off(true);  //let's force calling disable wifi
+        delay(100); //let the driver stop wifi
+        on();
+    }
+    else
+    {
+        configured = false;
     }
 }
 
@@ -313,7 +315,7 @@ int WifiManager::get_wifi_rssi()
 {
     int ret = 0;
     wifi_ap_record_t info;
-    if(esp_wifi_sta_get_ap_info(&info) == ESP_OK)
+    if (esp_wifi_sta_get_ap_info(&info) == ESP_OK)
     {
         ret = info.rssi;
     }

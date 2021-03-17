@@ -91,7 +91,7 @@ bool SignalKSocket::connect()
 
     ESP_LOGI(WS_TAG, "Connecting socket to server %s:%d", server.c_str(), port);
 
-    if (value == WS_Offline && server != "" && wifi->is_connected())
+    if (value == WS_Offline && server != "" && port > 0 && wifi->is_connected())
     {
         char url[256];
         sprintf(url, "/signalk/v1/stream?subscribe=none&token=%s", token.c_str());
@@ -106,6 +106,7 @@ bool SignalKSocket::connect()
 
         websocket = esp_websocket_client_init(&ws_cfg);
         websocket_initialized = true;
+        emit(WebsocketState_t::WS_Connecting);
 
         if (esp_websocket_register_events(websocket, WEBSOCKET_EVENT_ANY, ws_event_handler, this) == ESP_OK)
         {
@@ -115,6 +116,10 @@ bool SignalKSocket::connect()
                 ret = true;
             }
         }
+    }
+    else
+    {
+        emit(WebsocketState_t::WS_Offline);
     }
 
     return ret;

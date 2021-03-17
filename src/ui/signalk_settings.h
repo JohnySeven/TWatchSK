@@ -66,10 +66,6 @@ protected:
     {
         delete status_update_ticker_;
         status_update_ticker_ = NULL;
-        if (signalk_changed_)
-        {
-            save_signalk_settings();
-        }
         return true;
     }
 
@@ -93,6 +89,10 @@ protected:
         server_address_ = String(server);
         signalk_changed_ = true;
         update_server_info();
+        if(server_port_ != 0 && server_address_ != "")
+        {         
+            apply_signalk_settings();
+        }
     }
 
     void set_port(int port)
@@ -100,6 +100,10 @@ protected:
         server_port_ = port;
         signalk_changed_ = true;
         update_server_info();
+        if(server_port_ != 0 && server_address_ != "")
+        {         
+            apply_signalk_settings();
+        }
     }
 
 private:
@@ -174,8 +178,7 @@ private:
             server_search_completed_ = false;
             server_search_running_ = true;
             search_loader_ = new Loader(LOC_SIGNALK_FINDING_SERVER);
-            twatchsk::run_async("mDNS search", [this]()
-            {
+            twatchsk::run_async("mDNS search", [this]() {
                 const char *service_name = "signalk-ws";
                 const char *service_proto = "tcp";
                 mdns_result_t *results = NULL;
@@ -271,7 +274,7 @@ private:
         }
     }
 
-    void save_signalk_settings()
+    void apply_signalk_settings()
     {
         ESP_LOGI(SETTINGS_TAG, "Saving SignalK settings (server=%s,port=%d)...", server_address_.c_str(), server_port_);
         sk_socket_->set_server(server_address_, server_port_);
@@ -281,6 +284,13 @@ private:
             ESP_LOGI(SETTINGS_TAG, "SK websocket will be reconnected.");
             auto result = sk_socket_->reconnect();
             ESP_LOGI(SETTINGS_TAG, "SK websocket reconnect result=%d.", result);
+        }
+        else if (sk_socket_->get_state() == WebsocketState_t::WS_Offline)
+        {
+            if (!server_address_.isEmpty() && server_port_ != 0)
+            {
+                sk_socket_->connect();
+            }
         }
         //TODO:
     }
