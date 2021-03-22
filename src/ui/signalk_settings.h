@@ -314,7 +314,7 @@ private:
 
     void clear_token()
     {
-        ESP_LOGI(SETTINGS_TAG, "User is reseting SK authorization token.");
+        ESP_LOGI(SETTINGS_TAG, "User is resetting SK authorization token.");
         sk_socket_->clear_token();
         ESP_LOGI(SETTINGS_TAG, "Initiating SK reconnection.");
         auto result = sk_socket_->reconnect();
