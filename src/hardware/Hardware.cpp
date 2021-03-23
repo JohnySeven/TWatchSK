@@ -163,27 +163,20 @@ void Hardware::low_energy()
         invoke_power_callbacks(PowerCode_t::POWER_ENTER_LOW_POWER, 0);
         lenergy_ = true;
 
-        /*if (wifiManager->get_status() == Wifi_Off)
-        {
-            light_sleep_ = true;
-            setCpuFrequencyMhz(10);
-            ESP_LOGI(HW_TAG, "Entering light sleep mode");
-            gpio_wakeup_enable((gpio_num_t)AXP202_INT, GPIO_INTR_LOW_LEVEL);
-            gpio_wakeup_enable((gpio_num_t)BMA423_INT1, GPIO_INTR_HIGH_LEVEL);
-            gpio_wakeup_enable((gpio_num_t)TOUCH_INT, GPIO_INTR_HIGH_LEVEL);
-            esp_sleep_enable_gpio_wakeup();
-            esp_light_sleep_start();
-        }
-        else
-        {*/
         light_sleep_ = false;
         ESP_LOGI(HW_TAG, "Entering light sleep.");
-
+        uint counter = 0;
         while (!(isr_bits & WATCH_FLAG_SLEEP_EXIT) && !(app_bits & G_APP_STATE_WAKE_UP))
         {
             delay(500);
+            counter++;
             isr_bits = xEventGroupGetBits(isr_group);
             app_bits = xEventGroupGetBits(g_app_state);
+            //Signal every 5000 ms low actions
+            if(counter % 10 == 0)
+            {
+                invoke_power_callbacks(PowerCode_t::POWER_LOW_TICK, counter);
+            }
         }
 
         xEventGroupClearBits(g_app_state, G_APP_STATE_WAKE_UP);

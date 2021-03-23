@@ -12,6 +12,7 @@ enum PowerCode_t
     POWER_CHARGING_OFF,
     POWER_CHARGING_DONE,
     WALK_STEP_COUNTER_UPDATED,
+    POWER_LOW_TICK
 };
 
 enum WakeupSource_t

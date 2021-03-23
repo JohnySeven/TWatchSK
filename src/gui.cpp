@@ -543,6 +543,8 @@ void Gui::update_gui()
                 lv_msgbox_add_btns(mbox1, btns);
                 lv_obj_set_width(mbox1, 200);
                 lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
+                //trigger activity on main screen to avoid message is displayed and device goes into sleep
+                lv_disp_trig_activity(NULL);
                 //vibrate 50 ms on / 100 ms off 4 times
                 twatchsk::run_async("vibrate", [this]() {
                     for (int i = 0; i < 5; i++)

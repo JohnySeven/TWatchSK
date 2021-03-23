@@ -2,9 +2,33 @@
 #include "system/uuid.h"
 #include "system/events.h"
 #include "ui/localization.h"
+#include "esp_transport.h"
 
 static const char *WS_TAG = "WS";
 const char UnsubscribeMessage[] = "{\"context\":\"*\",\"unsubscribe\":[{\"path\":\"*\"}]}";
+
+struct esp_websocket_client_info
+{
+    esp_event_loop_handle_t event_handle;
+    void *transport_list;
+    esp_transport_handle_t transport;
+    void *config;
+    int state;
+    uint64_t keepalive_tick_ms;
+    uint64_t reconnect_tick_ms;
+    uint64_t ping_tick_ms;
+    int wait_timeout_ms;
+    int auto_reconnect;
+    bool run;
+    EventGroupHandle_t status_bits;
+    xSemaphoreHandle lock;
+    char *rx_buffer;
+    char *tx_buffer;
+    int buffer_size;
+    int last_opcode;
+    int payload_len;
+    int payload_offset;
+};
 
 void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
                                      int32_t event_id, void *event_data)
@@ -21,7 +45,7 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
         {
             ESP_LOGI(WS_TAG, "Web socket connected to server!");
             socket->reconnect_counter_ = socket->reconnect_count_; //restore reconnect counter to 3
-            socket->delta_counter = 0; //clear the socket delta counter
+            socket->delta_counter = 0;                             //clear the socket delta counter
         }
         else if (event_id == WEBSOCKET_EVENT_DISCONNECTED)
         {
@@ -99,7 +123,6 @@ bool SignalKSocket::connect()
             .host = server.c_str(),
             .path = url};
         ws_cfg.port = port;
-
         reconnect_counter_ = reconnect_count_; //restore reconnect counter
 
         ESP_LOGI(WS_TAG, "Initializing websocket ws://%s:%d%s...", ws_cfg.host, ws_cfg.port, url);
@@ -331,7 +354,14 @@ void SignalKSocket::send_token_permission()
     requestJson["requestId"] = requestId;
     auto accessRequest = requestJson.createNestedObject("accessRequest");
     accessRequest["clientId"] = clientId;
-    accessRequest["description"] = "TWatchSK";
+    if (device_name_ == NULL)
+    {
+        accessRequest["description"] = "TWatchSK";
+    }
+    else
+    {
+        accessRequest["description"] = device_name_;
+    }
     accessRequest["permissions"] = "admin";
     send_json(requestJson.as<JsonObject>());
 }
@@ -413,11 +443,55 @@ void SignalKSocket::remove_active_notification(String path)
     }
 }
 
+///This is kind of HACK to control period 10 seconds ping of websocket - we need to avoid it to save some battery
+void update_ws_timeout(esp_websocket_client_info *client)
+{
+    //ESP_LOGI(WS_TAG, "Ping timeout %d ms", (int)((esp_timer_get_time() / 1000) - client->ping_tick_ms));
+    client->ping_tick_ms = esp_timer_get_time() / 1000;
+}
+
+void SignalKSocket::send_status_message()
+{
+    StaticJsonDocument<512> statusJson;
+    char buff[512];
+
+    JsonArray updates = statusJson.createNestedArray("updates");
+    JsonObject current = updates.createNestedObject();
+    JsonObject source = current.createNestedObject("source");
+    source["label"] = device_name_;
+    JsonArray values = current.createNestedArray("values");
+    JsonObject status = values.createNestedObject();
+    sprintf(buff, "%s.status", device_name_);
+    status["path"] = buff;
+    JsonObject statusData = status.createNestedObject("value");
+    statusData["battery"] = TTGOClass::getWatch()->power->getBattPercentage();
+    statusData["uptime"] = (int)(esp_timer_get_time() / 1000);
+
+    if (serializeJson(statusJson, buff))
+    {
+        ESP_LOGI(WS_TAG, "Status json: %s", buff);
+        esp_websocket_client_send_text(websocket, buff, strlen(buff), portMAX_DELAY);
+    }
+}
+
 void SignalKSocket::handle_power_event(PowerCode_t code, uint32_t arg)
 {
     if (code == PowerCode_t::POWER_ENTER_LOW_POWER || code == PowerCode_t::POWER_LEAVE_LOW_POWER)
     {
         update_subscriptions();
+    }
+    else if (code == PowerCode_t::POWER_LOW_TICK)
+    {
+        //we need to avoid client ping for now
+        if (value == WebsocketState_t::WS_Connected)
+        {
+            update_ws_timeout((esp_websocket_client_info *)websocket);
+
+            if (arg % 90 == 0)
+            {
+                send_status_message();
+            }
+        }
     }
 }
 
