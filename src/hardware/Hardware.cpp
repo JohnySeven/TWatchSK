@@ -201,7 +201,7 @@ void Hardware::low_energy()
         //update system time from RTC
         watch_->rtc->syncToSystem();
         //enable display backlight
-        watch_->openBL();
+        watch_->openBL();        
         WakeupSource_t source = WAKEUP_BUTTON; // must be initialized to something
         if (isr_bits & WATCH_FLAG_BMA_IRQ) // wakeup came from double tap or tilt
         {

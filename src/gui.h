@@ -53,10 +53,12 @@ public:
     void theme_updated();
     const char* get_watch_name() { return watch_name; }
     void set_watch_name(const char *new_name) { strcpy(watch_name, new_name); }
-
+    bool is_active_view_dynamic() { return is_active_view_dynamic_; }
+    void set_is_active_view_dynamic(bool new_value);
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);
+    static void lv_mainbar_callback(lv_obj_t*obj, lv_event_t event);
     void update_time();
     void update_tiles_valid_points(int count);
     char *message_from_code(GuiMessageCode_t code);
@@ -87,5 +89,6 @@ private:
     lv_point_t*tile_valid_points = NULL; //this is for tile navigation matrix to allow user navigation in multiple directions
     int tile_valid_points_count = 0; //number of matrix points
     char watch_name[16] = "";
+    bool is_active_view_dynamic_ = false;
 };
 #endif /*__GUI_H */

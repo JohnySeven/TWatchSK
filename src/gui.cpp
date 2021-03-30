@@ -107,7 +107,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             // displaySettings->set_dark_theme_enabled(gui->get_dark_theme_enabled());
             // Save the value of dark_theme_enabled before going into Display tile
             bool current_dark_theme_enabled = twatchsk::dark_theme_enabled;
-            
+
             // Define the callback function (on_close()). If the value of any setting
             // changed while the Display tile was up, save it.
             displaySettings->on_close([displaySettings, gui, current_dark_theme_enabled, setupMenu]() {
@@ -126,14 +126,13 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
                     gui->set_display_brightness(new_brightness);
                     need_to_save = true;
                 }
-                if(twatchsk::dark_theme_enabled != current_dark_theme_enabled) // dark_theme flag changed while in Display tile
+                if (twatchsk::dark_theme_enabled != current_dark_theme_enabled) // dark_theme flag changed while in Display tile
                 {
                     need_to_save = true;
                     ESP_LOGI("GUI_TAG", "Dark theme changed to %d", twatchsk::dark_theme_enabled);
                     //update themes on GUI objects
                     setupMenu->theme_updated();
                     gui->theme_updated();
-                    
                 }
                 if (need_to_save)
                 {
@@ -180,11 +179,10 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             // Define the callback function (on_close()). If the watch name
             // changed while the Watch Info tile was up, save it.
             watchInfo->on_close([watchInfo, gui]() {
-                
-                char* new_watch_name = watchInfo->get_watch_name();
+                char *new_watch_name = watchInfo->get_watch_name();
                 if (strcmp(new_watch_name, "") != 0 // new_watch_name isn't blank
-                    &&            
-                    strcmp(gui->get_watch_name(), new_watch_name) != 0)  // and it has changed
+                    &&
+                    strcmp(gui->get_watch_name(), new_watch_name) != 0) // and it has changed
                 {
                     gui->set_watch_name(new_watch_name);
                     gui->save();
@@ -205,7 +203,7 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
 {
     wifiManager = wifi;
     ws_socket = socket;
-  
+
     hardware_ = hardware;
     //attach power events to GUI
     hardware->attach_power_callback(std::bind(&Gui::on_power_event, this, _1, _2));
@@ -223,11 +221,11 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     uint32_t flag = LV_THEME_MATERIAL_FLAG_LIGHT; // Create a theme flag and set it to the MATERIAL_LIGHT theme
     if (twatchsk::dark_theme_enabled)             // If the dark theme is enabled...
     {
-        flag = LV_THEME_MATERIAL_FLAG_DARK;       // ... change the flag to MATERIAL_DARK
+        flag = LV_THEME_MATERIAL_FLAG_DARK; // ... change the flag to MATERIAL_DARK
     }
-    LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag,        // Initiate the theme
-                lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
-                lv_theme_get_font_title());
+    LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag, // Initiate the theme
+                          lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
+                          lv_theme_get_font_title());
 
     bar = new StatusBar();
     //! bar
@@ -253,6 +251,9 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     mainBar = lv_tileview_create(scr, NULL);
     lv_obj_add_style(mainBar, LV_OBJ_PART_MAIN, &mainStyle);
     lv_obj_set_pos(mainBar, 0, bar->height());
+    //we need to update is_active_view_dynamic_ field
+    mainBar->user_data = this;
+    lv_obj_set_event_cb(mainBar, Gui::lv_mainbar_callback);
 
     watch_face = lv_cont_create(mainBar, NULL);
     lv_obj_add_style(watch_face, LV_OBJ_PART_MAIN, &mainStyle);
@@ -364,9 +365,9 @@ void Gui::update_time()
     if (time_24hour_format)
     {
         lv_obj_set_hidden(timeSuffixLabel, true);
-        strftime(buf, sizeof(buf), "%H:%M", &info); // see http://www.cplusplus.com/reference/ctime/strftime/
+        strftime(buf, sizeof(buf), "%H:%M", &info);                          // see http://www.cplusplus.com/reference/ctime/strftime/
         strftime(day_date_buf, sizeof(day_date_buf), "%a %e %b, %G", &info); // day/month format
-        lv_obj_set_hidden(timeSuffixLabel, true); //hide the suffix label as it's not needed
+        lv_obj_set_hidden(timeSuffixLabel, true);                            //hide the suffix label as it's not needed
     }
     else
     {
@@ -375,7 +376,8 @@ void Gui::update_time()
         strftime(day_date_buf, sizeof(day_date_buf), "%a %b %e, %G", &info); // month/day format
         if (info.tm_hour > 12)
         {
-            lv_label_set_text(timeSuffixLabel, "pm");;
+            lv_label_set_text(timeSuffixLabel, "pm");
+            ;
         }
         else
         {
@@ -460,20 +462,26 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
         increment_wakeup_count();
         switch (arg)
         {
-            case WAKEUP_BUTTON:
-                clear_temporary_screen_timeout(); // waking up with a button press - if the last timeout was temporary, clear it
-                break;
-            case WAKEUP_ACCELEROMETER: // waking up with double tap or tilt
-                set_temporary_screen_timeout(2);
-                break;
-            //case WAKEUP_TOUCH:                   // not yet implemented
-            //    set_temporary_screen_timeout(2); // change this when it is implemented
-            //    break;
-            default:
-                 clear_temporary_screen_timeout();
+        case WAKEUP_BUTTON:
+            clear_temporary_screen_timeout(); // waking up with a button press - if the last timeout was temporary, clear it
+            break;
+        case WAKEUP_ACCELEROMETER: // waking up with double tap or tilt
+            set_temporary_screen_timeout(2);
+
+            break;
+        //case WAKEUP_TOUCH:                   // not yet implemented
+        //    set_temporary_screen_timeout(2); // change this when it is implemented
+        //    break;
+        default:
+            clear_temporary_screen_timeout();
         }
         update_gui();
         lv_disp_trig_activity(NULL);
+        //update subscriptions if we are on dynamic view
+        if (is_active_view_dynamic_)
+        {
+            ws_socket->update_subscriptions();
+        }
     }
     else if (code == PowerCode_t::POWER_CHARGING_ON)
     {
@@ -624,10 +632,10 @@ void Gui::load_config_from_file(const JsonObject &json)
     else
     {
         strcpy(watch_name, "Set watch name");
-    }    
+    }
 
-    ESP_LOGI("GUI", "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimezoneID=%d, Brightness=%d, DarkTheme=%d, WatchName=%s",
-              time_24hour_format, screen_timeout, timezone_id, display_brightness, twatchsk::dark_theme_enabled, watch_name);
+    ESP_LOGI(GUI_TAG, "Loaded settings: 24hour=%d, ScreenTimeout=%d, TimezoneID=%d, Brightness=%d, DarkTheme=%d, WatchName=%s",
+             time_24hour_format, screen_timeout, timezone_id, display_brightness, twatchsk::dark_theme_enabled, watch_name);
 }
 
 void Gui::save_config_to_file(JsonObject &json)
@@ -661,5 +669,30 @@ void Gui::clear_temporary_screen_timeout()
     {
         screen_timeout = saved_screen_timeout;
         screen_timeout_is_temporary = false;
+    }
+}
+
+void Gui::lv_mainbar_callback(lv_obj_t *obj, lv_event_t event)
+{
+    if (event == LV_EVENT_VALUE_CHANGED)
+    {
+        Gui *gui = (Gui *)obj->user_data;
+        lv_coord_t x, y;
+        lv_tileview_get_tile_act(obj, &x, &y);
+        ESP_LOGI(GUI_TAG, "Tile view is showing location %d,%d", x, y);
+        gui->set_is_active_view_dynamic(x > 0);
+    }
+}
+
+void Gui::set_is_active_view_dynamic(bool new_value)
+{
+    if (is_active_view_dynamic_ != new_value)
+    {
+        ESP_LOGI(GUI_TAG, "Active view is dynamic=%d", new_value);
+        is_active_view_dynamic_ = new_value;
+        if (new_value)
+        {
+            ws_socket->update_subscriptions();
+        }
     }
 }
