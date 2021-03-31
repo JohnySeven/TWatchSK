@@ -7,7 +7,7 @@ EventGroupHandle_t isr_group = NULL;
 #define WATCH_FLAG_SLEEP_EXIT _BV(2) // leaving sleep mode because of any kind of interrupt
 #define WATCH_FLAG_BMA_IRQ _BV(3) // leaving sleep mode because of double tap or tilt
 #define WATCH_FLAG_AXP_IRQ _BV(4) // leaving sleep mode because of external button press or any other power management interrupt
-#define WATCH_FLAT_TOUCH_IRQ _BV(5) // leaving sleep mode because of touch (not yet implemented)
+#define WATCH_FLAG_TOUCH_IRQ _BV(5) // leaving sleep mode because of touch (not yet implemented)
 
 #define MOTOR_CHANNEL 1
 #define MOTOR_FREQUENCY 12000
@@ -72,7 +72,7 @@ void Hardware::initialize(TTGOClass *watch)
             if (bits & WATCH_FLAG_SLEEP_MODE)
             {
                 //! For quick wake up, use the group flag
-                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAT_TOUCH_IRQ, &xHigherPriorityTaskWoken);
+                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAG_TOUCH_IRQ, &xHigherPriorityTaskWoken);
             }
 
             if (xHigherPriorityTaskWoken)
@@ -238,10 +238,10 @@ void Hardware::loop()
 
             xEventGroupClearBits(isr_group, WATCH_FLAG_AXP_IRQ);
         }
-        if (bits & WATCH_FLAT_TOUCH_IRQ)
+        if (bits & WATCH_FLAG_TOUCH_IRQ)
         {
-            xEventGroupClearBits(isr_group, WATCH_FLAT_TOUCH_IRQ);
-            ESP_LOGD(HW_TAG, "Touch interupt!");
+            xEventGroupClearBits(isr_group, WATCH_FLAG_TOUCH_IRQ);
+            ESP_LOGD(HW_TAG, "Touch interrupt!");
         }
 
         xEventGroupClearBits(isr_group, WATCH_FLAG_SLEEP_EXIT);
@@ -264,12 +264,20 @@ void Hardware::loop()
                 result = watch_->bma->readInterrupt();
             } while (!result);
 
-            //! setp counter
+            // step counter
             if (watch_->bma->isStepCounter())
             {
                 invoke_power_callbacks(WALK_STEP_COUNTER_UPDATED, watch_->bma->getCounter());
             }
+
+            // double tap
+            if (!lenergy_ &&  watch_->bma->isDoubleClick())
+            {
+                invoke_power_callbacks(DOUBLE_TAP_DETECTED, 0);
+            }
+            
             break;
+
         case ApplicationEvents_T::Q_EVENT_AXP_INT:
             watch_->power->readIRQ();
 

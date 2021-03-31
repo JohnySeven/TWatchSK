@@ -5,8 +5,7 @@
 #include "themes.h"
 
 /**
- * @brief Used to set display brightness, wake-up sources (watch flip, touch,
- * double tap (accelerometer driven), auto screen timeout (sleep time), and
+ * @brief Used to set display brightness, auto screen timeout (sleep time), and
  * turn the Dark Theme on or off.
  **/
 

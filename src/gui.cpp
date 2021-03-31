@@ -220,11 +220,7 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     lv_obj_align(img_bin, NULL, LV_ALIGN_CENTER, 0, 0);*/
 
     // set the theme
-    uint32_t flag = LV_THEME_MATERIAL_FLAG_LIGHT; // Create a theme flag and set it to the MATERIAL_LIGHT theme
-    if (twatchsk::dark_theme_enabled)             // If the dark theme is enabled...
-    {
-        flag = LV_THEME_MATERIAL_FLAG_DARK;       // ... change the flag to MATERIAL_DARK
-    }
+    uint32_t flag = twatchsk::dark_theme_enabled ? LV_THEME_MATERIAL_FLAG_DARK : LV_THEME_MATERIAL_FLAG_LIGHT;
     LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag,        // Initiate the theme
                 lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
                 lv_theme_get_font_title());
@@ -486,6 +482,22 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
     else if (code == PowerCode_t::WALK_STEP_COUNTER_UPDATED)
     {
         update_step_counter(arg);
+    }
+    else if (code == PowerCode_t::DOUBLE_TAP_DETECTED)
+    {
+        if (screen_timeout_is_temporary) // double-tap occurs during a quickie "time check" that resulted from a double-tap or tilt
+        {
+            clear_temporary_screen_timeout(); // leave the screen on for the normal timeout time, then change the theme
+        }
+        twatchsk::dark_theme_enabled = !twatchsk::dark_theme_enabled;
+        uint32_t flag = twatchsk::dark_theme_enabled ? LV_THEME_MATERIAL_FLAG_DARK : LV_THEME_MATERIAL_FLAG_LIGHT; // Create a theme flag and set it to the new theme
+        LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag,                  // Initiate the theme with the flag
+                              lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
+                              lv_theme_get_font_title());
+        set_display_brightness(twatchsk::dark_theme_enabled ? 1 : 5);
+        auto ttgo = TTGOClass::getWatch();
+        ttgo->bl->adjust(get_adjusted_display_brightness());
+        this->theme_updated();            // sets theme for status bar icons
     }
 }
 
