@@ -45,7 +45,6 @@ public:
         for (std::vector<View*>::iterator it = active_views_.begin(); it != active_views_.end(); it++)
         {
             (*it)->theme_changed();
-            ESP_LOGI("VIEW", "invoke_theme_changed() was called");
         }
     }
 

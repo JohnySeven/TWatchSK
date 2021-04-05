@@ -65,9 +65,9 @@ public:
         for (int i = 0; i < count; i++)
         {
             auto tile = tiles.at(i);
+            btn = lv_list_get_next_btn(list, btn);
             if (!tile.color_img)
             {
-                btn = lv_list_get_next_btn(list, btn);
                 if (btn != NULL)
                 {
                     auto img = lv_list_get_btn_img(btn);

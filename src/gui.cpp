@@ -104,8 +104,6 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             // display_setting is saved to disk through GUI::display_brightness. Retrieve it here:
             displaySettings->set_display_brightness(gui->get_display_brightness());
 
-            // dark_theme_enabled is saved to disk through GUI::dark_theme_enabled. Retrieve it here:
-            // displaySettings->set_dark_theme_enabled(gui->get_dark_theme_enabled());
             // Save the value of dark_theme_enabled before going into Display tile
             bool current_dark_theme_enabled = twatchsk::dark_theme_enabled;
             
@@ -484,7 +482,7 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
     {
         update_step_counter(arg);
     }
-    else if (code == PowerCode_t::DOUBLE_TAP_DETECTED)
+    else if (code == PowerCode_t::DOUBLE_TAP_DETECTED) // while watch is awake - this switches between LIGHT and DARK theme
     {
         if (screen_timeout_is_temporary) // double-tap occurs during a quickie "time check" that resulted from a double-tap or tilt
         {
