@@ -71,7 +71,7 @@ public:
         lv_obj_align(_icons[5].icon, _icons[4].icon, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
 
         refresh();
-        theme_updated();
+        theme_changed();
     }
 
     void setStepCounter(uint32_t counter)
@@ -111,7 +111,7 @@ public:
         }
     }
 
-    void theme_updated()
+    void theme_changed()
     {
         twatchsk::update_imgbtn_color(_icons[3].icon);
         twatchsk::update_imgbtn_color(_icons[4].icon);

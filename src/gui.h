@@ -3,7 +3,6 @@
 #include "system/configurable.h"
 #include "system/events.h"
 #include "ui/statusbar.h"
-#include "ui/menubar.h"
 #include "ui/dynamic_gui.h"
 #include "ui/themes.h"
 #include "hardware/Hardware.h"
@@ -50,7 +49,7 @@ public:
     {
         return bar;
     }
-    void theme_updated();
+    void theme_changed();
     const char* get_watch_name() { return watch_name; }
     void set_watch_name(const char *new_name) { strcpy(watch_name, new_name); }
 
@@ -73,7 +72,6 @@ private:
     lv_obj_t *watch_face = NULL;
     lv_obj_t *dayDateLabel = NULL;
     lv_obj_t *watchNameLabel = NULL;
-    MenuBar *menuBars = NULL;
     StatusBar *bar = NULL;
     DynamicGui*dynamic_gui = NULL;
 

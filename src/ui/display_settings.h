@@ -53,6 +53,20 @@ public:
         display_brightness_ = value; 
     }
 
+    void theme_changed() override
+    {
+        twatchsk::update_imgbtn_color(back);
+        update_brightness(twatchsk::dark_theme_enabled ? 1 : 5);
+        if (twatchsk::dark_theme_enabled)
+        {
+            lv_switch_on(dark_switch_, LV_ANIM_OFF);
+        }
+        else
+        {
+            lv_switch_off(dark_switch_, LV_ANIM_OFF);
+        }
+    }
+
 protected:
     virtual void show_internal(lv_obj_t *parent) override
     {
@@ -143,6 +157,7 @@ private:
                         settings->update_timeout(timeout);
                     }
                 }
+                delete keyboard;
             });
             keyboard->show(lv_scr_act());
         }
@@ -162,6 +177,7 @@ private:
                     const char *text = keyboard->get_text();
                     settings->update_brightness(atoi(text));
                 }
+                delete keyboard;
             });
             keyboard->show(lv_scr_act());
         }
@@ -172,11 +188,7 @@ private:
         if (event == LV_EVENT_VALUE_CHANGED) 
         {
             DisplaySettings* settings = (DisplaySettings* )obj->user_data;
-            uint32_t flag = LV_THEME_MATERIAL_FLAG_LIGHT; // create a theme flag with the value of the LIGHT version of the theme (a "flag" is a setting for a theme)
-            if (lv_switch_get_state(obj)) // if the state of the switch is ON, change the value of "flag" to the DARK version
-            {
-                flag = LV_THEME_MATERIAL_FLAG_DARK;  
-            }
+            uint32_t flag = lv_switch_get_state(obj) ? LV_THEME_MATERIAL_FLAG_DARK : LV_THEME_MATERIAL_FLAG_LIGHT; // create theme flag that matches current state of the Dark Theme switch
             twatchsk::dark_theme_enabled = !twatchsk::dark_theme_enabled; // switch value changed, so save the changed value
             LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag,
                 lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),

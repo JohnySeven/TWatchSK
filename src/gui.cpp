@@ -63,6 +63,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
         gui->toggle_main_bar(true);
         NavigationView *setupMenu = NULL;
         setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]() {
+            setupMenu->remove_from_active_list(); // because, for some reason, `delete setupMenu;` doesn't remove it from the list
             delete setupMenu;
             gui->toggle_main_bar(false);
         });
@@ -129,10 +130,10 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
                 if(twatchsk::dark_theme_enabled != current_dark_theme_enabled) // dark_theme flag changed while in Display tile
                 {
                     need_to_save = true;
-                    ESP_LOGI("GUI_TAG", "Dark theme changed to %d", twatchsk::dark_theme_enabled);
+                    ESP_LOGI(GUI_TAG, "Dark theme changed to %d", twatchsk::dark_theme_enabled);
                     //update themes on GUI objects
-                    setupMenu->theme_updated();
-                    gui->theme_updated();
+                    setupMenu->theme_changed();
+                    gui->theme_changed();
                     
                 }
                 if (need_to_save)
@@ -497,7 +498,8 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
         set_display_brightness(twatchsk::dark_theme_enabled ? 1 : 5);
         auto ttgo = TTGOClass::getWatch();
         ttgo->bl->adjust(get_adjusted_display_brightness());
-        this->theme_updated();            // sets theme for status bar icons
+        View::invoke_theme_changed();     // calls theme_changed() for every descendant of View class
+        this->theme_changed();            // updates theme for status bar icons (because StatusBar is not a descendant of View class)
     }
 }
 
@@ -652,9 +654,9 @@ void Gui::save_config_to_file(JsonObject &json)
     json["watchname"] = watch_name;
 }
 
-void Gui::theme_updated()
+void Gui::theme_changed()
 {
-    bar->theme_updated();
+    bar->theme_changed();
 }
 
 void Gui::set_temporary_screen_timeout(int value)

@@ -5,7 +5,7 @@
 LV_IMG_DECLARE(exit_32px);
 const char *SETTINGS_TAG = "SETTINGS";
 
-class SettingsView : View
+class SettingsView : public View
 {
 public:
     SettingsView(char *title)
@@ -83,6 +83,11 @@ public:
         cleanup();
     }
 
+    virtual void theme_changed() // updates graphic elements for a theme change; override for every descendant of SettingsView with specific theme change needs
+    {
+        twatchsk::update_imgbtn_color(back); // make the "Back" button the correct color depending on the theme
+    }
+
 protected:
     virtual void show_internal(lv_obj_t *parent){};
     virtual bool hide_internal() { return true; }
@@ -120,7 +125,6 @@ private:
         {
             auto view = (SettingsView *)obj->user_data;
             ESP_LOGI("SETTINGS", "Closing view %s", view->titleText);
-            twatchsk::update_imgbtn_color(view->back); // BS: I'm not sure this is doing anything here
             view->hide();
         }
     }

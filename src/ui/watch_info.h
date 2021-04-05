@@ -130,6 +130,7 @@ private:
                     ESP_LOGI(SETTINGS_TAG, "keyboard->get_text() returned %s", text); //Jan: this is always executed twice - why?
                     watch_info->update_watch_name(text);
                 }
+                delete keyboard;
             });
             keyboard->show(lv_scr_act());
         }

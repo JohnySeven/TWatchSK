@@ -57,7 +57,7 @@ public:
 
         ESP_LOGI("SETTINGS", "Tiles loaded!");
     }
-    void theme_updated()
+    void theme_changed()
     {
         twatchsk::update_imgbtn_color(back); // make it the correct color depending on LIGHT/DARK setting
         auto count = lv_list_get_size(list);

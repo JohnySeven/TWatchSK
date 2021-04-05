@@ -259,6 +259,7 @@ private:
                         }
                     }
                 }
+                delete keyboard;
             });
             keyboard->show(lv_scr_act());
         }
@@ -281,6 +282,7 @@ private:
                         settings->update_minutes(minutes);
                     }
                 }
+                delete keyboard;
             });
             keyboard->show(lv_scr_act());
         }
@@ -307,7 +309,6 @@ private:
                     auto date = datePicker->get_date();
                     timeSettings->update_date(date.year, date.month, date.day);
                 }
-
                 delete datePicker;
             });
 
@@ -328,6 +329,7 @@ private:
                     auto selected_id = roller->get_selected_id();
                     timeSettings->update_timezone_id(selected_id);
                 }
+                delete roller;
             });
             roller->show(lv_scr_act());
         }
