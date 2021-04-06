@@ -481,19 +481,10 @@ void SignalKSocket::send_status_message()
 
 void SignalKSocket::handle_power_event(PowerCode_t code, uint32_t arg)
 {
-    if (code == PowerCode_t::POWER_ENTER_LOW_POWER)
+    if (code == PowerCode_t::POWER_ENTER_LOW_POWER && !low_power_subscriptions_)
     {
         update_subscriptions();
     }
-    //the update subscription will be called by GUI if there is need for subscriptions
-    //else if (code == PowerCode_t::POWER_LEAVE_LOW_POWER)
-    //{
-        //we need to make the GUI class to call update_subscriptions if we wake up on dynamic view
-    //    if (arg != WakeupSource_t::WAKEUP_ACCELEROMETER)
-    //    {
-    //        update_subscriptions();
-    //    }
-    //}
     else if (code == PowerCode_t::POWER_LOW_TICK)
     {
         //we need to avoid client ping for now
