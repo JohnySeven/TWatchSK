@@ -63,9 +63,14 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
         gui->toggle_main_bar(true);
         NavigationView *setupMenu = NULL;
         setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]() {
-            setupMenu->remove_from_active_list(); // because, for some reason, `delete setupMenu;` doesn't remove it from the list
+            setupMenu->remove_from_active_list(); // because, for some reason, `delete setupMenu;` doesn't remove it from View::active_views_
             delete setupMenu;
             gui->toggle_main_bar(false);
+            if (gui->get_gui_needs_saved())
+            {
+                gui->save();
+            }
+            gui->set_gui_needs_saved(false);
         });
 
         setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, false, [gui]() {
@@ -498,6 +503,18 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
         ttgo->bl->adjust(get_adjusted_display_brightness());
         View::invoke_theme_changed();     // calls theme_changed() for every descendant of View class
         this->theme_changed();            // updates theme for status bar icons (because StatusBar is not a descendant of View class)
+        if (View::get_active_views_count() == 0) // we're on the home screen, so save the new theme to SPIFFS immediately
+        {
+            twatchsk::run_async("GUI Settings save", [this]()
+            {
+                delay(100);
+                this->save();
+            });
+        }
+        else
+        {
+            gui_needs_saved = true;  // flag to save the new theme to SPIFFS later, when NavigationView is closed
+        }
     }
 }
 

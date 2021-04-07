@@ -15,20 +15,25 @@ public:
         active_views_.push_back(this); // add each View descendant to a std::vector of active views
         ESP_LOGI("VIEW_CONSTRUCTOR", "Size of active_views_ is %d", active_views_.size());
     }
+    
     ~View()
     {
         if (is_active_)
         {
             is_active_ = false;
             active_views_.pop_back();
-            ESP_LOGI("VIEW_DESTRUCTOR", "Size of active_views_ is %d", active_views_.size());
+            ESP_LOGI("VIEW_DESTRUCTOR", "Number of active_views_ is %d", active_views_.size());
         }
     }
+    
     void remove_from_active_list()
     {
         active_views_.pop_back();
-        ESP_LOGI("VIEW_POST_REMOVE", "Size of active_views_ is %d", active_views_.size());
-    }  
+        ESP_LOGI("VIEW_POST_REMOVE", "Number of active_views_ is %d", active_views_.size());
+    }
+
+    static int get_active_views_count() { return active_views_.size(); }
+
     virtual void show(lv_obj_t*parent) { }
     virtual void hide()
     {
@@ -36,7 +41,7 @@ public:
         {
             is_active_ = false;
             active_views_.pop_back();
-            ESP_LOGI("VIEW_HIDE", "Size of active_views_ is %d", active_views_.size());
+            ESP_LOGI("VIEW_HIDE", "Number of active_views_ is %d", active_views_.size());
         }
     }
     virtual void theme_changed() { }

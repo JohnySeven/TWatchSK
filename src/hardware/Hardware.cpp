@@ -155,6 +155,7 @@ void Hardware::low_energy()
         watch_->stopLvglTick();
         //disable step count interrupt to save battery (counter will still work)
         watch_->bma->enableStepCountInterrupt(false);
+        watch_->bma->enableWakeupInterrupt(double_tap_wakeup_); // enable or disable double_tap_wakeup depending on the switch setting
         watch_->displaySleep();
         //set event bits in events.cpp
         xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_MODE);
@@ -200,13 +201,11 @@ void Hardware::low_energy()
         watch_->touch->setPowerMode(PowerMode_t::FOCALTECH_PMODE_ACTIVE);
         //update system time from RTC
         watch_->rtc->syncToSystem();
+        // always enable double_tap_wakeup when awake - necessary for double-tap theme change to work
+        watch_->bma->enableWakeupInterrupt(true);
         //enable display backlight
         watch_->openBL();
-        WakeupSource_t source = WAKEUP_BUTTON; // must be initialized to something
-        if (isr_bits & WATCH_FLAG_BMA_IRQ) // wakeup came from double tap or tilt
-        {
-            source = WAKEUP_ACCELEROMETER;
-        }
+        WakeupSource_t source = (isr_bits & WATCH_FLAG_BMA_IRQ ? WAKEUP_ACCELEROMETER : WAKEUP_BUTTON);
         //notify everyone we are leaving low power mode
         invoke_power_callbacks(PowerCode_t::POWER_LEAVE_LOW_POWER, source);
         watch_->bma->enableStepCountInterrupt();
