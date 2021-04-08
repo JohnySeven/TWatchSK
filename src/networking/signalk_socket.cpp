@@ -226,7 +226,7 @@ void SignalKSocket::parse_data(int length, const char *data)
             }
             else
             {
-                update_subscriptions();
+                update_subscriptions(true);
             }
         }
         else if (doc.containsKey("requestId"))
@@ -381,38 +381,42 @@ SignalKSubscription *SignalKSocket::add_subscription(String path, uint period, b
     }
 }
 
-void SignalKSocket::update_subscriptions()
+void SignalKSocket::update_subscriptions(bool force)
 {
     if (value == WebsocketState_t::WS_Connected && !token_request_pending)
     {
         bool is_lp = xEventGroupGetBits(g_app_state) & G_APP_STATE_LOW_POWER;
-        DynamicJsonDocument subscriptionsJson(subscriptions.size() * 100);
-        int count = 0;
-        subscriptionsJson["context"] = "vessels.self";
-        JsonArray subscribe = subscriptionsJson.createNestedArray("subscribe");
-        for (auto subscription : this->subscriptions)
+        if (force || is_lp || (low_power_subscriptions_ == true && !is_lp))
         {
-            if (!is_lp || (is_lp && subscription.second->get_low_power()))
+            low_power_subscriptions_ = is_lp;
+            DynamicJsonDocument subscriptionsJson(subscriptions.size() * 100);
+            int count = 0;
+            subscriptionsJson["context"] = "vessels.self";
+            JsonArray subscribe = subscriptionsJson.createNestedArray("subscribe");
+            for (auto subscription : this->subscriptions)
             {
-                count++;
-                String path = subscription.second->get_path();
-                uint period = subscription.second->get_period();
-                JsonObject subscribePath = subscribe.createNestedObject();
+                if (!is_lp || (is_lp && subscription.second->get_low_power()))
+                {
+                    count++;
+                    String path = subscription.second->get_path();
+                    uint period = subscription.second->get_period();
+                    JsonObject subscribePath = subscribe.createNestedObject();
 
-                subscribePath["path"] = path;
-                subscribePath["period"] = period;
-                ESP_LOGI(WS_TAG, "Adding %s subscription with listen_delay %d ms", path.c_str(), period);
+                    subscribePath["path"] = path;
+                    subscribePath["period"] = period;
+                    ESP_LOGI(WS_TAG, "Adding %s subscription with listen_delay %d ms", path.c_str(), period);
+                }
             }
-        }
 
-        esp_websocket_client_send_text(websocket, UnsubscribeMessage, strlen(UnsubscribeMessage), portMAX_DELAY);
+            esp_websocket_client_send_text(websocket, UnsubscribeMessage, strlen(UnsubscribeMessage), portMAX_DELAY);
 
-        if (count > 0)
-        {
-            String subscriptionMessage;
-            serializeJson(subscriptionsJson, subscriptionMessage);
-            ESP_LOGI(WS_TAG, "Subscription: %s", subscriptionMessage.c_str());
-            esp_websocket_client_send_text(websocket, subscriptionMessage.c_str(), subscriptionMessage.length(), portMAX_DELAY);
+            if (count > 0)
+            {
+                String subscriptionMessage;
+                serializeJson(subscriptionsJson, subscriptionMessage);
+                //ESP_LOGI(WS_TAG, "Subscription: %s", subscriptionMessage.c_str());
+                esp_websocket_client_send_text(websocket, subscriptionMessage.c_str(), subscriptionMessage.length(), portMAX_DELAY);
+            }
         }
     }
 }
@@ -466,6 +470,7 @@ void SignalKSocket::send_status_message()
     JsonObject statusData = status.createNestedObject("value");
     statusData["battery"] = TTGOClass::getWatch()->power->getBattPercentage();
     statusData["uptime"] = (int)(esp_timer_get_time() / 1000);
+    statusData["temperature"] = (274.15f + TTGOClass::getWatch()->power->getTemp());
 
     if (serializeJson(statusJson, buff))
     {
@@ -476,7 +481,7 @@ void SignalKSocket::send_status_message()
 
 void SignalKSocket::handle_power_event(PowerCode_t code, uint32_t arg)
 {
-    if (code == PowerCode_t::POWER_ENTER_LOW_POWER || code == PowerCode_t::POWER_LEAVE_LOW_POWER)
+    if (code == PowerCode_t::POWER_ENTER_LOW_POWER && !low_power_subscriptions_)
     {
         update_subscriptions();
     }
@@ -486,8 +491,8 @@ void SignalKSocket::handle_power_event(PowerCode_t code, uint32_t arg)
         if (value == WebsocketState_t::WS_Connected)
         {
             update_ws_timeout((esp_websocket_client_info *)websocket);
-
-            if (arg % 90 == 0)
+            //send status message every minute in low power mode
+            if (arg % 120 == 0)
             {
                 send_status_message();
             }

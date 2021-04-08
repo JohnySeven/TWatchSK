@@ -3,7 +3,6 @@
 #include "system/configurable.h"
 #include "system/events.h"
 #include "ui/statusbar.h"
-#include "ui/menubar.h"
 #include "ui/dynamic_gui.h"
 #include "ui/themes.h"
 #include "hardware/Hardware.h"
@@ -50,13 +49,17 @@ public:
     {
         return bar;
     }
-    void theme_updated();
+    void theme_changed();
     const char* get_watch_name() { return watch_name; }
     void set_watch_name(const char *new_name) { strcpy(watch_name, new_name); }
-
+    bool is_active_view_dynamic() { return is_active_view_dynamic_; }
+    void set_is_active_view_dynamic(bool new_value);
+    bool get_gui_needs_saved() { return gui_needs_saved; }
+    void set_gui_needs_saved(bool new_value) { gui_needs_saved = new_value; } 
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);
+    static void lv_mainbar_callback(lv_obj_t*obj, lv_event_t event);
     void update_time();
     void update_tiles_valid_points(int count);
     char *message_from_code(GuiMessageCode_t code);
@@ -73,19 +76,20 @@ private:
     lv_obj_t *watch_face = NULL;
     lv_obj_t *dayDateLabel = NULL;
     lv_obj_t *watchNameLabel = NULL;
-    MenuBar *menuBars = NULL;
     StatusBar *bar = NULL;
     DynamicGui*dynamic_gui = NULL;
 
     bool time_24hour_format = false;
-    int screen_timeout = 10; // only until it's first changed
-    int saved_screen_timeout = 10;
+    int screen_timeout = 30; // only until it's first changed
+    int saved_screen_timeout = 30;
     bool screen_timeout_is_temporary = false;
     int8_t timezone_id = 0; // Index of the array of timezones in the timezone Roller selector widget
     int wakeup_count = 0; // restarts at zero at each startup
-    uint8_t display_brightness = 155; // only until it's first changed
+    uint8_t display_brightness = 5; // only until it's first changed
     lv_point_t*tile_valid_points = NULL; //this is for tile navigation matrix to allow user navigation in multiple directions
     int tile_valid_points_count = 0; //number of matrix points
     char watch_name[16] = "";
+    bool is_active_view_dynamic_ = false;
+    bool gui_needs_saved = false;
 };
 #endif /*__GUI_H */

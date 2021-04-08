@@ -32,6 +32,7 @@ public:
 
     bool is_success() { return success; }
     lv_calendar_date_t get_date() { return selected_date; }
+
 private:
     lv_obj_t *calendar;
     lv_calendar_date_t selected_date;

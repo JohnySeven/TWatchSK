@@ -43,7 +43,11 @@ public:
     void set_sync_time_with_server(bool enabled) { sync_time_with_server = enabled; }
     uint get_handled_delta_count() { return delta_counter; }
     SignalKSubscription *add_subscription(String path, uint period, bool is_low_power);
-    void update_subscriptions();
+    /**
+     *  Updates subscriptions depending on power mode to reduce power drain in low power mode.
+     *  In low power mode only active subscription is notifications.*
+     * */
+    void update_subscriptions(bool force = false);
     ///This is intended to be wired with Hardware class power events
     void handle_power_event(PowerCode_t code, uint32_t arg);
     ///Updates server configuration (address and port)
@@ -80,6 +84,7 @@ private:
     esp_websocket_client_handle_t websocket;
     int reconnect_counter_ = reconnect_count_;
     bool websocket_initialized = false;
+    bool low_power_subscriptions_ = false;
     std::map<String, SignalKSubscription *> subscriptions;
     std::vector<String> activeNotifications;
     WifiManager *wifi;

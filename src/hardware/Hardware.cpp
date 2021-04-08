@@ -7,7 +7,7 @@ EventGroupHandle_t isr_group = NULL;
 #define WATCH_FLAG_SLEEP_EXIT _BV(2) // leaving sleep mode because of any kind of interrupt
 #define WATCH_FLAG_BMA_IRQ _BV(3) // leaving sleep mode because of double tap or tilt
 #define WATCH_FLAG_AXP_IRQ _BV(4) // leaving sleep mode because of external button press or any other power management interrupt
-#define WATCH_FLAT_TOUCH_IRQ _BV(5) // leaving sleep mode because of touch (not yet implemented)
+#define WATCH_FLAG_TOUCH_IRQ _BV(5) // leaving sleep mode because of touch (not yet implemented)
 
 #define MOTOR_CHANNEL 1
 #define MOTOR_FREQUENCY 12000
@@ -72,7 +72,7 @@ void Hardware::initialize(TTGOClass *watch)
             if (bits & WATCH_FLAG_SLEEP_MODE)
             {
                 //! For quick wake up, use the group flag
-                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAT_TOUCH_IRQ, &xHigherPriorityTaskWoken);
+                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAG_TOUCH_IRQ, &xHigherPriorityTaskWoken);
             }
 
             if (xHigherPriorityTaskWoken)
@@ -155,6 +155,7 @@ void Hardware::low_energy()
         watch_->stopLvglTick();
         //disable step count interrupt to save battery (counter will still work)
         watch_->bma->enableStepCountInterrupt(false);
+        watch_->bma->enableWakeupInterrupt(double_tap_wakeup_); // enable or disable double_tap_wakeup depending on the switch setting
         watch_->displaySleep();
         //set event bits in events.cpp
         xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_MODE);
@@ -200,13 +201,11 @@ void Hardware::low_energy()
         watch_->touch->setPowerMode(PowerMode_t::FOCALTECH_PMODE_ACTIVE);
         //update system time from RTC
         watch_->rtc->syncToSystem();
+        // always enable double_tap_wakeup when awake - necessary for double-tap theme change to work
+        watch_->bma->enableWakeupInterrupt(true);
         //enable display backlight
         watch_->openBL();
-        WakeupSource_t source = WAKEUP_BUTTON; // must be initialized to something
-        if (isr_bits & WATCH_FLAG_BMA_IRQ) // wakeup came from double tap or tilt
-        {
-            source = WAKEUP_ACCELEROMETER;
-        }
+        WakeupSource_t source = (isr_bits & WATCH_FLAG_BMA_IRQ ? WAKEUP_ACCELEROMETER : WAKEUP_BUTTON);
         //notify everyone we are leaving low power mode
         invoke_power_callbacks(PowerCode_t::POWER_LEAVE_LOW_POWER, source);
         watch_->bma->enableStepCountInterrupt();
@@ -238,10 +237,10 @@ void Hardware::loop()
 
             xEventGroupClearBits(isr_group, WATCH_FLAG_AXP_IRQ);
         }
-        if (bits & WATCH_FLAT_TOUCH_IRQ)
+        if (bits & WATCH_FLAG_TOUCH_IRQ)
         {
-            xEventGroupClearBits(isr_group, WATCH_FLAT_TOUCH_IRQ);
-            ESP_LOGD(HW_TAG, "Touch interupt!");
+            xEventGroupClearBits(isr_group, WATCH_FLAG_TOUCH_IRQ);
+            ESP_LOGD(HW_TAG, "Touch interrupt!");
         }
 
         xEventGroupClearBits(isr_group, WATCH_FLAG_SLEEP_EXIT);
@@ -264,12 +263,20 @@ void Hardware::loop()
                 result = watch_->bma->readInterrupt();
             } while (!result);
 
-            //! setp counter
+            // step counter
             if (watch_->bma->isStepCounter())
             {
                 invoke_power_callbacks(WALK_STEP_COUNTER_UPDATED, watch_->bma->getCounter());
             }
+
+            // double tap
+            if (!lenergy_ &&  watch_->bma->isDoubleClick())
+            {
+                invoke_power_callbacks(DOUBLE_TAP_DETECTED, 0);
+            }
+            
             break;
+
         case ApplicationEvents_T::Q_EVENT_AXP_INT:
             watch_->power->readIRQ();
 

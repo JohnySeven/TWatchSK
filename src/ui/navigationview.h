@@ -57,7 +57,7 @@ public:
 
         ESP_LOGI("SETTINGS", "Tiles loaded!");
     }
-    void theme_updated()
+    void theme_changed()
     {
         twatchsk::update_imgbtn_color(back); // make it the correct color depending on LIGHT/DARK setting
         auto count = lv_list_get_size(list);
@@ -65,9 +65,9 @@ public:
         for (int i = 0; i < count; i++)
         {
             auto tile = tiles.at(i);
+            btn = lv_list_get_next_btn(list, btn);
             if (!tile.color_img)
             {
-                btn = lv_list_get_next_btn(list, btn);
                 if (btn != NULL)
                 {
                     auto img = lv_list_get_btn_img(btn);

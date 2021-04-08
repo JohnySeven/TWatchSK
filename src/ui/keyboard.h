@@ -135,8 +135,6 @@ private:
     void close_and_result(bool is_success)
     {
         _isSuccess = is_success;
-        
-        hide();
         lv_async_call(async_hide, this);
     }
 
