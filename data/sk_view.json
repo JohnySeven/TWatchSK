@@ -18,7 +18,7 @@
                     "binding": {
                         "path": "navigation.speedOverGround",
                         "multiply": 3.6,
-                        "period": 1000
+                        "period": 2000
                     }
                 },
                 {
