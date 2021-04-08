@@ -101,7 +101,7 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
         });
 
         setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, false, [gui, setupMenu]() {
-            auto displaySettings = new DisplaySettings(TTGOClass::getWatch());
+            auto displaySettings = new DisplaySettings(TTGOClass::getWatch(), gui->get_sk_socket());
 
             // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
             displaySettings->set_screen_timeout(gui->get_screen_timeout());
