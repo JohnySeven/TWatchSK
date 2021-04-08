@@ -143,6 +143,7 @@ private:
                 {
                     settings->set_server(keyboard->get_text());
                 }
+                delete keyboard;
             });
             keyboard->show(lv_scr_act());
         }
@@ -163,6 +164,7 @@ private:
                         settings->set_port(port);
                     }
                 }
+                delete keyboard;
             });
             keyboard->show(lv_scr_act());
         }
@@ -296,7 +298,10 @@ private:
     {
         ESP_LOGI(SETTINGS_TAG, "Saving SignalK settings (server=%s,port=%d)...", server_address_.c_str(), server_port_);
         sk_socket_->set_server(server_address_, server_port_);
-        sk_socket_->save();
+        twatchsk::run_async("SK Settings save", [this]() { //BS: try this for gui::save() of new theme from home screen
+            delay(100);
+            this->sk_socket_->save();
+        });
         if (sk_socket_->get_state() == WebsocketState_t::WS_Connected)
         {
             ESP_LOGI(SETTINGS_TAG, "SK websocket will be reconnected.");

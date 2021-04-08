@@ -63,8 +63,14 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
         gui->toggle_main_bar(true);
         NavigationView *setupMenu = NULL;
         setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]() {
+            setupMenu->remove_from_active_list(); // because, for some reason, `delete setupMenu;` doesn't remove it from View::active_views_
             delete setupMenu;
             gui->toggle_main_bar(false);
+            if (gui->get_gui_needs_saved())
+            {
+                gui->save();
+            }
+            gui->set_gui_needs_saved(false);
         });
 
         setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, false, [gui]() {
@@ -103,8 +109,6 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
             // display_setting is saved to disk through GUI::display_brightness. Retrieve it here:
             displaySettings->set_display_brightness(gui->get_display_brightness());
 
-            // dark_theme_enabled is saved to disk through GUI::dark_theme_enabled. Retrieve it here:
-            // displaySettings->set_dark_theme_enabled(gui->get_dark_theme_enabled());
             // Save the value of dark_theme_enabled before going into Display tile
             bool current_dark_theme_enabled = twatchsk::dark_theme_enabled;
             
@@ -129,10 +133,10 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
                 if(twatchsk::dark_theme_enabled != current_dark_theme_enabled) // dark_theme flag changed while in Display tile
                 {
                     need_to_save = true;
-                    ESP_LOGI("GUI_TAG", "Dark theme changed to %d", twatchsk::dark_theme_enabled);
+                    ESP_LOGI(GUI_TAG, "Dark theme changed to %d", twatchsk::dark_theme_enabled);
                     //update themes on GUI objects
-                    setupMenu->theme_updated();
-                    gui->theme_updated();
+                    setupMenu->theme_changed();
+                    gui->theme_changed();
                     
                 }
                 if (need_to_save)
@@ -220,11 +224,7 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     lv_obj_align(img_bin, NULL, LV_ALIGN_CENTER, 0, 0);*/
 
     // set the theme
-    uint32_t flag = LV_THEME_MATERIAL_FLAG_LIGHT; // Create a theme flag and set it to the MATERIAL_LIGHT theme
-    if (twatchsk::dark_theme_enabled)             // If the dark theme is enabled...
-    {
-        flag = LV_THEME_MATERIAL_FLAG_DARK;       // ... change the flag to MATERIAL_DARK
-    }
+    uint32_t flag = twatchsk::dark_theme_enabled ? LV_THEME_MATERIAL_FLAG_DARK : LV_THEME_MATERIAL_FLAG_LIGHT;
     LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag,        // Initiate the theme
                 lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
                 lv_theme_get_font_title());
@@ -487,6 +487,35 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
     {
         update_step_counter(arg);
     }
+    else if (code == PowerCode_t::DOUBLE_TAP_DETECTED) // while watch is awake - this switches between LIGHT and DARK theme
+    {
+        if (screen_timeout_is_temporary) // double-tap occurs during a quickie "time check" that resulted from a double-tap or tilt
+        {
+            clear_temporary_screen_timeout(); // leave the screen on for the normal timeout time, then change the theme
+        }
+        twatchsk::dark_theme_enabled = !twatchsk::dark_theme_enabled;
+        uint32_t flag = twatchsk::dark_theme_enabled ? LV_THEME_MATERIAL_FLAG_DARK : LV_THEME_MATERIAL_FLAG_LIGHT; // Create a theme flag and set it to the new theme
+        LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag,                  // Initiate the theme with the flag
+                              lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
+                              lv_theme_get_font_title());
+        set_display_brightness(twatchsk::dark_theme_enabled ? 1 : 5);
+        auto ttgo = TTGOClass::getWatch();
+        ttgo->bl->adjust(get_adjusted_display_brightness());
+        View::invoke_theme_changed();     // calls theme_changed() for every descendant of View class
+        this->theme_changed();            // updates theme for status bar icons (because StatusBar is not a descendant of View class)
+        if (View::get_active_views_count() == 0) // we're on the home screen, so save the new theme to SPIFFS immediately
+        {
+            twatchsk::run_async("GUI Settings save", [this]()
+            {
+                delay(100);
+                this->save();
+            });
+        }
+        else
+        {
+            gui_needs_saved = true;  // flag to save the new theme to SPIFFS later, when NavigationView is closed
+        }
+    }
 }
 
 void Gui::lv_update_task(struct _lv_task_t *data)
@@ -640,9 +669,9 @@ void Gui::save_config_to_file(JsonObject &json)
     json["watchname"] = watch_name;
 }
 
-void Gui::theme_updated()
+void Gui::theme_changed()
 {
-    bar->theme_updated();
+    bar->theme_changed();
 }
 
 void Gui::set_temporary_screen_timeout(int value)

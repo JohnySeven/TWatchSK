@@ -218,14 +218,11 @@ private:
                             {
                                 ESP_LOGI(SETTINGS_TAG, "User canceled password input.");
                             }
+                            delete passwordPicker;
                         });
 
                         passwordPicker->show(lv_scr_act());
                     }
-                }
-                else
-                {
-                    delete wifiList;
                 }
             });
         }
