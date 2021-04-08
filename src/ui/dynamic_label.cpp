@@ -25,7 +25,8 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
         {
             lv_label_set_text(label, json["text"].as<String>().c_str());
         }
-        else if (json.containsKey("binding"))
+        
+        if (json.containsKey("binding"))
         {
             JsonObject binding = json["binding"].as<JsonObject>();
             Data_formating_t formating;
