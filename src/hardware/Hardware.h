@@ -1,6 +1,7 @@
 #pragma once
 #include "../config.h"
 #include "system/configurable.h"
+#include "ui/themes.h"
 #include <functional>
 #include <vector>
 
@@ -12,7 +13,8 @@ enum PowerCode_t
     POWER_CHARGING_OFF,
     POWER_CHARGING_DONE,
     WALK_STEP_COUNTER_UPDATED,
-    POWER_LOW_TICK
+    POWER_LOW_TICK,
+    DOUBLE_TAP_DETECTED
 };
 
 enum WakeupSource_t
@@ -24,7 +26,8 @@ enum WakeupSource_t
 
 typedef std::function<void(PowerCode_t, uint32_t)> low_power_callback;
 /**
- * @brief Hardware class purpose is to handle all hardware features of the watch, power managment setup, power event callbacks and BMA interuptions, sound & vibrate stuff (comming soon)
+ * @brief Hardware class purpose is to handle all hardware features of the watch, power managment setup,
+ * power event callbacks and BMA interrupts, sound & vibrate stuff (coming soon)
  **/
 class Hardware : public Configurable
 {
