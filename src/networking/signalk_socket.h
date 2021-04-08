@@ -57,6 +57,11 @@ public:
     {
         device_name_ = device_name_ptr;
     }
+
+    String get_token()
+    {
+        return token;
+    }
 private:
     const int reconnect_count_ = 3;
     static void ws_event_handler(void *arg, esp_event_base_t event_base,
