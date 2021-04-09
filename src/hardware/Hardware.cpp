@@ -61,8 +61,9 @@ void Hardware::initialize(TTGOClass *watch)
     // Enable BMA423 interrupt ，
     // The default interrupt configuration,
     // you need to set the acceleration parameters, please refer to the BMA423_Accel example
-    watch->bma->attachInterrupt();
-    update_bma_wakeup();
+    watch->bma->attachInterrupt();    
+    watch_->bma->enableTiltInterrupt(this->tilt_wakeup_); // set according to the saved setting
+    watch_->bma->enableWakeupInterrupt(true); // needs to be on for double-tap theme switching whenever watch is awake
     //TODO: touch interrupt breaks touch as it uses the interrupt also
     /*pinMode(TOUCH_INT, INPUT);
     attachInterrupt(
