@@ -63,7 +63,7 @@
 #define LOC_INPUT_SCREEN_TIMEOUT "Scrn timeout (>=5 sec.)"
 #define LOC_WAKEUP_COUNT "Wakeup count: %d"
 #define LOC_DISPLAY_BRIGHTNESS "Display\nbrightness: "
-#define LOC_DISPLAY_DOWNLOAD_UI "Download UI"
+#define LOC_DISPLAY_DOWNLOAD_UI "Download DynamicViews"
 #define LOC_DISPLAY_DOWNLOADING_UI "Downloading UI from SK server..."
 #define LOC_DISPLAY_DOWNLOAD_UI_DONE "The Dynamic Views download was succes. Watch will reboot in 5 seconds!"
 #define LOC_DISPLAY_DOWNLOAD_UI_NO_CONNECTION "Unable to download Dynamic Views file!\r\nUnable to connect to SK server!"

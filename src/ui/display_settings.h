@@ -94,7 +94,7 @@ protected:
         lv_obj_set_width(timeoutButton_, 50);
 
         displayBrightnessLabel_ = lv_label_create(parent, NULL);
-        lv_obj_align(displayBrightnessLabel_, screenTimeoutLabel_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 16);
+        lv_obj_align(displayBrightnessLabel_, screenTimeoutLabel_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 15);
         lv_label_set_text(displayBrightnessLabel_, LOC_DISPLAY_BRIGHTNESS);
         brightnessButton_ = lv_btn_create(parent, NULL);
         lv_obj_align(brightnessButton_, displayBrightnessLabel_, LV_ALIGN_OUT_RIGHT_MID, 10, 0);
@@ -105,7 +105,7 @@ protected:
         lv_obj_set_width(brightnessButton_, 50);
 
         dark_switch_ = lv_switch_create(parent, NULL);
-        lv_obj_align(dark_switch_, displayBrightnessLabel_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 16);
+        lv_obj_align(dark_switch_, displayBrightnessLabel_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 12);
         if (lv_theme_get_flags() & LV_THEME_MATERIAL_FLAG_DARK) // is the theme's "dark" version currently on?
         {
             lv_switch_on(dark_switch_, LV_ANIM_OFF); // set the switch widget to "ON"
@@ -125,9 +125,11 @@ protected:
 
         download_ui_button_ = lv_btn_create(parent, NULL);
         lv_obj_t *downloadLabel = lv_label_create(download_ui_button_, NULL);
+        lv_obj_set_width(download_ui_button_, 230);
+        lv_obj_align(download_ui_button_, dark_switch_, LV_ALIGN_OUT_BOTTOM_LEFT, 1, 8);
+        lv_obj_add_style(download_ui_button_, LV_OBJ_PART_MAIN, &buttonStyle);
         lv_label_set_text(downloadLabel, LOC_DISPLAY_DOWNLOAD_UI);
         lv_obj_set_event_cb(download_ui_button_, download_button_cb);
-        lv_obj_align(download_ui_button_, dark_switch_, LV_ALIGN_OUT_BOTTOM_LEFT, 4, 0);
 
         download_ui_button_->user_data = this;
         timeoutButton_->user_data = this;
