@@ -26,6 +26,8 @@
 #include "hardware/Hardware.h"
 #include "system/async_dispatcher.h"
 #include <functional>
+#include "sounds/beep.h"
+#include "sounds/alert.h"
 /* In order to use std::bind to attach to method we need to use arguments placeholders that will map arguments to final method.
  * So in function setup_gui on line with attach_power_callback we just type _1 or _2 without whole namespace.
  */
@@ -591,6 +593,8 @@ void Gui::update_gui()
                             delay(100);
                         }
                     });
+                    //Run beep
+                    hardware_->get_player()->play_raw_from_const("alert", alert_sound, alert_sound_len);
                     ESP_LOGI(GUI_TAG, "pending_messages_ empty, so msg added: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
                 }
                 else
@@ -617,6 +621,7 @@ void Gui::update_gui()
                                     delay(100);
                                 }
                             });
+                            hardware_->get_player()->play_raw_from_const("alert", alert_sound, alert_sound_len);
                             break;
                         }
                     }
