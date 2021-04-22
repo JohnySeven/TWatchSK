@@ -47,12 +47,12 @@ void post_gui_warning(const String& message)
     post_gui_update(event);
 }
 
-void post_gui_signalk_update(const String& json)
+void post_gui_sk_dv_update(const String& json)
 {
     GuiEvent_t event;
     event.argument = malloc(json.length() + 1);
     strcpy((char *)event.argument, json.c_str());
-    event.event_type = GuiEventType_t::GUI_SIGNALK_UPDATE;
+    event.event_type = GuiEventType_t::GUI_SK_DV_UPDATE;
     event.message_code = GuiMessageCode_t::NONE;
 
     post_gui_update(event);

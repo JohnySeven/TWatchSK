@@ -594,7 +594,7 @@ void Gui::update_gui()
                 });
             }
         }
-        else if (event.event_type == GuiEventType_t::GUI_SIGNALK_UPDATE)
+        else if (event.event_type == GuiEventType_t::GUI_SK_DV_UPDATE)
         {
             ESP_LOGI(GUI_TAG, "Update SK view %s", (char *)event.argument);
             StaticJsonDocument<256> update;

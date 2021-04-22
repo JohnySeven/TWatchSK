@@ -298,7 +298,7 @@ void SignalKSocket::parse_data(int length, const char *data)
                         ESP_LOGI(WS_TAG, "Got SK value update %s", path.c_str());
                         String json;
                         serializeJson(value, json);
-                        post_gui_signalk_update(json);
+                        post_gui_sk_dv_update(json);
                     }
                 }
             }
