@@ -559,7 +559,7 @@ void Gui::update_gui()
 
     while (read_gui_update(event))
     {
-        if (event.event_type == GuiEventType_t::GUI_SHOW_MESSAGE || event.event_type == GuiEventType_t::GUI_SHOW_WARNING)
+        if (event.event_type == GuiEventType_t::GUI_SHOW_WARNING)
         {
             ESP_LOGI(GUI_TAG, "Show message %d, event=%d, message code=%d!", (int)event.argument, event.event_type, event.message_code);
             char *message = NULL;

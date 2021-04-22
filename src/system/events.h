@@ -24,7 +24,6 @@ enum ApplicationEvents_T
 
 enum GuiEventType_t
 {
-    GUI_SHOW_MESSAGE,
     GUI_SHOW_WARNING,
     GUI_SIGNALK_UPDATE
 };
