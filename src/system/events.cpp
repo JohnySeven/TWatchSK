@@ -21,7 +21,7 @@ void post_gui_update(GuiEvent_t event)
 {
     if (event.event_type == GuiEventType_t::GUI_SHOW_WARNING && is_low_power())
     {
-        xEventGroupSetBits(g_app_state, G_APP_STATE_WAKE_UP);
+        // xEventGroupSetBits(g_app_state, G_APP_STATE_WAKE_UP); // BS: uncomment when you know messages are being queued properly
     }
     
     xQueueSend(gui_queue_handle, &event, 10);
@@ -47,7 +47,7 @@ void post_gui_warning(const String& message)
     post_gui_update(event);
 }
 
-void post_gui_sk_dv_update(const String& json)
+void post_gui_sk_dv_update(const String& json)  // "sk_dv" means "SignalK DynamicView"
 {
     GuiEvent_t event;
     event.argument = malloc(json.length() + 1);

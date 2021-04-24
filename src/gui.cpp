@@ -376,8 +376,7 @@ void Gui::update_time()
         strftime(day_date_buf, sizeof(day_date_buf), "%a %b %e, %G", &info); // month/day format
         if (info.tm_hour > 12)
         {
-            lv_label_set_text(timeSuffixLabel, "pm");
-            ;
+            lv_label_set_text(timeSuffixLabel, "pm");;
         }
         else
         {
@@ -574,6 +573,42 @@ void Gui::update_gui()
 
             if (message != NULL)
             {
+                // create and populate a new PendingMsg_t
+                PendingMsg_t new_message;
+                new_message.msg_text = message;
+                new_message.msg_time = current_time();
+                new_message.msg_count = 1;
+
+                if (pending_messages_.size() == 0)
+                {
+                    pending_messages_.push_back(new_message); // add it to the list
+                    ESP_LOGI(GUI_TAG, "pending_messages_ empty, so msg added: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
+                }
+                else
+                {
+                    for (std::list<PendingMsg_t>::iterator it = pending_messages_.begin(); it != pending_messages_.end(); ++it)
+                    {
+                        // see if new_message is already in the list
+                        if (it->msg_text == new_message.msg_text) // this message is already in the list
+                        {
+                            // update its time and count
+                            ESP_LOGI(GUI_TAG, "Msg is already in pending_messages_: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
+                            it->msg_time = current_time();
+                            it->msg_count++;
+                            break;
+                        }
+                        else 
+                        {
+                            pending_messages_.push_back(new_message); // add it to the list
+                            ESP_LOGI(GUI_TAG, "Msg added to pending_messages_: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
+                            break;
+                        }
+                    }
+                }
+                ESP_LOGI(GUI_TAG, "There are %d messages in pending_messages", pending_messages_.size());
+
+                // this is how to display the message, but it needs to be done one at a time, with a user "OK" between them.
+
                 static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
                 lv_obj_t *mbox1 = lv_msgbox_create(lv_scr_act(), NULL);
                 lv_msgbox_set_text(mbox1, message);
@@ -582,7 +617,8 @@ void Gui::update_gui()
                 lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
                 //trigger activity on main screen to avoid message is displayed and device goes into sleep
                 lv_disp_trig_activity(NULL);
-                //vibrate 50 ms on / 100 ms off 4 times
+                //vibrate 50 ms on / 100 ms off 4 timesdelay(7000); 
+                /*  // BS: uncomment when all is working
                 twatchsk::run_async("vibrate", [this]() {
                     for (int i = 0; i < 5; i++)
                     {
@@ -592,11 +628,12 @@ void Gui::update_gui()
                         delay(100);
                     }
                 });
+                */
             }
         }
         else if (event.event_type == GuiEventType_t::GUI_SK_DV_UPDATE)
         {
-            ESP_LOGI(GUI_TAG, "Update SK view %s", (char *)event.argument);
+            ESP_LOGI(GUI_TAG, "Update SK DynamicView %s", (char *)event.argument);
             StaticJsonDocument<256> update;
             auto result = deserializeJson(update, event.argument);
 
@@ -724,4 +761,31 @@ void Gui::set_is_active_view_dynamic(bool new_value)
             ws_socket->update_subscriptions();
         }
     }
+}
+
+String Gui::current_time()
+{
+    time_t now;
+    struct tm info;
+    char buf[64];
+    time(&now);
+    localtime_r(&now, &info);
+    if (time_24hour_format)
+    {
+        strftime(buf, sizeof(buf), "%H:%M", &info);
+    }
+    else
+    {
+        strftime(buf, sizeof(buf), "%I:%M", &info);
+        if (info.tm_hour > 12)
+        {
+            strcat(buf, " pm");
+        }
+        else
+        {
+            strcat(buf, " am");
+        }
+    }
+    String current_time_string = buf;
+    return current_time_string;
 }

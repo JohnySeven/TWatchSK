@@ -6,6 +6,7 @@
 #include "ui/dynamic_gui.h"
 #include "ui/themes.h"
 #include "hardware/Hardware.h"
+#include <list>
 
 #ifndef __GUI_H
 #define __GUI_H
@@ -64,6 +65,7 @@ private:
     void update_tiles_valid_points(int count);
     char *message_from_code(GuiMessageCode_t code);
     void update_gui();
+    String current_time();
 
     WifiManager *wifiManager = NULL;
     SignalKSocket *ws_socket = NULL;
@@ -78,6 +80,13 @@ private:
     lv_obj_t *watchNameLabel = NULL;
     StatusBar *bar = NULL;
     DynamicGui*dynamic_gui = NULL;
+    struct PendingMsg_t
+    {
+        String msg_text;
+        String msg_time;;
+        int msg_count = 0;
+    };
+    std::list<PendingMsg_t> pending_messages_;
 
     bool time_24hour_format = false;
     int screen_timeout = 30; // only until it's first changed
