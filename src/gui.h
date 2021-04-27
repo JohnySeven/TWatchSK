@@ -82,6 +82,7 @@ private:
     lv_obj_t *watch_face = NULL;
     lv_obj_t *dayDateLabel = NULL;
     lv_obj_t *watchNameLabel = NULL;
+    lv_obj_t *msgBox = NULL;
     StatusBar *bar = NULL;
     DynamicGui*dynamic_gui = NULL;
     struct PendingMsg_t

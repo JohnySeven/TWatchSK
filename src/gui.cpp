@@ -582,6 +582,15 @@ void Gui::update_gui()
                 if (pending_messages_.size() == 0) // list is empty
                 {
                     pending_messages_.push_back(new_message); // add it to the list
+                    twatchsk::run_async("vibrate", [this]() { // first message in the queue - give it a full vibration
+                        for (int i = 0; i < 5; i++)
+                        {
+                            this->hardware_->vibrate(true);
+                            delay(50);
+                            this->hardware_->vibrate(false);
+                            delay(100);
+                        }
+                    });
                     ESP_LOGI(GUI_TAG, "pending_messages_ empty, so msg added: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
                 }
                 else
@@ -589,14 +598,25 @@ void Gui::update_gui()
                     bool message_found = false;
                     for (std::list<PendingMsg_t>::iterator it = pending_messages_.begin(); it != pending_messages_.end(); ++it)
                     {
-                        // see if new_message is already in the list
                         if (new_message.msg_text == it->msg_text) // this message is already in the list
                         {
                             // update its time and count
                             ESP_LOGI(GUI_TAG, "Msg is already in pending_messages_: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
                             it->msg_time = current_time();
                             it->msg_count++;
+                            String updated_text = 
+                                it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
+                            lv_msgbox_set_text(msgBox, updated_text.c_str()); 
                             message_found = true;
+                            twatchsk::run_async("vibrate", [this]() { // just a very brief vibration for each added message
+                                for (int i = 0; i < 3; i++)
+                                {
+                                    this->hardware_->vibrate(true);
+                                    delay(50);
+                                    this->hardware_->vibrate(false);
+                                    delay(100);
+                                }
+                            });
                             break;
                         }
                     }
@@ -604,6 +624,20 @@ void Gui::update_gui()
                     {
                         pending_messages_.push_back(new_message); // add it to the list
                         ESP_LOGI(GUI_TAG, "Msg added to pending_messages_: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
+                        // update the count on any currently-displayed message
+                        std::list<PendingMsg_t>::iterator it = pending_messages_.begin(); // get the first message - that's the one that's currently displayed
+                        String updated_text = // re-create the message text to reflect the new pending_messages_.size()
+                                it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
+                        lv_msgbox_set_text(msgBox, updated_text.c_str()); // display the updated text on the currently-displayed message
+                        twatchsk::run_async("vibrate", [this]() {         // just a very brief vibration for each added message
+                            for (int i = 0; i < 3; i++)
+                            {
+                                this->hardware_->vibrate(true);
+                                delay(50);
+                                this->hardware_->vibrate(false);
+                                delay(100);
+                            }
+                        });
                     }
                 }
                 ESP_LOGI(GUI_TAG, "There are %d messages in pending_messages", pending_messages_.size());
@@ -800,18 +834,18 @@ void Gui::display_next_message(bool delete_first_message)
         }
         else
         {
-            it = pending_messages_.begin();
+            it = pending_messages_.begin();    // doesn't work if "it" is not re-set to the first element like this
             ESP_LOGI(GUI_TAG, "Starting at the beginning again: %s", it->msg_text.c_str());
             static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
-            lv_obj_t *mbox1 = lv_msgbox_create(lv_scr_act(), NULL);
+            msgBox = lv_msgbox_create(lv_scr_act(), NULL);
             String full_text =
-                it->msg_time + ": " + it->msg_text + "\n(" + it->msg_count + LOC_MSG_COUNT + ")\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
-            lv_msgbox_set_text(mbox1, full_text.c_str());
-            lv_msgbox_add_btns(mbox1, btns);
-            lv_obj_set_width(mbox1, 200);
-            lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
-            mbox1->user_data = this;
-            lv_obj_set_event_cb(mbox1, msg_box_callback);
+                it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
+            lv_msgbox_set_text(msgBox, full_text.c_str());
+            lv_msgbox_add_btns(msgBox, btns);
+            lv_obj_set_size(msgBox, 220, 260);
+            lv_obj_align(msgBox, NULL, LV_ALIGN_CENTER, 0, 0);
+            msgBox->user_data = this;
+            lv_obj_set_event_cb(msgBox, msg_box_callback);
             display_next_pending_message_ = false; // so that only one is displayed at a time
             //trigger activity on main screen to avoid watch going to sleep right away, to ensure the message can be seen and read
             lv_disp_trig_activity(NULL);
