@@ -772,14 +772,12 @@ String Gui::current_time()
     return current_time_string;
 }
 
-void Gui::msg_box_cb(lv_obj_t * obj, lv_event_t event)
+void Gui::msg_box_callback(lv_obj_t * obj, lv_event_t event)
 {
     if(event == LV_EVENT_VALUE_CHANGED) 
     {
-        ESP_LOGI(GUI_TAG, "msg_box_cb() is happening");
         Gui *gui = (Gui *)obj->user_data;
         gui->set_display_next_pending_message(true); // now that this message is being closed, it's OK to display the next one
-        ESP_LOGI(GUI_TAG, "display_next_message() is about to happen");
         gui->display_next_message();
         lv_msgbox_start_auto_close(obj, 0);
     }
@@ -787,17 +785,19 @@ void Gui::msg_box_cb(lv_obj_t * obj, lv_event_t event)
 
 void Gui::display_next_message()
 {
-    ESP_LOGI(GUI_TAG, "display_next_message() is happening");
     if (pending_messages_.size() > 0)
     {
         std::list<PendingMsg_t>::iterator it = pending_messages_.begin();
         static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
         lv_obj_t *mbox1 = lv_msgbox_create(lv_scr_act(), NULL);
-        lv_msgbox_set_text(mbox1, it->msg_text.c_str());
+        String full_text = 
+            it->msg_time + ": " + it->msg_text + "\n(" + it->msg_count + LOC_MSG_COUNT + ")\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
+        lv_msgbox_set_text(mbox1, full_text.c_str());
         lv_msgbox_add_btns(mbox1, btns);
         lv_obj_set_width(mbox1, 200);
         lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
-        lv_obj_set_event_cb(mbox1, msg_box_cb);
+        mbox1->user_data = this;
+        lv_obj_set_event_cb(mbox1, msg_box_callback);
         pending_messages_.erase(it);
         display_next_pending_message_ = false; // so that only one is displayed at a time
         //trigger activity on main screen to avoid watch going to sleep right away, to ensure the message can be seen and read

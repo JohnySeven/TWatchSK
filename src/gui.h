@@ -69,7 +69,7 @@ private:
     char *message_from_code(GuiMessageCode_t code);
     void update_gui();
     String current_time();
-    static void msg_box_cb(lv_obj_t * obj, lv_event_t event);
+    static void msg_box_callback(lv_obj_t * obj, lv_event_t event);
 
     WifiManager *wifiManager = NULL;
     SignalKSocket *ws_socket = NULL;
