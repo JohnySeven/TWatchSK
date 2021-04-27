@@ -75,7 +75,6 @@ private:
     bool tilt_wakeup_ = false;
     TTGOClass *watch_;
     bool lenergy_ = false;
-    bool light_sleep_ = false;
     bool is_vibrating_ = false;
     void low_energy();
     void invoke_power_callbacks(PowerCode_t code, uint32_t arg);

@@ -21,7 +21,7 @@ void post_gui_update(GuiEvent_t event)
 {
     if (event.event_type == GuiEventType_t::GUI_SHOW_WARNING && is_low_power())
     {
-        // xEventGroupSetBits(g_app_state, G_APP_STATE_WAKE_UP); // BS: uncomment when you know messages are being queued properly
+        xEventGroupSetBits(g_app_state, G_APP_STATE_WAKE_UP);
     }
     
     xQueueSend(gui_queue_handle, &event, 10);

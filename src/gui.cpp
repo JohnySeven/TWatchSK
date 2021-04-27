@@ -607,28 +607,10 @@ void Gui::update_gui()
                 }
                 ESP_LOGI(GUI_TAG, "There are %d messages in pending_messages", pending_messages_.size());
 
-                // this is how to display the message, but it needs to be done one at a time, with a user "OK" between them.
-
-                static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
-                lv_obj_t *mbox1 = lv_msgbox_create(lv_scr_act(), NULL);
-                lv_msgbox_set_text(mbox1, message);
-                lv_msgbox_add_btns(mbox1, btns);
-                lv_obj_set_width(mbox1, 200);
-                lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
-                //trigger activity on main screen to avoid message is displayed and device goes into sleep
-                lv_disp_trig_activity(NULL);
-                //vibrate 50 ms on / 100 ms off 4 timesdelay(7000); 
-                /*  // BS: uncomment when all is working
-                twatchsk::run_async("vibrate", [this]() {
-                    for (int i = 0; i < 5; i++)
-                    {
-                        this->hardware_->vibrate(true);
-                        delay(50);
-                        this->hardware_->vibrate(false);
-                        delay(100);
-                    }
-                });
-                */
+                if (display_next_pending_message_) // if there is not already a message displayed
+                {
+                    display_next_message();
+                }
             }
         }
         else if (event.event_type == GuiEventType_t::GUI_SK_DV_UPDATE)
@@ -788,4 +770,51 @@ String Gui::current_time()
     }
     String current_time_string = buf;
     return current_time_string;
+}
+
+void Gui::msg_box_cb(lv_obj_t * obj, lv_event_t event)
+{
+    if(event == LV_EVENT_VALUE_CHANGED) 
+    {
+        ESP_LOGI(GUI_TAG, "msg_box_cb() is happening");
+        Gui *gui = (Gui *)obj->user_data;
+        gui->set_display_next_pending_message(true); // now that this message is being closed, it's OK to display the next one
+        ESP_LOGI(GUI_TAG, "display_next_message() is about to happen");
+        gui->display_next_message();
+        lv_msgbox_start_auto_close(obj, 0);
+    }
+}
+
+void Gui::display_next_message()
+{
+    ESP_LOGI(GUI_TAG, "display_next_message() is happening");
+    if (pending_messages_.size() > 0)
+    {
+        std::list<PendingMsg_t>::iterator it = pending_messages_.begin();
+        static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
+        lv_obj_t *mbox1 = lv_msgbox_create(lv_scr_act(), NULL);
+        lv_msgbox_set_text(mbox1, it->msg_text.c_str());
+        lv_msgbox_add_btns(mbox1, btns);
+        lv_obj_set_width(mbox1, 200);
+        lv_obj_align(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_set_event_cb(mbox1, msg_box_cb);
+        pending_messages_.erase(it);
+        display_next_pending_message_ = false; // so that only one is displayed at a time
+        //trigger activity on main screen to avoid watch going to sleep right away, to ensure the message can be seen and read
+        lv_disp_trig_activity(NULL);
+        //vibrate 50 ms on / 100 ms off 4 timesdelay(7000);
+        twatchsk::run_async("vibrate", [this]() {
+            for (int i = 0; i < 5; i++)
+            {
+                this->hardware_->vibrate(true);
+                delay(50);
+                this->hardware_->vibrate(false);
+                delay(100);
+            }
+        });
+    }
+    else
+    {
+        ESP_LOGI(GUI_TAG, "No more pending messages to display");
+    }
 }

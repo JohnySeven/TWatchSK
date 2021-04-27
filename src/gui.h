@@ -56,7 +56,10 @@ public:
     bool is_active_view_dynamic() { return is_active_view_dynamic_; }
     void set_is_active_view_dynamic(bool new_value);
     bool get_gui_needs_saved() { return gui_needs_saved; }
-    void set_gui_needs_saved(bool new_value) { gui_needs_saved = new_value; } 
+    void set_gui_needs_saved(bool new_value) { gui_needs_saved = new_value; }
+    void set_display_next_pending_message(bool value) { display_next_pending_message_ = value; }
+    void display_next_message();
+
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);
@@ -66,6 +69,7 @@ private:
     char *message_from_code(GuiMessageCode_t code);
     void update_gui();
     String current_time();
+    static void msg_box_cb(lv_obj_t * obj, lv_event_t event);
 
     WifiManager *wifiManager = NULL;
     SignalKSocket *ws_socket = NULL;
@@ -100,5 +104,6 @@ private:
     char watch_name[16] = "";
     bool is_active_view_dynamic_ = false;
     bool gui_needs_saved = false;
+    bool display_next_pending_message_ = true;
 };
 #endif /*__GUI_H */
