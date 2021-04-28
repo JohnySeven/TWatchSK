@@ -24,9 +24,8 @@ enum ApplicationEvents_T
 
 enum GuiEventType_t
 {
-    GUI_SHOW_MESSAGE,
     GUI_SHOW_WARNING,
-    GUI_SIGNALK_UPDATE
+    GUI_SK_DV_UPDATE  // SK_DV means "SignalK DynamicView"
 };
 
 enum GuiMessageCode_t
@@ -50,7 +49,7 @@ extern EventGroupHandle_t g_app_state;
 
 void initialize_events();
 void post_event(ApplicationEvents_T event);
-void post_gui_signalk_update(const String& json);
+void post_gui_sk_dv_update(const String& json);  // "sk_dv" means "SignalK DynamicView"
 void post_gui_warning(GuiMessageCode_t message);
 void post_gui_warning(const String& message);
 bool read_gui_update(GuiEvent_t& event);

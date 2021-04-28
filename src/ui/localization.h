@@ -85,3 +85,5 @@
 #define LOC_WIFI_SETTINGS_MENU "Wifi"
 #define LOC_SIGNALK_SETTING_MENU "Signal K"
 #define LOC_WATCH_INFO_MENU "Watch info"
+#define LOC_MSG_COUNT " of this msg"
+#define LOC_UNREAD_MSGS " unread msgs"

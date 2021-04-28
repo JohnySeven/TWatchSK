@@ -6,6 +6,7 @@
 #include "ui/dynamic_gui.h"
 #include "ui/themes.h"
 #include "hardware/Hardware.h"
+#include <list>
 
 #ifndef __GUI_H
 #define __GUI_H
@@ -55,7 +56,10 @@ public:
     bool is_active_view_dynamic() { return is_active_view_dynamic_; }
     void set_is_active_view_dynamic(bool new_value);
     bool get_gui_needs_saved() { return gui_needs_saved; }
-    void set_gui_needs_saved(bool new_value) { gui_needs_saved = new_value; } 
+    void set_gui_needs_saved(bool new_value) { gui_needs_saved = new_value; }
+    void set_display_next_pending_message(bool value) { display_next_pending_message_ = value; }
+    void display_next_message(bool delete_first_message);
+
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);
@@ -64,6 +68,8 @@ private:
     void update_tiles_valid_points(int count);
     char *message_from_code(GuiMessageCode_t code);
     void update_gui();
+    String current_time();
+    static void msg_box_callback(lv_obj_t * obj, lv_event_t event);
 
     WifiManager *wifiManager = NULL;
     SignalKSocket *ws_socket = NULL;
@@ -76,8 +82,16 @@ private:
     lv_obj_t *watch_face = NULL;
     lv_obj_t *dayDateLabel = NULL;
     lv_obj_t *watchNameLabel = NULL;
+    lv_obj_t *msgBox = NULL;
     StatusBar *bar = NULL;
     DynamicGui*dynamic_gui = NULL;
+    struct PendingMsg_t
+    {
+        String msg_text;
+        String msg_time;;
+        int msg_count = 0;
+    };
+    std::list<PendingMsg_t> pending_messages_;
 
     bool time_24hour_format = false;
     int screen_timeout = 30; // only until it's first changed
@@ -91,5 +105,6 @@ private:
     char watch_name[16] = "";
     bool is_active_view_dynamic_ = false;
     bool gui_needs_saved = false;
+    bool display_next_pending_message_ = true;
 };
 #endif /*__GUI_H */

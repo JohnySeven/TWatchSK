@@ -132,7 +132,7 @@ void Hardware::initialize(TTGOClass *watch)
 ///Invokes power callback to all listeners
 void Hardware::invoke_power_callbacks(PowerCode_t code, uint32_t arg)
 {
-    ESP_LOGI(HW_TAG, "Power event %d with arg %d", (int)code, arg);
+    ESP_LOGI(HW_TAG, "invoke_power_callbacks(PowerCode_t %d, arg %d)", (int)code, arg);
     for (auto callback : power_callbacks_)
     {
         callback(code, arg);
@@ -165,7 +165,6 @@ void Hardware::low_energy()
         invoke_power_callbacks(PowerCode_t::POWER_ENTER_LOW_POWER, 0);
         lenergy_ = true;
 
-        light_sleep_ = false;
         ESP_LOGI(HW_TAG, "Entering light sleep.");
         uint counter = 0;
         while (!(isr_bits & WATCH_FLAG_SLEEP_EXIT) && !(app_bits & G_APP_STATE_WAKE_UP))
