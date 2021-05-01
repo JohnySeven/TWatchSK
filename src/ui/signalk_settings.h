@@ -28,37 +28,52 @@ protected:
         //shows server name and version (if connected)
         server_label_ = lv_label_create(parent, NULL);
         lv_obj_align(server_label_, status_label_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 10);
+
+        static lv_style_t buttonStyle;
+        lv_style_init(&buttonStyle);
+        lv_style_set_radius(&buttonStyle, LV_STATE_DEFAULT, 10);
+
         //add address and port changing buttons - we will use keyboard for input!
         server_address_button_ = lv_btn_create(parent, NULL);
         server_address_button_->user_data = this;
         lv_obj_set_event_cb(server_address_button_, change_server_address_event);
-        lv_obj_align(server_address_button_, server_label_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 10);
+        lv_obj_add_style(server_address_button_, LV_OBJ_PART_MAIN, &buttonStyle);
+        lv_obj_set_size(server_address_button_, 140, 38);
+        lv_obj_align(server_address_button_, server_label_, LV_ALIGN_OUT_BOTTOM_LEFT, 6, 8);
         server_address_label_ = lv_label_create(server_address_button_, NULL);
+        
         //server port
         server_port_button_ = lv_btn_create(parent, NULL);
         server_port_label_ = lv_label_create(server_port_button_, NULL);
-        lv_obj_set_width(server_port_button_, 50);
+        lv_obj_add_style(server_port_button_, LV_OBJ_PART_MAIN, &buttonStyle);
+        lv_obj_set_size(server_port_button_, 60, 38);
         lv_obj_set_event_cb(server_port_button_, change_server_port_event);
         server_port_button_->user_data = this;
 
         //find sk with mDNS service
         find_button_ = lv_btn_create(parent, NULL);
-        lv_obj_align(find_button_, server_address_button_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, -10);
+        lv_obj_add_style(find_button_, LV_OBJ_PART_MAIN, &buttonStyle);
+        lv_obj_set_size(find_button_, 215, 38);
+        lv_obj_align(find_button_, server_address_button_, LV_ALIGN_OUT_BOTTOM_LEFT, -4, 8);
         find_button_label_ = lv_label_create(find_button_, NULL);
         lv_label_set_text(find_button_label_, LOC_SIGNALK_FIND_SERVER);
-        lv_obj_align(find_button_, parent, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
         find_button_->user_data = this;
         lv_obj_set_event_cb(find_button_, __scan_event);
+        
         //reset token button - only visible if token is present
         token_reset_button_ = lv_btn_create(parent, NULL);
-        lv_obj_align(token_reset_button_, find_button_, LV_ALIGN_OUT_TOP_MID, 0, -5);
+        lv_obj_add_style(token_reset_button_, LV_OBJ_PART_MAIN, &buttonStyle);
+        lv_obj_set_size(token_reset_button_, 140, 38);
+        lv_obj_align(token_reset_button_, find_button_, LV_ALIGN_OUT_BOTTOM_MID, 0, 8);
         auto resetLabel = lv_label_create(token_reset_button_, NULL);
         lv_label_set_text(resetLabel, LOC_SIGNALK_TOKEN_RESET);
         token_reset_button_->user_data = this;
         lv_obj_set_event_cb(token_reset_button_, __token_reset_event);
+        
         //update current configuration to class variables
         server_address_ = sk_socket_->get_server_address();
         server_port_ = sk_socket_->get_server_port();
+        
         //update current status
         update_sk_info();
         update_server_info();

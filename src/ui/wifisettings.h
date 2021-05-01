@@ -46,22 +46,32 @@ protected:
         wifi_name_ = lv_label_create(parent, NULL);
         lv_label_set_text_fmt(wifi_name_, LOC_WIFI_CONFIG_SSID_FMT, wifi_manager_->get_configured_ssid().c_str());
         lv_obj_set_pos(wifi_name_, spacing, spacing);
+        
         //show wifi current status
         status_ = lv_label_create(parent, NULL);
         lv_obj_align(status_, wifi_name_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, spacing);
+        
         //show current IP address (if any)
         wifi_ip_ = lv_label_create(parent, NULL);
         lv_obj_align(wifi_ip_, status_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, spacing);
+        
+        static lv_style_t buttonStyle;
+        lv_style_init(&buttonStyle);
+        lv_style_set_radius(&buttonStyle, LV_STATE_DEFAULT, 10);
+        
         //connect button - visible only if not connected - just guide for user to enable wifi
         connect_button_ = lv_btn_create(parent, NULL);
+        lv_obj_add_style(connect_button_, LV_OBJ_PART_MAIN, &buttonStyle);
         lv_obj_align_y(connect_button_, wifi_ip_, LV_ALIGN_OUT_BOTTOM_LEFT, spacing * 2); //first align the top with label above + 4pix
         lv_obj_align_x(connect_button_, parent, LV_ALIGN_IN_BOTTOM_MID, 0);               //then center the button in parent
         auto connectLabel = lv_label_create(connect_button_, NULL);
         lv_label_set_text(connectLabel, LOC_WIFI_CONNECT);
         connect_button_->user_data = this;
         lv_obj_set_event_cb(connect_button_, __connect_event);
+        
         //scan button
         scan_button_ = lv_btn_create(parent, NULL);
+        lv_obj_add_style(scan_button_, LV_OBJ_PART_MAIN, &buttonStyle);
         lv_obj_align(scan_button_, connect_button_, LV_ALIGN_OUT_BOTTOM_MID, 0, spacing);
         auto scanLabel = lv_label_create(scan_button_, NULL);
         lv_label_set_text(scanLabel, LOC_WIFI_SCAN_LABEL);

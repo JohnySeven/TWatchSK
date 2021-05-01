@@ -42,7 +42,7 @@ protected:
         lv_label_set_text(watchNameLabel_, LOC_WATCH_NAME);
         watchNameButton_ = lv_btn_create(parent, NULL);
         watchNameButton_->user_data = this;
-        lv_obj_align(watchNameButton_, watchNameLabel_, LV_ALIGN_OUT_RIGHT_MID, 5, 5);
+        lv_obj_align(watchNameButton_, watchNameLabel_, LV_ALIGN_OUT_RIGHT_MID, 7, 2);
         lv_obj_add_style(watchNameButton_, LV_OBJ_PART_MAIN, &buttonStyle);
         watchName_ = lv_label_create(watchNameButton_, NULL);
         lv_label_set_text(watchName_, watch_name_);
