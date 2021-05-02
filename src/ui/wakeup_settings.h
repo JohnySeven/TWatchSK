@@ -21,7 +21,7 @@ public:
 protected:
     virtual void show_internal(lv_obj_t *parent) override
     {
-        const lv_coord_t padding = 8;
+        const lv_coord_t padding = 10;
         lv_cont_set_layout(parent, LV_LAYOUT_OFF);
 
         title_ = lv_label_create(parent, NULL);
