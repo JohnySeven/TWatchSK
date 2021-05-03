@@ -92,7 +92,7 @@ lv_color_t DynamicHelpers::get_color(const String &value)
 
     if (value.startsWith("#"))
     {
-        ret = lv_color_hex(strtol(value.c_str(), NULL, 16));
+        ret = lv_color_hex(strtol(value.substring(1).c_str(), NULL, 16));
     }
     else if (value == "white")
     {

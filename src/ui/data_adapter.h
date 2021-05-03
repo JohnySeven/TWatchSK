@@ -8,6 +8,7 @@ struct Data_formating_t
     float multiply = 1.0;
     float offset = 0.0;
     int decimal_places = 1;
+    char *string_format = NULL;
 };
 
 typedef std::function<void(const JsonVariant&, const Data_formating_t&)> adapter_callback_t;
