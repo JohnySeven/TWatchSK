@@ -45,8 +45,13 @@ void init_i2s()
           .data_out_num = TWATCH_DAC_IIS_DOUT,
           .data_in_num = I2S_PIN_NO_CHANGE};
 
-  i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
-  i2s_set_pin(I2S_NUM_0, &pin_config);
+  if(i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL) == ESP_OK)
+  {
+     if(i2s_set_pin(I2S_NUM_0, &pin_config) == ESP_OK)
+     {
+       ESP_LOGI(PLAYER_TAG, "I2S initialized OK!");
+     }
+  }
 }
 
 void deinit_i2s()
@@ -80,7 +85,7 @@ void SoundPlayer::player_task_func(void *pvParameter)
   {
     if (xQueueReceive(queue, &currentTask, portMAX_DELAY))
     {
-      ESP_LOGI(PLAYER_TAG, "Playing sound %s", currentTask.name);
+      ESP_LOGI(PLAYER_TAG, "Playing sound %s repeat=%d", currentTask.name, currentTask.repeat);
       init_i2s();
       ssize_t nread;
       size_t nwritten;
@@ -90,18 +95,24 @@ void SoundPlayer::player_task_func(void *pvParameter)
 
       for (int r = 0; r < currentTask.repeat; r++)
       {
-        for (int i = 0; i < currentTask.len; i = i + 256)
-        {
-          auto ret = i2s_write(I2S_NUM_0, (currentTask.sound + i), 256, &nwritten, portMAX_DELAY);
+        int bytes = currentTask.len;
+        unsigned char *ptr = currentTask.sound;
 
-          if(ret != ESP_OK)
+        while (bytes > 0)
+        {
+          int batchSize = (bytes - 128) ? 128 : bytes;
+          auto ret = i2s_write(I2S_NUM_0, ptr, batchSize, &nwritten, portMAX_DELAY);
+          bytes -= nwritten;
+          ptr += nwritten;
+
+          if (ret != ESP_OK)
           {
             ESP_LOGI(PLAYER_TAG, "Unable to send I2S data, failed with result=%d", ret);
           }
         }
       }
-      ESP_LOGI(PLAYER_TAG, "Sound playing %s finished", currentTask.name);
       deinit_i2s();
+      ESP_LOGI(PLAYER_TAG, "Sound playing %s finished", currentTask.name);
     }
   }
 }

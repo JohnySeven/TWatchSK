@@ -465,6 +465,7 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
         {
         case WAKEUP_BUTTON:
             clear_temporary_screen_timeout(); // waking up with a button press - if the last timeout was temporary, clear it
+            hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, 1);
             break;
         case WAKEUP_ACCELEROMETER: // waking up with double tap or tilt
             set_temporary_screen_timeout(2);
@@ -594,7 +595,7 @@ void Gui::update_gui()
                         }
                     });
                     //Run beep
-                    hardware_->get_player()->play_raw_from_const("alert", alert_sound, alert_sound_len);
+                    hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, 10);
                     ESP_LOGI(GUI_TAG, "pending_messages_ empty, so msg added: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
                 }
                 else
@@ -621,7 +622,7 @@ void Gui::update_gui()
                                     delay(100);
                                 }
                             });
-                            hardware_->get_player()->play_raw_from_const("alert", alert_sound, alert_sound_len);
+                            hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, alert_sound_default_repeat);
                             break;
                         }
                     }
