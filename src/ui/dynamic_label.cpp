@@ -21,11 +21,14 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
             lv_obj_set_style_local_text_color(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, color);
         }
 
+        auto textSet = false;
+
         if (json.containsKey("text"))
         {
+            textSet = true;
             lv_label_set_text(label, json["text"].as<String>().c_str());
         }
-        
+
         if (json.containsKey("binding"))
         {
             JsonObject binding = json["binding"].as<JsonObject>();
@@ -53,34 +56,56 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
                 formating.decimal_places = binding["decimals"].as<int>();
             }
 
+            if (binding.containsKey("format"))
+            {
+                auto jsonFormating = binding["format"].as<char *>();
+                //allocate memory for format string + 1 for \0 char at the end
+                formating.string_format = (char *)malloc(strlen(jsonFormating) + 1);
+                strcpy(formating.string_format, jsonFormating);
+            }
+
             factory->add_data_adapter(binding["path"].as<String>(), period, formating, [label](const JsonVariant &value, const Data_formating_t &format) {
+                String stringValue;
+
                 if (value.is<String>())
                 {
-                    lv_label_set_text(label, value.as<String>().c_str());
+                    stringValue = value.as<String>();
                 }
                 else if (value.is<int>())
                 {
-                    auto intValue = String(value.as<int>());
-                    lv_label_set_text(label, intValue.c_str());
+                    stringValue = String(value.as<int>());
                 }
                 else if (value.is<float>())
                 {
-                    auto floatValue = String((value.as<float>() + format.offset) * format.multiply, format.decimal_places);
-
-                    lv_label_set_text(label, floatValue.c_str());
+                    stringValue = String((value.as<float>() + format.offset) * format.multiply, format.decimal_places);
                 }
                 else if (value.is<bool>())
                 {
-                    lv_label_set_text(label, value.as<bool>() ? LOC_TRUE : LOC_FALSE);
+                    stringValue = String(value.as<bool>() ? LOC_TRUE : LOC_FALSE);
                 }
                 else
                 {
                     String json;
                     serializeJson(value, json);
-                    lv_label_set_text(label, json.c_str());
+                    stringValue = json;
+                }
+
+                if (format.string_format != NULL)
+                {
+                    String text = String(format.string_format);
+                    text.replace("$$", stringValue.c_str());
+                    lv_label_set_text(label, text.c_str());
+                }
+                else
+                {
+                    lv_label_set_text(label, stringValue.c_str());
                 }
             });
-            lv_label_set_text(label, "--");
+
+            if (!textSet)
+            {
+                lv_label_set_text(label, "--");
+            }
         }
 
         if (json.containsKey("font"))
