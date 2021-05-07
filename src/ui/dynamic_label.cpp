@@ -92,9 +92,9 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
 
                 if (format.string_format != NULL)
                 {
-                    String replace = String(format.string_format);
-                    replace.replace("$$", stringValue.c_str());
-                    lv_label_set_text(label, replace.c_str());
+                    String text = String(format.string_format);
+                    text.replace("$$", stringValue.c_str());
+                    lv_label_set_text(label, text.c_str());
                 }
                 else
                 {
