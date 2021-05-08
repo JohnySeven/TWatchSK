@@ -33,7 +33,7 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
         wifi_event_sta_disconnected_t *disconnect_event = (wifi_event_sta_disconnected_t *)event_data;
         auto status = manager->value;
         ESP_LOGI(WIFI_TAG, "Wifi disconnected with reason=%d, status=%d", disconnect_event->reason, status);
-        if (!manager->disconnecting)
+        if (!manager->forced_disconnect) // this is an unintentional wifi disconnect
         {
             if (manager->is_enabled())
             {
@@ -54,7 +54,7 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
         }
 
         manager->update_status(Wifi_Disconnected);
-        manager->disconnecting = false;
+        manager->forced_disconnect = false; // reset to the normal "waiting for the next disconnect" state
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
@@ -265,7 +265,7 @@ void WifiManager::connect()
     {
         if (get_status() == WifiState_t::Wifi_Connecting || get_status() == WifiState_t::Wifi_Connected)
         {
-            disconnecting = true;
+            forced_disconnect = true; // to prevent "Wifi disconnected" messages from appearing on the watch
         }
 
         off(true);  //let's force calling disable wifi

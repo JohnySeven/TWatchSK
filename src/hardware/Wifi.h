@@ -57,7 +57,7 @@ private:
     bool enabled = false;
     bool connected = false;
     bool initialized = false;
-    bool disconnecting = false;
+    bool forced_disconnect = false;
     bool configured = false;
     static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                    int32_t event_id, void *event_data);

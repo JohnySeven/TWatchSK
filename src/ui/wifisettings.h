@@ -115,7 +115,9 @@ protected:
 
     void set_password_and_connect(const char *password)
     {
-        if (state_ != WifiSettingsState_t::WiS_ConnectingToWifi) //JD: Workaround, something is wrong as this is called 2x, will fix that later
+        if (state_ != WifiSettingsState_t::WiS_ConnectingToWifi) //JD: Workaround, something is wrong as this is called 2x, will fix that later 
+                                                                 // BS: I think it was a bug with keyboards, and may be fixed now?
+                                                                 // See changes to keyboard.h in https://github.com/JohnySeven/TWatchSK/commit/551d1be1fce5e36144c4c00131db384b8cce88ae#
         {
             strcpy(password_, password);
             wifi_changed_ = true;
