@@ -60,12 +60,12 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
     Gui *gui = (Gui *)obj->user_data;
     if (event == LV_EVENT_SHORT_CLICKED)
     { //!  Event callback is in here
-        gui->toggle_main_bar(true);
+        gui->hide_main_bar(true);
         NavigationView *setupMenu = NULL;
         setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]() {
             setupMenu->remove_from_active_list(); // because, for some reason, `delete setupMenu;` doesn't remove it from View::active_views_
             delete setupMenu;
-            gui->toggle_main_bar(false);
+            gui->hide_main_bar(false);
             if (gui->get_gui_needs_saved())
             {
                 gui->save();
@@ -437,7 +437,7 @@ char *Gui::message_from_code(GuiMessageCode_t code)
     };
 }
 
-void Gui::toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden)
+void Gui::hide_status_bar_icon(lv_icon_status_bar_t icon, bool hidden)
 {
     if (hidden)
     {
@@ -538,20 +538,20 @@ void Gui::update_gui()
     auto wifiStatus = wifiManager->get_status();
     if (wifiStatus == WifiState_t::Wifi_Connected || wifiStatus == WifiState_t::Wifi_Connecting)
     {
-        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, false);
+        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, false);
     }
     else
     {
-        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, true);
+        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, true);
     }
 
     if (ws_socket->get_state() == WebsocketState_t::WS_Connected)
     {
-        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, false);
+        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, false);
     }
     else
     {
-        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, true);
+        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, true);
     }
 
     GuiEvent_t event;
@@ -679,12 +679,12 @@ void Gui::lv_battery_task(struct _lv_task_t *data)
     gui->update_battery_level();
 }
 
-void Gui::toggle_status_bar(bool hidden)
+void Gui::hide_status_bar(bool hidden)
 {
     bar->set_hidden(hidden);
 }
 
-void Gui::toggle_main_bar(bool hidden)
+void Gui::hide_main_bar(bool hidden)
 {
     lv_obj_set_hidden(mainBar, hidden);
 }
