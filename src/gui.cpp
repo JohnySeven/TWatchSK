@@ -835,7 +835,7 @@ void Gui::display_next_message(bool delete_first_message)
         else
         {
             it = pending_messages_.begin();    // doesn't work if "it" is not re-set to the first element like this
-            ESP_LOGI(GUI_TAG, "Starting at the beginning again: %s", it->msg_text.c_str());
+            ESP_LOGI(GUI_TAG, "Displaying the first message in pending_messages: %s", it->msg_text.c_str());
             static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
             msgBox = lv_msgbox_create(lv_scr_act(), NULL);
             String full_text =

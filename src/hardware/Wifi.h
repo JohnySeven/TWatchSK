@@ -6,6 +6,8 @@
 #include "system/observable.h"
 #include "esp_wifi.h"
 #define WIFI_AP_LIST_MAX_SIZE 32
+#define WIFI_RETRY_ARRAY_SIZE 8 //BS: make it 8 in final version
+#define WIFI_RETRY_MAX_MINUTES 60.0
 
 enum WifiState_t
 {
@@ -63,4 +65,8 @@ private:
                                    int32_t event_id, void *event_data);
     void clear_wifi_list();
     std::vector<KnownWifi_t> known_wifi_list_;
+    static void wifi_reconnect_task(void *pvParameter);
+    float wifi_retry_minutes[WIFI_RETRY_ARRAY_SIZE] = {0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4}; //{0.5, 1.0, 2.0, 3.0, 10.0, 20.0, 30.0, 60.0};
+    int wifi_retry_counter = 0;
+
 };

@@ -46,10 +46,9 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
                     post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED);
                 }
 
-                //this needs to be run async out of wifi task
-                twatchsk::run_async("Wifi off", [manager] {
-                    manager->off();
-                });
+                xTaskCreate(&wifi_reconnect_task, "wifi reconnect task", 2048, manager, 5, NULL);
+
+                ESP_LOGI(WIFI_TAG, "This should display ONLY after an unintentional wifi disconnect."); //BS: delete after testing
             }
         }
 
@@ -64,6 +63,7 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
         sprintf(buff, IPSTR, IP2STR(&event->ip_info.ip));
         manager->set_ip(String(buff));
         manager->update_status(Wifi_Connected);
+        manager->wifi_retry_counter = 0; // to be ready for the next disconnect
 
         if (!manager->is_known_wifi(manager->ssid_)) //add wifi to know list - we need to save it later on
         {
@@ -81,6 +81,27 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
         scan_running = false;
         scan_done = true;
     }
+}
+
+void WifiManager::wifi_reconnect_task(void *pvParameter)
+{
+    auto manager = (WifiManager*)pvParameter;
+    ESP_LOGI(WIFI_TAG, "wifi_retry_counter is now %d", manager->wifi_retry_counter); //BS: delete after testing
+    float wifi_retry_time = manager->wifi_retry_counter < WIFI_RETRY_ARRAY_SIZE ? manager->wifi_retry_minutes[manager->wifi_retry_counter] : WIFI_RETRY_MAX_MINUTES;
+    ESP_LOGI(WIFI_TAG, "Will try to reconnect to wifi in %.1f minutes...", wifi_retry_time);
+    vTaskDelay((60000 / portTICK_RATE_MS) * wifi_retry_time);
+    if (manager->is_enabled())
+    {
+       manager->wifi_retry_counter++;
+       ESP_LOGI(WIFI_TAG, "Reconnect attempt %d", manager->wifi_retry_counter);
+       manager->connect();
+    }
+    else
+    {
+        ESP_LOGI(WIFI_TAG, "Oops! Wifi is not enabled. This should never happen."); //BS: delete after testing
+    }
+    //remove this task
+    vTaskDelete(NULL);
 }
 
 int WifiManager::found_wifi_count()
@@ -173,7 +194,7 @@ void WifiManager::off(bool force)
         enabled = false;
         disable_wifi();
         ESP_LOGI(WIFI_TAG, "Wifi has been disabled.");
-        this->update_status(WifiState_t::Wifi_Off);
+        this->update_status(Wifi_Off);
     }
 }
 
@@ -265,7 +286,7 @@ void WifiManager::connect()
     {
         if (get_status() == WifiState_t::Wifi_Connecting || get_status() == WifiState_t::Wifi_Connected)
         {
-            forced_disconnect = true; // to prevent "Wifi disconnected" messages from appearing on the watch
+            forced_disconnect = true; // to prevent "Wifi disconnected" messages from appearing on the watch for an "on-purpose" disconnect
         }
 
         off(true);  //let's force calling disable wifi
