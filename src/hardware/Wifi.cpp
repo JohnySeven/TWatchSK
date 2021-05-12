@@ -32,38 +32,46 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
     {
         wifi_event_sta_disconnected_t *disconnect_event = (wifi_event_sta_disconnected_t *)event_data;
         auto status = manager->value;
-        ESP_LOGI(WIFI_TAG, "Wifi disconnected with reason=%d, status=%d", disconnect_event->reason, status);
-        if (!manager->forced_disconnect) // this is an unintentional wifi disconnect
+        ESP_LOGI(WIFI_TAG, "wifi_event_handler(): Wifi disconnected with reason=%d, status=%d", disconnect_event->reason, status);
+        if (!manager->forced_disconnect_) // this is an unintentional wifi disconnect
         {
             if (manager->is_enabled())
             {
                 if (manager->value == WifiState_t::Wifi_Connecting)
                 {
-                    post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_CONNECTION_FAILED);
+                    // BS: modify this code to get the desired interval of messages that vibrate & notify, and those that don't
+                    if (manager->wifi_retry_counter_ <= 2 || manager->wifi_retry_counter_ % 4 == 0) // first three, and then 5, 9, 13, etc. (Battery will be dead by then.)
+                    {
+                        post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_CONNECTION_FAILED);
+                    }
+                    else
+                    {
+                        // BS: add code here to increment a counter of skipped messages, each representing a failed wifi-reconnect
+                    }
                 }
-                else
+                else // manager->value is WifiState_t::Connected
                 {
                     post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED);
                 }
 
                 xTaskCreate(&wifi_reconnect_task, "wifi reconnect task", 2048, manager, 5, NULL);
 
-                ESP_LOGI(WIFI_TAG, "This should display ONLY after an unintentional wifi disconnect."); //BS: delete after testing
+                ESP_LOGI(WIFI_TAG, "wifi_event_handler() - This should display ONLY after an unintentional wifi disconnect."); //BS: delete after testing
             }
         }
 
         manager->update_status(Wifi_Disconnected);
-        manager->forced_disconnect = false; // reset to the normal "waiting for the next disconnect" state
+        manager->forced_disconnect_ = false; // reset to the normal "waiting for the next disconnect" state
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(WIFI_TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI(WIFI_TAG, "wifi_event_handler(): Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
         char buff[24];
         sprintf(buff, IPSTR, IP2STR(&event->ip_info.ip));
         manager->set_ip(String(buff));
         manager->update_status(Wifi_Connected);
-        manager->wifi_retry_counter = 0; // to be ready for the next disconnect
+        manager->wifi_retry_counter_ = 0; // to be ready for the next disconnect
 
         if (!manager->is_known_wifi(manager->ssid_)) //add wifi to know list - we need to save it later on
         {
@@ -76,7 +84,7 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_SCAN_DONE)
     {
         ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
-        ESP_LOGI(WIFI_TAG, "Scan complete. Total APs found = %u", ap_count);
+        ESP_LOGI(WIFI_TAG, "wifi_event_handler(): Scan complete. Total APs found = %u", ap_count);
         ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&ap_count, ap_info));
         scan_running = false;
         scan_done = true;
@@ -86,19 +94,19 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
 void WifiManager::wifi_reconnect_task(void *pvParameter)
 {
     auto manager = (WifiManager*)pvParameter;
-    ESP_LOGI(WIFI_TAG, "wifi_retry_counter is now %d", manager->wifi_retry_counter); //BS: delete after testing
-    float wifi_retry_time = manager->wifi_retry_counter < WIFI_RETRY_ARRAY_SIZE ? manager->wifi_retry_minutes[manager->wifi_retry_counter] : WIFI_RETRY_MAX_MINUTES;
-    ESP_LOGI(WIFI_TAG, "Will try to reconnect to wifi in %.1f minutes...", wifi_retry_time);
+    ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): wifi_retry_counter is now %d", manager->wifi_retry_counter_); //BS: delete after testing
+    float wifi_retry_time = manager->wifi_retry_counter_ < WIFI_RETRY_ARRAY_SIZE ? manager->wifi_retry_minutes_[manager->wifi_retry_counter_] : WIFI_RETRY_MAX_MINUTES;
+    ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): Will try to reconnect to wifi in %.1f minutes...", wifi_retry_time);
     vTaskDelay((60000 / portTICK_RATE_MS) * wifi_retry_time);
     if (manager->is_enabled())
     {
-       manager->wifi_retry_counter++;
-       ESP_LOGI(WIFI_TAG, "Reconnect attempt %d", manager->wifi_retry_counter);
+       manager->wifi_retry_counter_++;
+       ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): Reconnect attempt %d", manager->wifi_retry_counter_);
        manager->connect();
     }
     else
     {
-        ESP_LOGI(WIFI_TAG, "Oops! Wifi is not enabled. This should never happen."); //BS: delete after testing
+        ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): Oops! Wifi is not enabled. This should never happen."); //BS: delete after testing
     }
     //remove this task
     vTaskDelete(NULL);
@@ -116,9 +124,9 @@ bool WifiManager::is_scan_complete()
 
 void WifiManager::initialize()
 {
-    if (!initialized)
+    if (!initialized_)
     {
-        ESP_LOGI(WIFI_TAG, "Initializing wifi...");
+        ESP_LOGI(WIFI_TAG, "WifiManager::initialize(): Initializing wifi...");
         tcpip_adapter_init();
         ESP_ERROR_CHECK(esp_event_loop_create_default());
         wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -126,8 +134,8 @@ void WifiManager::initialize()
         ESP_ERROR_CHECK(esp_wifi_init(&cfg));
         ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WifiManager::wifi_event_handler, this));
         ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &WifiManager::wifi_event_handler, this));
-        ESP_LOGI(WIFI_TAG, "Wifi is initialized!");
-        initialized = true;
+        ESP_LOGI(WIFI_TAG, "WifiManager::initialize(): Wifi is initialized!");
+        initialized_ = true;
     }
 }
 
@@ -143,7 +151,7 @@ static void wifi_enable(const char *ssid, const char *password)
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(WIFI_TAG, "esp_wifi_set_ps().");
+    ESP_LOGI(WIFI_TAG, "wifi_enable(): esp_wifi_set_ps().");
     esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
 }
 
@@ -164,7 +172,7 @@ WifiManager::WifiManager() : Configurable("/config/wifi"), SystemObject("wifi"),
     load();
     initialize();
 
-    if (enabled)
+    if (enabled_)
     {
         on();
     }
@@ -174,26 +182,26 @@ void WifiManager::on()
 {
     if (!ssid_.isEmpty())
     {
-        enabled = true;
+        enabled_ = true;
         wifi_enable(ssid_.c_str(), password_.c_str());
-        ESP_LOGI(WIFI_TAG, "Wifi has been enabled, SSID=%s.", ssid_.c_str());
+        ESP_LOGI(WIFI_TAG, "WifiManager::on(): Wifi has been enabled, SSID=%s.", ssid_.c_str());
         update_status(Wifi_Connecting);
     }
     else
     {
-        ESP_LOGW(WIFI_TAG, "No SSID is configured!");
+        ESP_LOGW(WIFI_TAG, "WifiManager::on(): No SSID is configured!");
         this->off();
-        this->configured = false;
+        this->configured_ = false;
     }
 }
 
 void WifiManager::off(bool force)
 {
-    if (enabled || force)
+    if (enabled_ || force)
     {
-        enabled = false;
+        enabled_ = false;
         disable_wifi();
-        ESP_LOGI(WIFI_TAG, "Wifi has been disabled.");
+        ESP_LOGI(WIFI_TAG, "WifiManager::off(): Wifi has been disabled.");
         this->update_status(Wifi_Off);
     }
 }
@@ -201,7 +209,7 @@ void WifiManager::off(bool force)
 void WifiManager::save_config_to_file(JsonObject &json)
 {
     ESP_LOGI(WIFI_TAG, "Storing SSID %s to JSON.", ssid_.c_str());
-    json["enabled"] = enabled;
+    json["enabled"] = enabled_;
     json["ssid"] = ssid_;
     json["password"] = password_;
     JsonArray knownList = json.createNestedArray("known");
@@ -216,7 +224,7 @@ void WifiManager::save_config_to_file(JsonObject &json)
 
 void WifiManager::load_config_from_file(const JsonObject &json)
 {
-    enabled = json["enabled"].as<bool>();
+    enabled_ = json["enabled"].as<bool>();
     setup(json["ssid"].as<String>(), json["password"].as<String>());
 
     if (json.containsKey("known"))
@@ -238,7 +246,7 @@ void WifiManager::setup(String ssid, String password)
     ssid_ = ssid;
     password_ = password;
     ESP_LOGI(WIFI_TAG, "SSID has been updated to %s with password ******.", ssid.c_str());
-    configured = !ssid.isEmpty();
+    configured_ = !ssid.isEmpty();
 }
 
 bool WifiManager::scan_wifi()
@@ -250,7 +258,7 @@ bool WifiManager::scan_wifi()
         initialize();
         clear_wifi_list();
         scan_done = false;
-        ESP_LOGI(WIFI_TAG, "Scanning nearby Wifi state=%d...", (int)value);
+        ESP_LOGI(WIFI_TAG, "WifiManager::scan_wifi(): Scanning nearby Wifi state=%d...", (int)value);
         if (value == WifiState_t::Wifi_Connected)
         {
             ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, false));
@@ -286,7 +294,7 @@ void WifiManager::connect()
     {
         if (get_status() == WifiState_t::Wifi_Connecting || get_status() == WifiState_t::Wifi_Connected)
         {
-            forced_disconnect = true; // to prevent "Wifi disconnected" messages from appearing on the watch for an "on-purpose" disconnect
+            forced_disconnect_ = true; // to prevent "Wifi disconnected" messages from appearing on the watch for an "on-purpose" disconnect
         }
 
         off(true);  //let's force calling disable wifi
@@ -295,7 +303,7 @@ void WifiManager::connect()
     }
     else
     {
-        configured = false;
+        configured_ = false;
     }
 }
 

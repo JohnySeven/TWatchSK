@@ -36,10 +36,7 @@ using std::placeholders::_2;
 
 LV_FONT_DECLARE(Geometr);
 LV_FONT_DECLARE(Ubuntu);
-// LV_FONT_DECLARE(roboto80); //BS: delete these fonts if they're not used after adding seconds to the display
 LV_FONT_DECLARE(roboto70);
-//LV_FONT_DECLARE(roboto60);
-//LV_FONT_DECLARE(roboto40);
 LV_FONT_DECLARE(roboto30);
 //LV_IMG_DECLARE(bg_default);
 LV_FONT_DECLARE(lv_font_montserrat_16);
@@ -360,7 +357,7 @@ void Gui::update_time()
     lv_obj_align(watchNameLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 3);
     lv_label_set_text(watchNameLabel, get_watch_name());
 
-    lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, -23, 25); //BS: was -23, 15 before adding Watch Name above it. -23, 30 with montserrate_22 for WatchName
+    lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, -23, 25);
 
     if (time_24hour_format)
     {
@@ -562,11 +559,11 @@ void Gui::update_gui()
         {
             ESP_LOGI(GUI_TAG, "Show message %d, event=%d, message code=%d!", (int)event.argument, event.event_type, event.message_code);
             char *message = NULL;
-            if (event.message_code != GuiMessageCode_t::NONE)
+            if (event.message_code != GuiMessageCode_t::NONE) // WIFI or SK connection message
             {
                 message = message_from_code(event.message_code);
             }
-            else
+            else // SK Server alarm/alert, or MDNS-related error message
             {
                 message = (char *)event.argument;
             }
@@ -823,16 +820,16 @@ void Gui::display_next_message(bool delete_first_message)
     if (pending_messages_.size() > 0)
     {
         std::list<PendingMsg_t>::iterator it = pending_messages_.begin();
-        if (delete_first_message)
+        if (delete_first_message) // done only when a message was being displayed and has now been cleared from the screen by the user
         {
             ESP_LOGI(GUI_TAG, "Erasing the first message: %s", it->msg_text.c_str());
-            pending_messages_.erase(it); // done only when a message was being displayed and has now been cleared from the screen
+            pending_messages_.erase(it); 
         }
         if (pending_messages_.size() == 0)    //it == pending_messages_.end() didn't work for some reason
         {
             ESP_LOGI(GUI_TAG, "Last message has been deleted");
         }
-        else
+        else // there is at least one message in pending_messages, so display it
         {
             it = pending_messages_.begin();    // doesn't work if "it" is not re-set to the first element like this
             ESP_LOGI(GUI_TAG, "Displaying the first message in pending_messages: %s", it->msg_text.c_str());
@@ -849,16 +846,6 @@ void Gui::display_next_message(bool delete_first_message)
             display_next_pending_message_ = false; // so that only one is displayed at a time
             //trigger activity on main screen to avoid watch going to sleep right away, to ensure the message can be seen and read
             lv_disp_trig_activity(NULL);
-            //vibrate 50 ms on / 100 ms off 4 timesdelay(7000);
-            twatchsk::run_async("vibrate", [this]() { //BS: consider putting the vibration back where messages are added to pending_messages_
-                for (int i = 0; i < 5; i++)
-                {
-                    this->hardware_->vibrate(true);
-                    delay(50);
-                    this->hardware_->vibrate(false);
-                    delay(100);
-                }
-            });
         }
     }
     else
