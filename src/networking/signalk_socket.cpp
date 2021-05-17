@@ -46,6 +46,18 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
             ESP_LOGI(WS_TAG, "Web socket connected to server!");
             socket->reconnect_counter_ = socket->reconnect_count_; //restore reconnect counter to 3
             socket->delta_counter = 0;                             //clear the socket delta counter
+
+            socket->update_status(WebsocketState_t::WS_Connected);
+
+            //if token is empty, request access
+            if (socket->token.isEmpty())
+            {
+                socket->send_token_permission();
+            }
+            else //token isn't empty send subscription requests
+            {
+                socket->update_subscriptions(true);
+            }
         }
         else if (event_id == WEBSOCKET_EVENT_DISCONNECTED)
         {
@@ -216,18 +228,7 @@ void SignalKSocket::parse_data(int length, const char *data)
             serverName = doc["name"].as<String>();
             serverVersion = doc["version"].as<String>();
 
-            update_status(WebsocketState_t::WS_Connected);
-
             ESP_LOGI(WS_TAG, "Got welcome message token is available %s", token.isEmpty() ? "yes" : "no");
-
-            if (token.isEmpty())
-            {
-                send_token_permission();
-            }
-            else
-            {
-                update_subscriptions(true);
-            }
         }
         else if (doc.containsKey("requestId"))
         {
