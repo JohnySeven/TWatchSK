@@ -465,13 +465,30 @@ void SignalKSocket::send_status_message()
     JsonObject source = current.createNestedObject("source");
     source["label"] = device_name_;
     JsonArray values = current.createNestedArray("values");
-    JsonObject status = values.createNestedObject();
-    sprintf(buff, "%s.status", device_name_);
-    status["path"] = buff;
-    JsonObject statusData = status.createNestedObject("value");
-    statusData["battery"] = TTGOClass::getWatch()->power->getBattPercentage();
-    statusData["uptime"] = (int)(esp_timer_get_time() / 1000);
-    statusData["temperature"] = (274.15f + TTGOClass::getWatch()->power->getTemp());
+
+    JsonObject battery = values.createNestedObject();
+    sprintf(buff, "%s.battery", device_name_);
+    battery["path"] = buff;
+    battery["value"] = TTGOClass::getWatch()->power->getBattPercentage();
+
+    JsonObject uptime = values.createNestedObject();
+    sprintf(buff, "%s.uptime", device_name_);
+    uptime["path"] = buff;
+
+    int32_t elapsed_seconds = esp_timer_get_time() / 1000000;
+    int hours = elapsed_seconds/3600;
+	elapsed_seconds = elapsed_seconds%3600;
+	int minutes = elapsed_seconds/60;
+	elapsed_seconds = elapsed_seconds%60;
+	int seconds = elapsed_seconds;
+
+    sprintf(buff, "%d:%.2d:%.2d", hours, minutes, seconds);
+    uptime["value"] = buff;
+
+    JsonObject temp = values.createNestedObject();
+    sprintf(buff, "%s.temperature", device_name_);
+    temp["path"] = buff;
+    temp["value"] =  (274.15f + TTGOClass::getWatch()->power->getTemp());
 
     if (serializeJson(statusJson, buff))
     {
