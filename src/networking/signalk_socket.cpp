@@ -488,7 +488,7 @@ void SignalKSocket::send_status_message()
     JsonObject temp = values.createNestedObject();
     sprintf(buff, "%s.temperature", device_name_);
     temp["path"] = buff;
-    temp["value"] =  (274.15f + TTGOClass::getWatch()->power->getTemp());
+    temp["value"] =  (273.15f + TTGOClass::getWatch()->power->getTemp());
 
     if (serializeJson(statusJson, buff))
     {
