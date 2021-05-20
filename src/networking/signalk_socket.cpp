@@ -46,6 +46,18 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
             ESP_LOGI(WS_TAG, "Web socket connected to server!");
             socket->reconnect_counter_ = socket->reconnect_count_; //restore reconnect counter to 3
             socket->delta_counter = 0;                             //clear the socket delta counter
+
+            socket->update_status(WebsocketState_t::WS_Connected);
+
+            //if token is empty, request access
+            if (socket->token.isEmpty())
+            {
+                socket->send_token_permission();
+            }
+            else //token isn't empty send subscription requests
+            {
+                socket->update_subscriptions(true);
+            }
         }
         else if (event_id == WEBSOCKET_EVENT_DISCONNECTED)
         {
@@ -216,18 +228,7 @@ void SignalKSocket::parse_data(int length, const char *data)
             serverName = doc["name"].as<String>();
             serverVersion = doc["version"].as<String>();
 
-            update_status(WebsocketState_t::WS_Connected);
-
             ESP_LOGI(WS_TAG, "Got welcome message token is available %s", token.isEmpty() ? "yes" : "no");
-
-            if (token.isEmpty())
-            {
-                send_token_permission();
-            }
-            else
-            {
-                update_subscriptions(true);
-            }
         }
         else if (doc.containsKey("requestId"))
         {
@@ -464,13 +465,30 @@ void SignalKSocket::send_status_message()
     JsonObject source = current.createNestedObject("source");
     source["label"] = device_name_;
     JsonArray values = current.createNestedArray("values");
-    JsonObject status = values.createNestedObject();
-    sprintf(buff, "%s.status", device_name_);
-    status["path"] = buff;
-    JsonObject statusData = status.createNestedObject("value");
-    statusData["battery"] = TTGOClass::getWatch()->power->getBattPercentage();
-    statusData["uptime"] = (int)(esp_timer_get_time() / 1000);
-    statusData["temperature"] = (274.15f + TTGOClass::getWatch()->power->getTemp());
+
+    JsonObject battery = values.createNestedObject();
+    sprintf(buff, "%s.battery", device_name_);
+    battery["path"] = buff;
+    battery["value"] = TTGOClass::getWatch()->power->getBattPercentage();
+
+    JsonObject uptime = values.createNestedObject();
+    sprintf(buff, "%s.uptime", device_name_);
+    uptime["path"] = buff;
+
+    int32_t elapsed_seconds = esp_timer_get_time() / 1000000;
+    int hours = elapsed_seconds/3600;
+	elapsed_seconds = elapsed_seconds%3600;
+	int minutes = elapsed_seconds/60;
+	elapsed_seconds = elapsed_seconds%60;
+	int seconds = elapsed_seconds;
+
+    sprintf(buff, "%d:%.2d:%.2d", hours, minutes, seconds);
+    uptime["value"] = buff;
+
+    JsonObject temp = values.createNestedObject();
+    sprintf(buff, "%s.temperature", device_name_);
+    temp["path"] = buff;
+    temp["value"] =  (273.15f + TTGOClass::getWatch()->power->getTemp());
 
     if (serializeJson(statusJson, buff))
     {
