@@ -6,7 +6,7 @@
 #include "system/observable.h"
 #include "esp_wifi.h"
 #define WIFI_AP_LIST_MAX_SIZE 32
-#define WIFI_RETRY_ARRAY_SIZE 8 //BS: make it 8 in final version
+#define WIFI_RETRY_ARRAY_SIZE 8
 #define WIFI_RETRY_MAX_MINUTES 60.0
 
 enum WifiState_t

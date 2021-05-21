@@ -46,7 +46,6 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
                     post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED);
                 }
                 xTaskCreate(&wifi_reconnect_task, "wifi reconnect task", 2048, manager, 5, NULL);
-                ESP_LOGI(WIFI_TAG, "wifi_event_handler() - This should display ONLY after an unintentional wifi disconnect."); //BS: delete after testing
             }
         }
 
@@ -98,10 +97,6 @@ void WifiManager::wifi_reconnect_task(void *pvParameter)
        manager->wifi_retry_counter_++;
        ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): Reconnect attempt %d", manager->wifi_retry_counter_);
        manager->connect();
-    }
-    else
-    {
-        ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): Oops! Wifi is not enabled. This should never happen."); //BS: delete after testing
     }
     //remove this task
     vTaskDelete(NULL);
