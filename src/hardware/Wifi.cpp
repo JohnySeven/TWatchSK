@@ -33,29 +33,19 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
         wifi_event_sta_disconnected_t *disconnect_event = (wifi_event_sta_disconnected_t *)event_data;
         auto status = manager->value;
         ESP_LOGI(WIFI_TAG, "wifi_event_handler(): Wifi disconnected with reason=%d, status=%d", disconnect_event->reason, status);
-        if (!manager->forced_disconnect_) // this is an unintentional wifi disconnect
+        if (!manager->forced_disconnect_) // this is not an intentional wifi disconnect
         {
             if (manager->is_enabled())
             {
                 if (manager->value == WifiState_t::Wifi_Connecting)
                 {
-                    // BS: modify this code to get the desired interval of messages that vibrate & notify, and those that don't
-                    if (manager->wifi_retry_counter_ <= 2 || manager->wifi_retry_counter_ % 4 == 0) // first three, and then 5, 9, 13, etc. (Battery will be dead by then.)
-                    {
-                        post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_CONNECTION_FAILED);
-                    }
-                    else
-                    {
-                        // BS: add code here to increment a counter of skipped messages, each representing a failed wifi-reconnect
-                    }
+                    post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_CONNECTION_FAILED);   
                 }
                 else // manager->value is WifiState_t::Connected
                 {
                     post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_DISCONNECTED);
                 }
-
                 xTaskCreate(&wifi_reconnect_task, "wifi reconnect task", 2048, manager, 5, NULL);
-
                 ESP_LOGI(WIFI_TAG, "wifi_event_handler() - This should display ONLY after an unintentional wifi disconnect."); //BS: delete after testing
             }
         }
@@ -71,9 +61,11 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
         sprintf(buff, IPSTR, IP2STR(&event->ip_info.ip));
         manager->set_ip(String(buff));
         manager->update_status(Wifi_Connected);
+        //BS: add a new message here: "Wifi reconnected after X attempts"
+        //post_gui_warning(GuiMessageCode_t::GUI_WARN_WIFI_RECONNECTED);
         manager->wifi_retry_counter_ = 0; // to be ready for the next disconnect
 
-        if (!manager->is_known_wifi(manager->ssid_)) //add wifi to know list - we need to save it later on
+        if (!manager->is_known_wifi(manager->ssid_)) //add wifi to known list - we need to save it later on
         {
             KnownWifi_t wifi;
             wifi.known_ssid = manager->ssid_;
@@ -94,6 +86,9 @@ void WifiManager::wifi_event_handler(void *arg, esp_event_base_t event_base,
 void WifiManager::wifi_reconnect_task(void *pvParameter)
 {
     auto manager = (WifiManager*)pvParameter;
+    esp_wifi_disconnect();
+    esp_wifi_stop();
+    manager->update_status(Wifi_Disconnected);
     ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): wifi_retry_counter is now %d", manager->wifi_retry_counter_); //BS: delete after testing
     float wifi_retry_time = manager->wifi_retry_counter_ < WIFI_RETRY_ARRAY_SIZE ? manager->wifi_retry_minutes_[manager->wifi_retry_counter_] : WIFI_RETRY_MAX_MINUTES;
     ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): Will try to reconnect to wifi in %.1f minutes...", wifi_retry_time);

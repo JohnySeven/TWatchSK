@@ -66,7 +66,7 @@ private:
     void clear_wifi_list();
     std::vector<KnownWifi_t> known_wifi_list_;
     static void wifi_reconnect_task(void *pvParameter);
-    float wifi_retry_minutes_[WIFI_RETRY_ARRAY_SIZE] = {0.5, 0.6, 0.7, 0.8, 0.7, 0.6, 0.5, 0.4}; //{0.5, 1.0, 2.0, 3.0, 10.0, 20.0, 30.0, 60.0};
+    float wifi_retry_minutes_[WIFI_RETRY_ARRAY_SIZE] = {0.5, 1.0, 2.0, 3.0, 10.0, 20.0, 30.0, 60.0}; //{0.5, 1.0, 2.0, 3.0, 10.0, 20.0, 30.0, 60.0};
     int wifi_retry_counter_ = 0;
 
 };

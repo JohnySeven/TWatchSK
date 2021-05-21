@@ -603,6 +603,7 @@ void Gui::update_gui()
                             it->msg_count++;
                             String updated_text = 
                                 it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
+                            // update the text on the screen to show the latest time and the new count
                             lv_msgbox_set_text(msgBox, updated_text.c_str()); 
                             message_found = true;
                             twatchsk::run_async("vibrate", [this]() { // just a very brief vibration for each added message
