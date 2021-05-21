@@ -601,9 +601,10 @@ void Gui::update_gui()
                             ESP_LOGI(GUI_TAG, "Msg is already in pending_messages_: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
                             it->msg_time = current_time();
                             it->msg_count++;
+                            // update the text on the screen to show the latest time and the new count and the new size of pending_messages
+                            it = pending_messages_.begin(); // get back to the first message in the list, which is the one currently being displayed
                             String updated_text = 
                                 it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
-                            // update the text on the screen to show the latest time and the new count
                             lv_msgbox_set_text(msgBox, updated_text.c_str()); 
                             message_found = true;
                             twatchsk::run_async("vibrate", [this]() { // just a very brief vibration for each added message
@@ -622,7 +623,7 @@ void Gui::update_gui()
                     {
                         pending_messages_.push_back(new_message); // add it to the list
                         ESP_LOGI(GUI_TAG, "Msg added to pending_messages_: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
-                        // update the count on any currently-displayed message
+                        // update the unread-messages count on any currently-displayed message
                         std::list<PendingMsg_t>::iterator it = pending_messages_.begin(); // get the first message - that's the one that's currently displayed
                         String updated_text = // re-create the message text to reflect the new pending_messages_.size()
                                 it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
