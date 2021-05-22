@@ -36,10 +36,7 @@ using std::placeholders::_2;
 
 LV_FONT_DECLARE(Geometr);
 LV_FONT_DECLARE(Ubuntu);
-// LV_FONT_DECLARE(roboto80); //BS: delete these fonts if they're not used after adding seconds to the display
 LV_FONT_DECLARE(roboto70);
-//LV_FONT_DECLARE(roboto60);
-//LV_FONT_DECLARE(roboto40);
 LV_FONT_DECLARE(roboto30);
 //LV_IMG_DECLARE(bg_default);
 LV_FONT_DECLARE(lv_font_montserrat_16);
@@ -60,12 +57,12 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
     Gui *gui = (Gui *)obj->user_data;
     if (event == LV_EVENT_SHORT_CLICKED)
     { //!  Event callback is in here
-        gui->toggle_main_bar(true);
+        gui->hide_main_bar(true);
         NavigationView *setupMenu = NULL;
         setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]() {
             setupMenu->remove_from_active_list(); // because, for some reason, `delete setupMenu;` doesn't remove it from View::active_views_
             delete setupMenu;
-            gui->toggle_main_bar(false);
+            gui->hide_main_bar(false);
             if (gui->get_gui_needs_saved())
             {
                 gui->save();
@@ -360,7 +357,7 @@ void Gui::update_time()
     lv_obj_align(watchNameLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 3);
     lv_label_set_text(watchNameLabel, get_watch_name());
 
-    lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, -23, 25); //BS: was -23, 15 before adding Watch Name above it. -23, 30 with montserrate_22 for WatchName
+    lv_obj_align(timeLabel, NULL, LV_ALIGN_IN_TOP_MID, -23, 25);
 
     if (time_24hour_format)
     {
@@ -437,7 +434,7 @@ char *Gui::message_from_code(GuiMessageCode_t code)
     };
 }
 
-void Gui::toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden)
+void Gui::hide_status_bar_icon(lv_icon_status_bar_t icon, bool hidden)
 {
     if (hidden)
     {
@@ -538,20 +535,20 @@ void Gui::update_gui()
     auto wifiStatus = wifiManager->get_status();
     if (wifiStatus == WifiState_t::Wifi_Connected || wifiStatus == WifiState_t::Wifi_Connecting)
     {
-        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, false);
+        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, false);
     }
     else
     {
-        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, true);
+        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, true);
     }
 
     if (ws_socket->get_state() == WebsocketState_t::WS_Connected)
     {
-        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, false);
+        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, false);
     }
     else
     {
-        toggle_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, true);
+        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, true);
     }
 
     GuiEvent_t event;
@@ -562,11 +559,11 @@ void Gui::update_gui()
         {
             ESP_LOGI(GUI_TAG, "Show message %d, event=%d, message code=%d!", (int)event.argument, event.event_type, event.message_code);
             char *message = NULL;
-            if (event.message_code != GuiMessageCode_t::NONE)
+            if (event.message_code != GuiMessageCode_t::NONE) // WIFI or SK connection message
             {
                 message = message_from_code(event.message_code);
             }
-            else
+            else // SK Server alarm/alert, or MDNS-related error message
             {
                 message = (char *)event.argument;
             }
@@ -604,6 +601,8 @@ void Gui::update_gui()
                             ESP_LOGI(GUI_TAG, "Msg is already in pending_messages_: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
                             it->msg_time = current_time();
                             it->msg_count++;
+                            // update the text on the screen to show the latest time and the new count and the new size of pending_messages
+                            it = pending_messages_.begin(); // get back to the first message in the list, which is the one currently being displayed
                             String updated_text = 
                                 it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
                             lv_msgbox_set_text(msgBox, updated_text.c_str()); 
@@ -624,7 +623,7 @@ void Gui::update_gui()
                     {
                         pending_messages_.push_back(new_message); // add it to the list
                         ESP_LOGI(GUI_TAG, "Msg added to pending_messages_: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
-                        // update the count on any currently-displayed message
+                        // update the unread-messages count on any currently-displayed message
                         std::list<PendingMsg_t>::iterator it = pending_messages_.begin(); // get the first message - that's the one that's currently displayed
                         String updated_text = // re-create the message text to reflect the new pending_messages_.size()
                                 it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
@@ -679,12 +678,12 @@ void Gui::lv_battery_task(struct _lv_task_t *data)
     gui->update_battery_level();
 }
 
-void Gui::toggle_status_bar(bool hidden)
+void Gui::hide_status_bar(bool hidden)
 {
     bar->set_hidden(hidden);
 }
 
-void Gui::toggle_main_bar(bool hidden)
+void Gui::hide_main_bar(bool hidden)
 {
     lv_obj_set_hidden(mainBar, hidden);
 }
@@ -823,19 +822,19 @@ void Gui::display_next_message(bool delete_first_message)
     if (pending_messages_.size() > 0)
     {
         std::list<PendingMsg_t>::iterator it = pending_messages_.begin();
-        if (delete_first_message)
+        if (delete_first_message) // done only when a message was being displayed and has now been cleared from the screen by the user
         {
             ESP_LOGI(GUI_TAG, "Erasing the first message: %s", it->msg_text.c_str());
-            pending_messages_.erase(it); // done only when a message was being displayed and has now been cleared from the screen
+            pending_messages_.erase(it); 
         }
         if (pending_messages_.size() == 0)    //it == pending_messages_.end() didn't work for some reason
         {
             ESP_LOGI(GUI_TAG, "Last message has been deleted");
         }
-        else
+        else // there is at least one message in pending_messages, so display it
         {
             it = pending_messages_.begin();    // doesn't work if "it" is not re-set to the first element like this
-            ESP_LOGI(GUI_TAG, "Starting at the beginning again: %s", it->msg_text.c_str());
+            ESP_LOGI(GUI_TAG, "Displaying the first message in pending_messages: %s", it->msg_text.c_str());
             static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
             msgBox = lv_msgbox_create(lv_scr_act(), NULL);
             String full_text =
@@ -849,16 +848,6 @@ void Gui::display_next_message(bool delete_first_message)
             display_next_pending_message_ = false; // so that only one is displayed at a time
             //trigger activity on main screen to avoid watch going to sleep right away, to ensure the message can be seen and read
             lv_disp_trig_activity(NULL);
-            //vibrate 50 ms on / 100 ms off 4 timesdelay(7000);
-            twatchsk::run_async("vibrate", [this]() { //BS: consider putting the vibration back where messages are added to pending_messages_
-                for (int i = 0; i < 5; i++)
-                {
-                    this->hardware_->vibrate(true);
-                    delay(50);
-                    this->hardware_->vibrate(false);
-                    delay(100);
-                }
-            });
         }
     }
     else

@@ -24,8 +24,8 @@ public:
     void update_step_counter(uint32_t counter);
     void update_battery_icon(lv_icon_battery_t index);
     void update_battery_level();
-    void toggle_status_bar(bool hidden);
-    void toggle_main_bar(bool hidden);
+    void hide_status_bar(bool hidden);
+    void hide_main_bar(bool hidden);
     void load_config_from_file(const JsonObject &json) override;
     void save_config_to_file(JsonObject &json) override;
     WifiManager *get_wifi_manager() { return wifiManager; }
@@ -33,7 +33,7 @@ public:
     Hardware *get_hardware() { return hardware_; }
     bool get_time_24hour_format() { return time_24hour_format; }
     void set_time_24hour_format(bool value) { time_24hour_format = value; }
-    void toggle_status_bar_icon(lv_icon_status_bar_t icon, bool hidden);
+    void hide_status_bar_icon(lv_icon_status_bar_t icon, bool hidden);
     int get_screen_timeout() { return screen_timeout; }
     void set_screen_timeout(int value) { screen_timeout = value; }
     void set_temporary_screen_timeout(int value);
