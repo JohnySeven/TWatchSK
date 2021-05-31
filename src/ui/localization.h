@@ -21,6 +21,7 @@
 #define LOC_WIFI_LOST_CONNECTION "Wifi has lost connection to AP!"
 #define LOC_WIFI_ASSOC_FAIL "Can't connect to Wifi. Incorrect password, or out of range."
 #define LOC_MESSAGEBOX_OK "OK"
+#define LOC_MESSAGEBOX_DISABLE_WIFI "Disable Wifi"
 #define LOC_SETTINGS_MENU "Watch settings"
 #define LOC_SIGNALK_SETTINGS "Signal K settings"
 #define LOC_SIGNALK_CONNECTED_FMT "Connected, Rx msgs: %d"

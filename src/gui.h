@@ -88,6 +88,7 @@ private:
     struct PendingMsg_t
     {
         String msg_text;
+        String msg_topic;
         String msg_time;;
         int msg_count = 0;
     };
