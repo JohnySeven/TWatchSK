@@ -87,9 +87,9 @@ void WifiManager::wifi_reconnect_task(void *pvParameter)
     auto manager = (WifiManager*)pvParameter;
     esp_wifi_disconnect();
     esp_wifi_stop();
-    //manager->off(); // BS: for some reason, when wifi is turned off this way, the "Disable Wifi" button on the message box doesn't work
+    //manager->off(); //if wifi is turned off this way, the "Disable Wifi" button on the message box doesn't work
     manager->update_status(Wifi_Disconnected);
-    ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): wifi_retry_counter is now %d", manager->wifi_retry_counter_); //BS: delete after testing
+    ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): wifi_retry_counter is now %d", manager->wifi_retry_counter_);
     float wifi_retry_time = manager->wifi_retry_counter_ < WIFI_RETRY_ARRAY_SIZE ? manager->wifi_retry_minutes_[manager->wifi_retry_counter_] : WIFI_RETRY_MAX_MINUTES;
     ESP_LOGI(WIFI_TAG, "wifi_reconnect_task(): Will try to reconnect to wifi in %.1f minutes...", wifi_retry_time);
     vTaskDelay((60000 / portTICK_RATE_MS) * wifi_retry_time);

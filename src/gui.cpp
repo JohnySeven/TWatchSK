@@ -814,9 +814,8 @@ void Gui::msg_box_callback(lv_obj_t * obj, lv_event_t event)
 {
     if(event == LV_EVENT_VALUE_CHANGED) 
     {
-        Gui *gui = (Gui *)obj->user_data;
-        uint16_t pressed_btn = lv_msgbox_get_active_btn(obj); // 0 is the OK button, 1 is the Disable Wifi button
-        if (pressed_btn == 1)
+        Gui *gui = (Gui *)obj->user_data; 
+        if (lv_msgbox_get_active_btn(obj) == 1) // 0 is the OK button, 1 is the Disable Wifi button
         {
             gui->wifiManager->off();
         }
@@ -852,7 +851,7 @@ void Gui::display_next_message(bool delete_first_message)
             {
                 static const char *btns[] = {LOC_MESSAGEBOX_OK, LOC_MESSAGEBOX_DISABLE_WIFI, ""};
                 lv_msgbox_add_btns(msgBox, btns); //Jan: why does this have to be inside the if and the else? If I put it AFTER the else, compiler says btns is undefined.
-                lv_btnmatrix_set_btn_width(lv_msgbox_get_btnmatrix(msgBox), 1, 2); // make "Disable Wifi" button twice as wide as "OK" button
+                lv_btnmatrix_set_btn_width(lv_msgbox_get_btnmatrix(msgBox), 1, 2); // make "Disable Wifi" button (button 1) twice as wide as "OK" button (button 0)
                 lv_obj_set_style_local_radius(msgBox, LV_MSGBOX_PART_BTN, LV_STATE_DEFAULT, 10);
             }
             else
@@ -861,7 +860,6 @@ void Gui::display_next_message(bool delete_first_message)
                 lv_msgbox_add_btns(msgBox, btns);
                 lv_obj_set_style_local_radius(msgBox, LV_MSGBOX_PART_BTN, LV_STATE_DEFAULT, 10);
             }
-            //lv_msgbox_add_btns(msgBox, btns);
             lv_obj_set_size(msgBox, 220, 260);
             lv_obj_align(msgBox, NULL, LV_ALIGN_CENTER, 0, 0);
             msgBox->user_data = this;
