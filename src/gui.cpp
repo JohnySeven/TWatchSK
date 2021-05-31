@@ -853,11 +853,13 @@ void Gui::display_next_message(bool delete_first_message)
                 static const char *btns[] = {LOC_MESSAGEBOX_OK, LOC_MESSAGEBOX_DISABLE_WIFI, ""};
                 lv_msgbox_add_btns(msgBox, btns); //Jan: why does this have to be inside the if and the else? If I put it AFTER the else, compiler says btns is undefined.
                 lv_btnmatrix_set_btn_width(lv_msgbox_get_btnmatrix(msgBox), 1, 2); // make "Disable Wifi" button twice as wide as "OK" button
+                lv_obj_set_style_local_radius(msgBox, LV_MSGBOX_PART_BTN, LV_STATE_DEFAULT, 10);
             }
             else
             {
                 static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
                 lv_msgbox_add_btns(msgBox, btns);
+                lv_obj_set_style_local_radius(msgBox, LV_MSGBOX_PART_BTN, LV_STATE_DEFAULT, 10);
             }
             //lv_msgbox_add_btns(msgBox, btns);
             lv_obj_set_size(msgBox, 220, 260);
