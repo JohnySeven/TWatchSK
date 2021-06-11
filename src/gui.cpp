@@ -573,6 +573,10 @@ void Gui::update_gui()
                 // create and populate a new PendingMsg_t
                 PendingMsg_t new_message;
                 new_message.msg_text = message;
+                if (event.message_code == GUI_WARN_WIFI_CONNECTION_FAILED || event.message_code == GUI_WARN_WIFI_DISCONNECTED)
+                {
+                    new_message.msg_topic = "wifi_problem"; //   //BS: make this a typedef instead of just text?
+                }
                 new_message.msg_time = current_time();
                 new_message.msg_count = 1;
 
@@ -810,7 +814,11 @@ void Gui::msg_box_callback(lv_obj_t * obj, lv_event_t event)
 {
     if(event == LV_EVENT_VALUE_CHANGED) 
     {
-        Gui *gui = (Gui *)obj->user_data;
+        Gui *gui = (Gui *)obj->user_data; 
+        if (lv_msgbox_get_active_btn(obj) == 1) // 0 is the OK button, 1 is the Disable Wifi button
+        {
+            gui->wifiManager->off();
+        }
         gui->set_display_next_pending_message(true); // now that this message is being closed, it's OK to display the next one
         gui->display_next_message(true); // true means "delete the first message before displaying the next one"
         lv_msgbox_start_auto_close(obj, 0);
@@ -835,12 +843,23 @@ void Gui::display_next_message(bool delete_first_message)
         {
             it = pending_messages_.begin();    // doesn't work if "it" is not re-set to the first element like this
             ESP_LOGI(GUI_TAG, "Displaying the first message in pending_messages: %s", it->msg_text.c_str());
-            static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
             msgBox = lv_msgbox_create(lv_scr_act(), NULL);
             String full_text =
                 it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
             lv_msgbox_set_text(msgBox, full_text.c_str());
-            lv_msgbox_add_btns(msgBox, btns);
+            if (it->msg_topic == "wifi_problem")
+            {
+                static const char *btns[] = {LOC_MESSAGEBOX_OK, LOC_MESSAGEBOX_DISABLE_WIFI, ""};
+                lv_msgbox_add_btns(msgBox, btns); //Jan: why does this have to be inside the if and the else? If I put it AFTER the else, compiler says btns is undefined.
+                lv_btnmatrix_set_btn_width(lv_msgbox_get_btnmatrix(msgBox), 1, 2); // make "Disable Wifi" button (button 1) twice as wide as "OK" button (button 0)
+                lv_obj_set_style_local_radius(msgBox, LV_MSGBOX_PART_BTN, LV_STATE_DEFAULT, 10);
+            }
+            else
+            {
+                static const char *btns[] = {LOC_MESSAGEBOX_OK, ""};
+                lv_msgbox_add_btns(msgBox, btns);
+                lv_obj_set_style_local_radius(msgBox, LV_MSGBOX_PART_BTN, LV_STATE_DEFAULT, 10);
+            }
             lv_obj_set_size(msgBox, 220, 260);
             lv_obj_align(msgBox, NULL, LV_ALIGN_CENTER, 0, 0);
             msgBox->user_data = this;
