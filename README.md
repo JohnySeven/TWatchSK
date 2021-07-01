@@ -1,12 +1,12 @@
 # TWatchSK
 
-TWatchSK gives you a way to wear Signal K on your wrist! It connects via wifi to your Signal K Server and displays whatever SK Paths you choose.
+TWatchSK gives you a way to wear [Signal K](https://github.com/SignalK) on your wrist! It connects via wifi to your Signal K Server and displays whatever SK Paths you choose.
 Perhaps more important, it receives SK Notifications so that you know immediately when something important is going on with your boat, no matter
 where you are on the boat or what you're doing.
 
 It runs exclusively on the [LILYGO T-Watch-2020 watch](http://www.lilygo.cn/prod_view.aspx?TypeId=50053&Id=1290&FId=t3:50053:3), which is based on an ESP32 microcontroller.
 
-BS: insert pictures here of the main screen, and a SK data screen, and a message on the screen.
+![image](https://user-images.githubusercontent.com/15186790/124195298-65e6d980-da87-11eb-8a72-95e3c0d3ea47.png)
 
 The code is C++, built with PlatformIO and VS Code. The source code is open, under the (Jan: which open source license?).
 
@@ -131,4 +131,3 @@ BS: To Do
 - Add images to the text above.
 - Add a section about the DynamicViews, and a link to the DynamicViews Editor documentation.
 - Get Jan to make a short video showing the main functions of the watch, including some DynamicViews and the display of an SK Notification.
-- Remove the README.rst file? Jan?
