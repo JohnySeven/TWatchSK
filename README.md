@@ -128,6 +128,6 @@ with the data that is sent to the Server (watch battery status, etc.) After you 
 the SK Server. 
 
 BS: To Do
-- Add images to the text above.
+- Add images, and replace the ones that are there now with some good ones from Jan.
 - Add a section about the DynamicViews, and a link to the DynamicViews Editor documentation.
 - Get Jan to make a short video showing the main functions of the watch, including some DynamicViews and the display of an SK Notification.
