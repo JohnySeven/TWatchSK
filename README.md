@@ -125,6 +125,7 @@ keyboard and enter the name you want for the watch. It will be displayed above t
 
 ## Signal K Notifications
 Signal K broadcasts notifications for various things: some are enabled by default (such as when a new version is available), but most are user-defined (such as when the value of a particular path is outside of a defined range, like engine oil pressure being too low). The watch receives all SK notifications, and if they are categorized as "warn", "alert", "alarm", or "emergency", the watch will wake up, display the notification as a message, vibrate. (BS: address the issue of a sound being played.)
+
 ![image](https://user-images.githubusercontent.com/15186790/124197236-56698f80-da8b-11eb-9484-81c49a57b7c2.png)
 
 It's up to you to set up the notifications you want to see in Signal K, and give them the proper status: "warn", "alert", "alarm", or "emergency". The watch will take it from there. (The Simple Notifications plug-in is an easy way to set up notifications. There are other ways, too.)
