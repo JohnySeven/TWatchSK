@@ -100,8 +100,6 @@ the new network.
 is not connected.
 
 ### Signal K
-(NOTE: Before you connect to the SK Server the very first time, you might want to set your watch's name, on the Watch Info menu, described below. You don't
-have to, but if you don't, you'll have to re-authorize the watch's SK Server access when you do change the watch's name.)
 This screen shows the current status of the connection to the SK Server (shows the server address and the SK Server version number if connected), and
 provides buttons for managing the connection to the SK Server. Note that you can make the initial connection to the Server by specifically entering
 its IP address and port number, or by using the "Find SK Server w/ mDNS" button: both methods are described below.
@@ -123,9 +121,7 @@ wake up accidentally, you must enable them or they won't work. You enable each o
 
 ### Watch info
 This screen mostly shows some basic info about the watch and the software, but it does have one editable field: "Watch name". Tap it to bring up a
-keyboard and enter the name you want for the watch. It will be displayed above the time on the main screen, and you'll see it in the SK Server, associated
-with the data that is sent to the Server (watch battery status, etc.) After you change the name of the watch, you'll need to authorize its access on
-the SK Server. 
+keyboard and enter the name you want for the watch. It will be displayed above the time on the main screen, and you'll see it in the SK Server, in the "path" of the data that is sent to the Server (watch battery status, etc.)
 
 BS: To Do
 - Add images, and replace the ones that are there now with some good ones from Jan.
