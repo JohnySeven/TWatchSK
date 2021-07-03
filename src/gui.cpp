@@ -575,7 +575,7 @@ void Gui::update_gui()
                 new_message.msg_text = message;
                 if (event.message_code == GUI_WARN_WIFI_CONNECTION_FAILED || event.message_code == GUI_WARN_WIFI_DISCONNECTED)
                 {
-                    new_message.msg_topic = "wifi_problem"; //   //BS: make this a typedef instead of just text?
+                    new_message.msg_topic = Wifi_Problem;
                 }
                 new_message.msg_time = current_time();
                 new_message.msg_count = 1;
@@ -847,7 +847,7 @@ void Gui::display_next_message(bool delete_first_message)
             String full_text =
                 it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
             lv_msgbox_set_text(msgBox, full_text.c_str());
-            if (it->msg_topic == "wifi_problem")
+            if (it->msg_topic == Wifi_Problem)
             {
                 static const char *btns[] = {LOC_MESSAGEBOX_OK, LOC_MESSAGEBOX_DISABLE_WIFI, ""};
                 lv_msgbox_add_btns(msgBox, btns); //Jan: why does this have to be inside the if and the else? If I put it AFTER the else, compiler says btns is undefined.
