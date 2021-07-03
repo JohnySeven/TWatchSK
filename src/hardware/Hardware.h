@@ -4,6 +4,7 @@
 #include "ui/themes.h"
 #include <functional>
 #include <vector>
+#include "sounds/sound_player.h"
 
 enum PowerCode_t
 {
@@ -67,6 +68,10 @@ public:
     {
         get_screen_timeout_ = func;
     }
+    SoundPlayer*get_player()
+    {
+        return player_;
+    }
     void vibrate(bool status);
 private:
     std::vector<low_power_callback> power_callbacks_;
@@ -79,4 +84,5 @@ private:
     void low_energy();
     void invoke_power_callbacks(PowerCode_t code, uint32_t arg);
     void update_bma_wakeup();
+    SoundPlayer*player_ = NULL;
 };

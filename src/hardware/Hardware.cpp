@@ -127,6 +127,9 @@ void Hardware::initialize(TTGOClass *watch)
             }
         },
         FALLING);
+
+    //initialize sound player
+    player_ = new SoundPlayer();
 }
 
 ///Invokes power callback to all listeners
