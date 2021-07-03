@@ -235,17 +235,20 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
                           lv_theme_get_font_title());
 
     bar = new StatusBar();
-    //! bar
     bar->setup(scr);
-    //battery {LV_SYMBOL_BATTERY_EMPTY, LV_SYMBOL_BATTERY_1, LV_SYMBOL_BATTERY_2, LV_SYMBOL_BATTERY_3, LV_SYMBOL_BATTERY_FULL, LV_SYMBOL_CHARGE};
+    // intialize status bar icons
+    // battery/charge icon and battery percent
     batteryPercent_ = bar->create_text_icon(LV_SYMBOL_BATTERY_EMPTY "0%", StatusBarLocation::Right);
     update_battery_level();
-
+    // step counter icon and number of steps
     stepCounterIcon_ = bar->create_image_icon(&step, StatusBarLocation::Left);
     stepCounterSteps_ = bar->create_text_icon("0", StatusBarLocation::Left);
-
+    // wifi status icon
     WifiIcon_ = bar->create_text_icon(LV_SYMBOL_WIFI, StatusBarLocation::Right, StatusBarIconStatus::Hidden);
+    // signal k status icon
     SKIcon_ = bar->create_image_icon(&sk_statusbar_icon, StatusBarLocation::Right, StatusBarIconStatus::Hidden);
+    // messages counter
+    pendingMessagesIcon_ = bar->create_text_icon(LV_SYMBOL_BELL " 0", StatusBarLocation::Left, StatusBarIconStatus::Hidden);
 
     TTGOClass *ttgo = TTGOClass::getWatch();
     //! main
@@ -326,6 +329,10 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     update_tiles_valid_points(dynamic_view_count);
     lv_tileview_set_valid_positions(mainBar, tile_valid_points, tile_valid_points_count);
     lv_tileview_set_edge_flash(mainBar, true);
+
+    post_gui_warning("Warning message 1");
+    post_gui_warning("Warning message 2");
+    post_gui_warning("Warning message 3");
 }
 
 void Gui::update_tiles_valid_points(int count)
@@ -414,7 +421,7 @@ void Gui::update_battery_level()
         batterySymbol = LV_SYMBOL_CHARGE "\0";
     }
     else
-    {        
+    {
         if (level > 80)
         {
             batterySymbol = LV_SYMBOL_BATTERY_3 "\0";
@@ -425,12 +432,12 @@ void Gui::update_battery_level()
         }
         else if (level > 20)
         {
-            batterySymbol = LV_SYMBOL_BATTERY_1  "\0";
+            batterySymbol = LV_SYMBOL_BATTERY_1 "\0";
         }
         else
         {
             batterySymbol = LV_SYMBOL_BATTERY_EMPTY "\0";
-        }    
+        }
     }
 
     sprintf(buff, "%s %d%%", batterySymbol, level);
@@ -630,7 +637,7 @@ void Gui::update_gui()
                             // update the text on the screen to show the latest time and the new count and the new size of pending_messages
                             it = pending_messages_.begin(); // get back to the first message in the list, which is the one currently being displayed
                             String updated_text =
-                                it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
+                                it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text;
                             lv_msgbox_set_text(msgBox, updated_text.c_str());
                             message_found = true;
                             twatchsk::run_async("vibrate", [this]() { // just a very brief vibration for each added message
@@ -645,6 +652,7 @@ void Gui::update_gui()
                             break;
                         }
                     }
+
                     if (!message_found) // it's not already in the list
                     {
                         pending_messages_.push_back(new_message); // add it to the list
@@ -666,6 +674,8 @@ void Gui::update_gui()
                     }
                 }
                 ESP_LOGI(GUI_TAG, "There are %d messages in pending_messages", pending_messages_.size());
+
+                update_pending_messages();
 
                 if (display_next_pending_message_) // if there is not already a message displayed
                 {
@@ -844,6 +854,7 @@ void Gui::msg_box_callback(lv_obj_t *obj, lv_event_t event)
         gui->set_display_next_pending_message(true); // now that this message is being closed, it's OK to display the next one
         gui->display_next_message(true);             // true means "delete the first message before displaying the next one"
         lv_msgbox_start_auto_close(obj, 0);
+        gui->update_pending_messages();
     }
 }
 
@@ -893,6 +904,24 @@ void Gui::display_next_message(bool delete_first_message)
     }
     else
     {
+        //hide pending messages icon
         ESP_LOGI(GUI_TAG, "No more pending messages to display");
+    }
+
+    update_pending_messages();
+}
+
+void Gui::update_pending_messages()
+{
+    if (pending_messages_.size() > 0)
+    {
+        char buff[10];
+        sprintf(buff, "%s %d", LV_SYMBOL_BELL, pending_messages_.size());
+        pendingMessagesIcon_->set_text(buff);
+        pendingMessagesIcon_->set_status(StatusBarIconStatus::Warning);
+    }
+    else
+    {
+        pendingMessagesIcon_->set_status(StatusBarIconStatus::Hidden);
     }
 }

@@ -57,7 +57,7 @@ public:
     void set_gui_needs_saved(bool new_value) { gui_needs_saved = new_value; }
     void set_display_next_pending_message(bool value) { display_next_pending_message_ = value; }
     void display_next_message(bool delete_first_message);
-
+    void update_pending_messages();
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);
@@ -111,5 +111,6 @@ private:
     StatusBarIcon* stepCounterSteps_;
     StatusBarIcon* WifiIcon_;
     StatusBarIcon* SKIcon_;
+    StatusBarIcon* pendingMessagesIcon_;
 };
 #endif /*__GUI_H */
