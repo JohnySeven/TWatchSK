@@ -81,7 +81,7 @@ public:
     {
         if (status_ != status)
         {
-            auto call_update = (status == StatusBarIconStatus::Hidden || status_ == StatusBarIconStatus::Hidden);
+            bool call_update = (status == StatusBarIconStatus::Hidden || status_ == StatusBarIconStatus::Hidden);
 
             if (status == StatusBarIconStatus::Hidden)
             {
