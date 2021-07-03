@@ -11,6 +11,11 @@
 #ifndef __GUI_H
 #define __GUI_H
 
+enum MsgTopic_t
+{
+    Wifi_Problem
+};
+
 class Gui : public Configurable
 {
 public:
@@ -88,7 +93,7 @@ private:
     struct PendingMsg_t
     {
         String msg_text;
-        String msg_topic;
+        MsgTopic_t msg_topic;
         String msg_time;;
         int msg_count = 0;
     };
