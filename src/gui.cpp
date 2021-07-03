@@ -595,7 +595,7 @@ void Gui::update_gui()
                         }
                     });
                     //Run beep
-                    hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, 10);
+                    hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, 3);
                     ESP_LOGI(GUI_TAG, "pending_messages_ empty, so msg added: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
                 }
                 else
