@@ -329,10 +329,6 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     update_tiles_valid_points(dynamic_view_count);
     lv_tileview_set_valid_positions(mainBar, tile_valid_points, tile_valid_points_count);
     lv_tileview_set_edge_flash(mainBar, true);
-
-    post_gui_warning("Warning message 1");
-    post_gui_warning("Warning message 2");
-    post_gui_warning("Warning message 3");
 }
 
 void Gui::update_tiles_valid_points(int count)
