@@ -563,7 +563,7 @@ void Gui::update_gui()
             {
                 message = message_from_code(event.message_code);
             }
-            else // SK Server alarm/alert, or MDNS-related error message
+            else // SK Server alarm/alert/warn/emergency, or MDNS-related error message
             {
                 message = (char *)event.argument;
             }
