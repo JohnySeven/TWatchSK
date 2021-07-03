@@ -465,7 +465,7 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
         {
         case WAKEUP_BUTTON:
             clear_temporary_screen_timeout(); // waking up with a button press - if the last timeout was temporary, clear it
-            hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, 1);
+            //hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, 1);
             break;
         case WAKEUP_ACCELEROMETER: // waking up with double tap or tilt
             set_temporary_screen_timeout(2);
