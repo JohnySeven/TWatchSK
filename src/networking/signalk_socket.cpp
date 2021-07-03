@@ -280,7 +280,7 @@ void SignalKSocket::parse_data(int length, const char *data)
                         String state = notification["state"].as<String>();
                         ESP_LOGI(WS_TAG, "Got SK notification %s with state %s, active=%d", path.c_str(), state.c_str(), active);
 
-                        if (state == "alarm" || state == "alert") //alarm is active we need to wake up the watch and show alert text on the display
+                        if (state == "alarm" || state == "alert" || state == "warn" || state == "emergency") //alarm is active we need to wake up the watch and show alert text on the display
                         {
                             if (!active)
                             {
