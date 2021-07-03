@@ -2,44 +2,154 @@
 #include "config.h"
 #include "system/observable.h"
 #include "ui/themes.h"
+#include <functional>
+#include <vector>
 
-LV_IMG_DECLARE(step);
-LV_IMG_DECLARE(sk_statusbar_icon);
-
-typedef enum
+enum StatusBarIconType
 {
-    LV_ICON_BAT_EMPTY,
-    LV_ICON_BAT_1,
-    LV_ICON_BAT_2,
-    LV_ICON_BAT_3,
-    LV_ICON_BAT_FULL,
-    LV_ICON_CHARGE,
-    LV_ICON_CALCULATION
-} lv_icon_battery_t;
+    Text,
+    Image
+};
 
-typedef enum
+enum StatusBarLocation
 {
-    LV_STATUS_BAR_BATTERY_LEVEL = 0,
-    LV_STATUS_BAR_BATTERY_ICON = 1,
-    LV_STATUS_BAR_WIFI = 2,
-    LV_STATUS_BAR_SIGNALK = 3
-} lv_icon_status_bar_t;
+    Left,
+    Right
+};
+
+enum StatusBarIconStatus
+{
+    Visible,
+    Warning,
+    Hidden
+};
+
+class StatusBarIcon
+{
+public:
+    StatusBarIcon(lv_obj_t *parent, const char *text, StatusBarLocation location, std::function<void(void)> update_func, StatusBarIconStatus status)
+    {
+        type_ = StatusBarIconType::Text;
+        obj_ = lv_label_create(parent, NULL);
+        lv_label_set_text(obj_, text);
+        update_func_ = update_func;
+        location_ = location;
+        set_status(status);
+    }
+
+    StatusBarIcon(lv_obj_t *parent, const void *image, StatusBarLocation location, std::function<void(void)> update_func, StatusBarIconStatus status)
+    {
+        type_ = StatusBarIconType::Image;
+        obj_ = lv_img_create(parent, NULL);
+        lv_img_set_src(obj_, image);
+        twatchsk::update_imgbtn_color(obj_);
+        update_func_ = update_func;
+        location_ = location;
+        set_status(status);
+    }
+
+    lv_obj_t *get_obj()
+    {
+        return obj_;
+    }
+
+    StatusBarLocation get_location()
+    {
+        return location_;
+    }
+
+    StatusBarIconStatus get_status()
+    {
+        return status_;
+    }
+
+    StatusBarIconType get_type()
+    {
+        return type_;
+    }
+
+    void set_text(const char *text)
+    {
+        if (type_ != StatusBarIconType::Image)
+        {
+            lv_label_set_text(obj_, text);
+            update_func_();
+        }
+    }
+
+    void set_status(StatusBarIconStatus status)
+    {
+        if (status_ != status)
+        {
+            bool call_update = (status == StatusBarIconStatus::Hidden || status_ == StatusBarIconStatus::Hidden);
+
+            if (status == StatusBarIconStatus::Hidden)
+            {
+                lv_obj_set_hidden(obj_, true);
+            }
+            else if (status == StatusBarIconStatus::Warning)
+            {
+                lv_obj_set_hidden(obj_, false);
+                set_color(LV_COLOR_RED);
+            }
+            else //normal
+            {
+                lv_obj_set_hidden(obj_, false);
+                set_color(twatchsk::get_text_color());
+            }
+
+            status_ = status;
+
+            if (call_update) //when status is changing from normal <--> warning we don't need update locations
+            {
+                update_func_();
+            }
+        }
+    }
+
+    void set_color(lv_color_t color)
+    {
+        if (type_ == StatusBarIconType::Image)
+        {
+            lv_obj_set_style_local_image_recolor(obj_, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, color);
+        }
+        else
+        {
+            lv_obj_set_style_local_text_color(obj_, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, color);
+        }
+    }
+
+private:
+    lv_obj_t *obj_ = NULL;
+    StatusBarIconType type_;
+    std::function<void(void)> update_func_;
+    StatusBarLocation location_;
+    StatusBarIconStatus status_;
+};
 
 class StatusBar
 {
-    typedef struct
-    {
-        bool vaild;
-        lv_obj_t *icon;
-    } lv_status_bar_t;
-
 public:
     StatusBar()
     {
-        memset(_icons, 0, sizeof(_icons));
     }
 
-    void createIcons(lv_obj_t *par)
+    StatusBarIcon *create_text_icon(char *initial, StatusBarLocation location, StatusBarIconStatus status = StatusBarIconStatus::Visible)
+    {
+        auto ret = new StatusBarIcon(_par, initial, location, std::bind(&StatusBar::refresh, this), status);
+        icons_.push_back(ret);
+
+        return ret;
+    }
+
+    StatusBarIcon *create_image_icon(const void *image_bytes, StatusBarLocation location, StatusBarIconStatus status = StatusBarIconStatus::Visible)
+    {
+        auto ret = new StatusBarIcon(_par, image_bytes, location, std::bind(&StatusBar::refresh, this), status);
+        icons_.push_back(ret);
+        return ret;
+    }
+
+    void setup(lv_obj_t *par)
     {
         _par = par;
 
@@ -48,79 +158,32 @@ public:
         lv_obj_set_style_local_radius(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, 0);
         lv_obj_set_style_local_border_width(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, 2);
         lv_obj_set_style_local_border_side(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_BORDER_SIDE_BOTTOM);
-
-        _icons[0].icon = lv_label_create(_bar, NULL);
-        lv_label_set_text(_icons[0].icon, "100%");
-
-        _icons[1].icon = lv_img_create(_bar, NULL);
-        lv_img_set_src(_icons[1].icon, LV_SYMBOL_BATTERY_FULL);
-
-        _icons[2].icon = lv_img_create(_bar, NULL);
-        lv_img_set_src(_icons[2].icon, LV_SYMBOL_WIFI);
-        lv_obj_set_hidden(_icons[2].icon, true);
-        //web socket
-        _icons[3].icon = lv_img_create(_bar, NULL);
-        lv_img_set_src(_icons[3].icon, &sk_statusbar_icon);
-        //step counter
-        _icons[4].icon = lv_img_create(_bar, NULL);
-        lv_img_set_src(_icons[4].icon, &step);
-        lv_obj_align(_icons[4].icon, _bar, LV_ALIGN_IN_LEFT_MID, 10, 0);
-
-        _icons[5].icon = lv_label_create(_bar, NULL);
-        lv_label_set_text(_icons[5].icon, "0");
-        lv_obj_align(_icons[5].icon, _icons[4].icon, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
-
+        
         refresh();
         theme_changed();
     }
 
-    void setStepCounter(uint32_t counter)
-    {
-        lv_label_set_text(_icons[5].icon, String(counter).c_str());
-        lv_obj_align(_icons[5].icon, _icons[4].icon, LV_ALIGN_OUT_RIGHT_MID, 5, 0);
-    }
-
-    void updateLevel(int level)
-    {
-        lv_label_set_text(_icons[0].icon, (String(level) + "%").c_str());
-        refresh();
-    }
-
-    void updateBatteryIcon(lv_icon_battery_t icon)
-    {
-        const char *icons[6] = {LV_SYMBOL_BATTERY_EMPTY, LV_SYMBOL_BATTERY_1, LV_SYMBOL_BATTERY_2, LV_SYMBOL_BATTERY_3, LV_SYMBOL_BATTERY_FULL, LV_SYMBOL_CHARGE};
-        lv_img_set_src(_icons[1].icon, icons[icon]);
-        refresh();
-    }
-
-    void show(lv_icon_status_bar_t icon)
-    {
-        if (lv_obj_get_hidden(_icons[icon].icon) == true)
-        {
-            lv_obj_set_hidden(_icons[icon].icon, false);
-            refresh();
-        }
-    }
-
-    void hidden(lv_icon_status_bar_t icon)
-    {
-        if (lv_obj_get_hidden(_icons[icon].icon) == false)
-        {
-            lv_obj_set_hidden(_icons[icon].icon, true);
-            refresh();
-        }
-    }
-
     void theme_changed()
     {
-        twatchsk::update_imgbtn_color(_icons[3].icon);
-        twatchsk::update_imgbtn_color(_icons[4].icon);
+        for (int i = 0; i < icons_.size(); i++)
+        {
+            auto icon = icons_.at(i);
+            if (icon->get_type() == StatusBarIconType::Image)
+            {
+                twatchsk::update_imgbtn_color(icon->get_obj());
+            }
+            else if(icon->get_type() == StatusBarIconType::Text && icon->get_status() == StatusBarIconStatus::Visible)
+            {
+                icon->set_color(twatchsk::get_text_color());
+            }
+        }
     }
 
     uint8_t height()
     {
         return _barHeight;
     }
+
     lv_obj_t *self()
     {
         return _bar;
@@ -131,29 +194,64 @@ public:
         lv_obj_set_hidden(_bar, hidden);
     }
 
+    void dont_refresh()
+    {
+        refresh_hold_ = true;
+    }
+
+    void do_refresh()
+    {
+        refresh_hold_ = false;
+        refresh();
+    }
+
 private:
     void refresh()
     {
-        int prev = 0;
-        for (int i = 0; i < 4; i++)
+        if (!refresh_hold_)
         {
-            if (!lv_obj_get_hidden(_icons[i].icon))
+            lv_obj_t *lastLeft = NULL;
+            lv_obj_t *lastRight = NULL;
+            for (int i = 0; i < icons_.size(); i++)
             {
-                if (i == LV_STATUS_BAR_BATTERY_LEVEL)
+                auto icon = icons_.at(i);
+                if (icon->get_status() != StatusBarIconStatus::Hidden)
                 {
-                    lv_obj_align(_icons[i].icon, NULL, LV_ALIGN_IN_RIGHT_MID, 0, 0);
+                    if (icon->get_location() == StatusBarLocation::Left)
+                    {
+                        if (lastLeft == NULL)
+                        {
+                            lv_obj_align(icon->get_obj(), _bar, LV_ALIGN_IN_LEFT_MID, iconOffset, 0);
+                        }
+                        else
+                        {
+                            lv_obj_align(icon->get_obj(), lastLeft, LV_ALIGN_OUT_RIGHT_MID, iconOffset, 0);
+                        }
+
+                        lastLeft = icon->get_obj();
+                    }
+                    else
+                    {
+                        if (lastRight == NULL)
+                        {
+                            lv_obj_align(icon->get_obj(), _bar, LV_ALIGN_IN_RIGHT_MID, -iconOffset, 0);
+                        }
+                        else
+                        {
+                            lv_obj_align(icon->get_obj(), lastRight, LV_ALIGN_OUT_LEFT_MID, -iconOffset, 0);
+                        }
+
+                        lastRight = icon->get_obj();
+                    }
                 }
-                else
-                {
-                    lv_obj_align(_icons[i].icon, _icons[prev].icon, LV_ALIGN_OUT_LEFT_MID, iconOffset, 0);
-                }
-                prev = i;
             }
         }
     };
     lv_obj_t *_bar = nullptr;
     lv_obj_t *_par = nullptr;
     uint8_t _barHeight = 30;
-    lv_status_bar_t _icons[6];
-    const int8_t iconOffset = -5;
+    std::vector<StatusBarIcon *> icons_;
+
+    const int8_t iconOffset = 5;
+    bool refresh_hold_ = false;
 };

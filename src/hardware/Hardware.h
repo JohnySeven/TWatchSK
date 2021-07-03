@@ -5,6 +5,7 @@
 #include <functional>
 #include <vector>
 #include "system/async_dispatcher.h"
+#include "sounds/sound_player.h"
 
 enum PowerCode_t
 {
@@ -70,6 +71,11 @@ public:
     }
     void vibrate(int duration);
     void vibrate(int pattern[], int repeat = 1);
+    
+    SoundPlayer*get_player()
+    {
+        return player_;
+    }
 private:
     std::vector<low_power_callback> power_callbacks_;
     std::function<uint32_t(void)> get_screen_timeout_;
@@ -82,4 +88,5 @@ private:
     void invoke_power_callbacks(PowerCode_t code, uint32_t arg);
     void update_bma_wakeup();
     void vibrate(bool status);
+    SoundPlayer*player_ = NULL;
 };

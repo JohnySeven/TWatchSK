@@ -30,6 +30,8 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 #include "system/async_dispatcher.h"
+#include "sounds/sound_player.h"
+#include "sounds/beep.h"
 
 const char *TAG = "APP";
 TTGOClass *ttgo;
@@ -109,6 +111,7 @@ void setup()
     //When the initialization is complete, turn on the backlight
     ttgo->openBL(); 
     ttgo->bl->adjust(gui->get_adjusted_display_brightness());
+    hardware->get_player()->play_raw_from_const("beep", beep_sound, beep_sound_len);
 
 #if CONFIG_PM_ENABLE
     // Configure dynamic frequency scaling:

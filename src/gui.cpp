@@ -26,6 +26,8 @@
 #include "hardware/Hardware.h"
 #include "system/async_dispatcher.h"
 #include <functional>
+#include "sounds/beep.h"
+#include "sounds/alert.h"
 /* In order to use std::bind to attach to method we need to use arguments placeholders that will map arguments to final method.
  * So in function setup_gui on line with attach_power_callback we just type _1 or _2 without whole namespace.
  */
@@ -50,6 +52,9 @@ LV_IMG_DECLARE(time_48px);
 LV_IMG_DECLARE(display_48px);
 LV_IMG_DECLARE(wakeup_48px);
 
+LV_IMG_DECLARE(step);
+LV_IMG_DECLARE(sk_statusbar_icon);
+
 const char *GUI_TAG = "GUI";
 
 static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
@@ -59,142 +64,149 @@ static void main_menu_event_cb(lv_obj_t *obj, lv_event_t event)
     { //!  Event callback is in here
         gui->hide_main_bar(true);
         NavigationView *setupMenu = NULL;
-        setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]() {
-            setupMenu->remove_from_active_list(); // because, for some reason, `delete setupMenu;` doesn't remove it from View::active_views_
-            delete setupMenu;
-            gui->hide_main_bar(false);
-            if (gui->get_gui_needs_saved())
-            {
-                gui->save();
-            }
-            gui->set_gui_needs_saved(false);
-        });
+        setupMenu = new NavigationView(LOC_SETTINGS_MENU, [setupMenu, gui]()
+                                       {
+                                           setupMenu->remove_from_active_list(); // because, for some reason, `delete setupMenu;` doesn't remove it from View::active_views_
+                                           delete setupMenu;
+                                           gui->hide_main_bar(false);
+                                           if (gui->get_gui_needs_saved())
+                                           {
+                                               gui->save();
+                                           }
+                                           gui->set_gui_needs_saved(false);
+                                       });
 
-        setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, false, [gui]() {
-            auto timeSetting = new TimeSettings(TTGOClass::getWatch(), gui->get_sk_socket());
-            timeSetting->set_24hour_format(gui->get_time_24hour_format());
-            timeSetting->set_timezone_id(gui->get_timezone_id());
-            timeSetting->on_close([timeSetting, gui]() {
-                bool need_to_save_gui = false;
-                if (gui->get_time_24hour_format() != timeSetting->get_24hour_format())
-                {
-                    gui->set_time_24hour_format(timeSetting->get_24hour_format());
-                    need_to_save_gui = true;
-                }
-                if (gui->get_timezone_id() != timeSetting->get_timezone_id())
-                {
-                    gui->set_timezone_id(timeSetting->get_timezone_id());
-                    need_to_save_gui = true;
-                }
+        setupMenu->add_tile(LOC_CLOCK_SETTINGS_MENU, &time_48px, false, [gui]()
+                            {
+                                auto timeSetting = new TimeSettings(TTGOClass::getWatch(), gui->get_sk_socket());
+                                timeSetting->set_24hour_format(gui->get_time_24hour_format());
+                                timeSetting->set_timezone_id(gui->get_timezone_id());
+                                timeSetting->on_close([timeSetting, gui]()
+                                                      {
+                                                          bool need_to_save_gui = false;
+                                                          if (gui->get_time_24hour_format() != timeSetting->get_24hour_format())
+                                                          {
+                                                              gui->set_time_24hour_format(timeSetting->get_24hour_format());
+                                                              need_to_save_gui = true;
+                                                          }
+                                                          if (gui->get_timezone_id() != timeSetting->get_timezone_id())
+                                                          {
+                                                              gui->set_timezone_id(timeSetting->get_timezone_id());
+                                                              need_to_save_gui = true;
+                                                          }
 
-                if (need_to_save_gui)
-                {
-                    gui->save();
-                }
+                                                          if (need_to_save_gui)
+                                                          {
+                                                              gui->save();
+                                                          }
 
-                delete timeSetting;
-            });
-            timeSetting->show(lv_scr_act());
-        });
+                                                          delete timeSetting;
+                                                      });
+                                timeSetting->show(lv_scr_act());
+                            });
 
-        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, false, [gui, setupMenu]() {
-            auto displaySettings = new DisplaySettings(TTGOClass::getWatch(), gui->get_sk_socket());
+        setupMenu->add_tile(LOC_DISPLAY_SETTINGS_MENU, &display_48px, false, [gui, setupMenu]()
+                            {
+                                auto displaySettings = new DisplaySettings(TTGOClass::getWatch(), gui->get_sk_socket());
 
-            // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
-            displaySettings->set_screen_timeout(gui->get_screen_timeout());
+                                // screen_timeout is saved to disk through GUI::screen_timeout. Retrieve it here:
+                                displaySettings->set_screen_timeout(gui->get_screen_timeout());
 
-            // display_setting is saved to disk through GUI::display_brightness. Retrieve it here:
-            displaySettings->set_display_brightness(gui->get_display_brightness());
+                                // display_setting is saved to disk through GUI::display_brightness. Retrieve it here:
+                                displaySettings->set_display_brightness(gui->get_display_brightness());
 
-            // Save the value of dark_theme_enabled before going into Display tile
-            bool current_dark_theme_enabled = twatchsk::dark_theme_enabled;
+                                // Save the value of dark_theme_enabled before going into Display tile
+                                bool current_dark_theme_enabled = twatchsk::dark_theme_enabled;
 
-            // Define the callback function (on_close()). If the value of any setting
-            // changed while the Display tile was up, save it.
-            displaySettings->on_close([displaySettings, gui, current_dark_theme_enabled, setupMenu]() {
-                bool need_to_save = false;
-                int new_timeout = displaySettings->get_screen_timeout();
-                if (gui->get_screen_timeout() != new_timeout &&
-                    new_timeout >= 5)
-                {
-                    gui->set_screen_timeout(new_timeout);
-                    need_to_save = true;
-                }
-                uint8_t new_brightness = displaySettings->get_display_brightness();
-                if (gui->get_display_brightness() != new_brightness &&
-                    new_brightness > 0)
-                {
-                    gui->set_display_brightness(new_brightness);
-                    need_to_save = true;
-                }
-                if (twatchsk::dark_theme_enabled != current_dark_theme_enabled) // dark_theme flag changed while in Display tile
-                {
-                    need_to_save = true;
-                    ESP_LOGI(GUI_TAG, "Dark theme changed to %d", twatchsk::dark_theme_enabled);
-                    //update themes on GUI objects
-                    setupMenu->theme_changed();
-                    gui->theme_changed();
-                }
-                if (need_to_save)
-                {
-                    gui->save();
-                }
-                delete displaySettings;
-            });
+                                // Define the callback function (on_close()). If the value of any setting
+                                // changed while the Display tile was up, save it.
+                                displaySettings->on_close([displaySettings, gui, current_dark_theme_enabled, setupMenu]()
+                                                          {
+                                                              bool need_to_save = false;
+                                                              int new_timeout = displaySettings->get_screen_timeout();
+                                                              if (gui->get_screen_timeout() != new_timeout &&
+                                                                  new_timeout >= 5)
+                                                              {
+                                                                  gui->set_screen_timeout(new_timeout);
+                                                                  need_to_save = true;
+                                                              }
+                                                              uint8_t new_brightness = displaySettings->get_display_brightness();
+                                                              if (gui->get_display_brightness() != new_brightness &&
+                                                                  new_brightness > 0)
+                                                              {
+                                                                  gui->set_display_brightness(new_brightness);
+                                                                  need_to_save = true;
+                                                              }
+                                                              if (twatchsk::dark_theme_enabled != current_dark_theme_enabled) // dark_theme flag changed while in Display tile
+                                                              {
+                                                                  need_to_save = true;
+                                                                  ESP_LOGI(GUI_TAG, "Dark theme changed to %d", twatchsk::dark_theme_enabled);
+                                                                  //update themes on GUI objects
+                                                                  setupMenu->theme_changed();
+                                                                  gui->theme_changed();
+                                                              }
+                                                              if (need_to_save)
+                                                              {
+                                                                  gui->save();
+                                                              }
+                                                              delete displaySettings;
+                                                          });
 
-            // show() does a few things, then calls show_internal(), which defines
-            // the way this tile looks and acts.
-            displaySettings->show(lv_scr_act());
-        });
+                                // show() does a few things, then calls show_internal(), which defines
+                                // the way this tile looks and acts.
+                                displaySettings->show(lv_scr_act());
+                            });
 
-        setupMenu->add_tile(LOC_WIFI_SETTINGS_MENU, &wifi_48px, false, [gui]() {
-            auto wifiSettings = new WifiSettings(gui->get_wifi_manager());
-            wifiSettings->on_close([wifiSettings]() {
-                delete wifiSettings;
-            });
-            wifiSettings->show(lv_scr_act());
-        });
+        setupMenu->add_tile(LOC_WIFI_SETTINGS_MENU, &wifi_48px, false, [gui]()
+                            {
+                                auto wifiSettings = new WifiSettings(gui->get_wifi_manager());
+                                wifiSettings->on_close([wifiSettings]()
+                                                       { delete wifiSettings; });
+                                wifiSettings->show(lv_scr_act());
+                            });
 
-        setupMenu->add_tile(LOC_SIGNALK_SETTING_MENU, &signalk_48px, true, [gui]() {
-            auto skSettings = new SignalKSettings(gui->get_sk_socket());
-            skSettings->on_close([skSettings]() {
-                delete skSettings;
-            });
-            skSettings->show(lv_scr_act());
-        });
+        setupMenu->add_tile(LOC_SIGNALK_SETTING_MENU, &signalk_48px, true, [gui]()
+                            {
+                                auto skSettings = new SignalKSettings(gui->get_sk_socket());
+                                skSettings->on_close([skSettings]()
+                                                     { delete skSettings; });
+                                skSettings->show(lv_scr_act());
+                            });
 
-        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &wakeup_48px, false, [gui]() {
-            auto wakeupSettings = new WakeupSettings(gui, gui->get_hardware());
-            wakeupSettings->on_close([wakeupSettings]() {
-                delete wakeupSettings;
-            });
-            wakeupSettings->show(lv_scr_act());
-        });
+        setupMenu->add_tile(LOC_WAKEUP_SETTINGS_MENU, &wakeup_48px, false, [gui]()
+                            {
+                                auto wakeupSettings = new WakeupSettings(gui, gui->get_hardware());
+                                wakeupSettings->on_close([wakeupSettings]()
+                                                         { delete wakeupSettings; });
+                                wakeupSettings->show(lv_scr_act());
+                            });
 
-        setupMenu->add_tile(LOC_WATCH_INFO_MENU, &info_48px, false, [gui]() {
-            auto watchInfo = new WatchInfo(gui);
+        setupMenu->add_tile(LOC_WATCH_INFO_MENU, &info_48px, false, [gui]()
+                            {
+                                auto watchInfo = new WatchInfo(gui);
 
-            // watch_name is saved to disk through GUI::watch_name. Retrieve it here:
-            watchInfo->set_watch_name(gui->get_watch_name());
+                                // watch_name is saved to disk through GUI::watch_name. Retrieve it here:
+                                watchInfo->set_watch_name(gui->get_watch_name());
 
-            // Define the callback function (on_close()). If the watch name
-            // changed while the Watch Info tile was up, save it.
-            watchInfo->on_close([watchInfo, gui]() {
-                char *new_watch_name = watchInfo->get_watch_name();
-                if (strcmp(new_watch_name, "") != 0 // new_watch_name isn't blank
-                    &&
-                    strcmp(gui->get_watch_name(), new_watch_name) != 0) // and it has changed
-                {
-                    gui->set_watch_name(new_watch_name);
-                    gui->save();
-                }
-                delete watchInfo;
-            });
+                                // Define the callback function (on_close()). If the watch name
+                                // changed while the Watch Info tile was up, save it.
+                                watchInfo->on_close([watchInfo, gui]()
+                                                    {
+                                                        char *new_watch_name = watchInfo->get_watch_name();
+                                                        if (strcmp(new_watch_name, "") != 0 // new_watch_name isn't blank
+                                                            &&
+                                                            strcmp(gui->get_watch_name(), new_watch_name) != 0) // and it has changed
+                                                        {
+                                                            gui->set_watch_name(new_watch_name);
+                                                            gui->save();
+                                                        }
+                                                        delete watchInfo;
+                                                    });
 
-            // show() does a few things, then calls show_internal(), which defines
-            // the way this tile looks and acts.
-            watchInfo->show(lv_scr_act());
-        });
+                                // show() does a few things, then calls show_internal(), which defines
+                                // the way this tile looks and acts.
+                                watchInfo->show(lv_scr_act());
+                            });
 
         setupMenu->show(lv_scr_act());
     }
@@ -220,25 +232,27 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
 
     // set the theme
     uint32_t flag = twatchsk::dark_theme_enabled ? LV_THEME_MATERIAL_FLAG_DARK : LV_THEME_MATERIAL_FLAG_LIGHT;
-    LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag,        // Initiate the theme
-                lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
-                lv_theme_get_font_title());
+    LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag, // Initiate the theme
+                          lv_theme_get_font_small(), lv_theme_get_font_normal(), lv_theme_get_font_subtitle(),
+                          lv_theme_get_font_title());
 
     bar = new StatusBar();
-    //! bar
-    bar->createIcons(scr);
-    //battery
+    bar->setup(scr);
+    // intialize status bar icons
+    // battery/charge icon and battery percent
+    batteryPercent_ = bar->create_text_icon(LV_SYMBOL_BATTERY_EMPTY "0%", StatusBarLocation::Right);
     update_battery_level();
-    lv_icon_battery_t icon = LV_ICON_CALCULATION;
+    // step counter icon and number of steps
+    stepCounterIcon_ = bar->create_image_icon(&step, StatusBarLocation::Left);
+    stepCounterSteps_ = bar->create_text_icon("0", StatusBarLocation::Left);
+    // wifi status icon
+    WifiIcon_ = bar->create_text_icon(LV_SYMBOL_WIFI, StatusBarLocation::Right, StatusBarIconStatus::Hidden);
+    // signal k status icon
+    SKIcon_ = bar->create_image_icon(&sk_statusbar_icon, StatusBarLocation::Right, StatusBarIconStatus::Hidden);
+    // messages counter
+    pendingMessagesIcon_ = bar->create_text_icon(LV_SYMBOL_BELL " 0", StatusBarLocation::Left, StatusBarIconStatus::Hidden);
 
     TTGOClass *ttgo = TTGOClass::getWatch();
-
-    if (ttgo->power->isChargeing())
-    {
-        icon = LV_ICON_CHARGE;
-    }
-
-    update_battery_icon(icon);
     //! main
     static lv_style_t mainStyle;
     lv_style_init(&mainStyle);
@@ -342,7 +356,9 @@ void Gui::update_tiles_valid_points(int count)
 
 void Gui::update_step_counter(uint32_t counter)
 {
-    bar->setStepCounter(counter);
+    char buf[20];
+    sprintf(buf, "%d", counter);
+    stepCounterSteps_->set_text(buf);
 }
 
 void Gui::update_time()
@@ -373,7 +389,8 @@ void Gui::update_time()
         strftime(day_date_buf, sizeof(day_date_buf), "%a %b %e, %G", &info); // month/day format
         if (info.tm_hour > 12)
         {
-            lv_label_set_text(timeSuffixLabel, "pm");;
+            lv_label_set_text(timeSuffixLabel, "pm");
+            ;
         }
         else
         {
@@ -393,28 +410,36 @@ void Gui::update_time()
 void Gui::update_battery_level()
 {
     TTGOClass *ttgo = TTGOClass::getWatch();
-    int p = ttgo->power->getBattPercentage();
-    bar->updateLevel(p);
-}
+    int level = ttgo->power->getBattPercentage();
+    char buff[10];
+    auto batterySymbol = LV_SYMBOL_BATTERY_FULL "\0";
 
-void Gui::update_battery_icon(lv_icon_battery_t icon)
-{
-    if (icon >= LV_ICON_CALCULATION)
+    if (ttgo->power->isChargeing())
     {
-        TTGOClass *ttgo = TTGOClass::getWatch();
-        int level = ttgo->power->getBattPercentage();
-        if (level > 95)
-            icon = LV_ICON_BAT_FULL;
-        else if (level > 80)
-            icon = LV_ICON_BAT_3;
-        else if (level > 45)
-            icon = LV_ICON_BAT_2;
-        else if (level > 20)
-            icon = LV_ICON_BAT_1;
-        else
-            icon = LV_ICON_BAT_EMPTY;
+        batterySymbol = LV_SYMBOL_CHARGE "\0";
     }
-    bar->updateBatteryIcon(icon);
+    else
+    {
+        if (level > 80)
+        {
+            batterySymbol = LV_SYMBOL_BATTERY_3 "\0";
+        }
+        else if (level > 45)
+        {
+            batterySymbol = LV_SYMBOL_BATTERY_2 "\0";
+        }
+        else if (level > 20)
+        {
+            batterySymbol = LV_SYMBOL_BATTERY_1 "\0";
+        }
+        else
+        {
+            batterySymbol = LV_SYMBOL_BATTERY_EMPTY "\0";
+        }
+    }
+
+    sprintf(buff, "%s %d%%", batterySymbol, level);
+    batteryPercent_->set_text(buff);
 }
 
 char *Gui::message_from_code(GuiMessageCode_t code)
@@ -434,32 +459,23 @@ char *Gui::message_from_code(GuiMessageCode_t code)
     };
 }
 
-void Gui::hide_status_bar_icon(lv_icon_status_bar_t icon, bool hidden)
-{
-    if (hidden)
-    {
-        bar->hidden(icon);
-    }
-    else
-    {
-        bar->show(icon);
-    }
-}
-
 void Gui::on_power_event(PowerCode_t code, uint32_t arg)
 {
     if (code == PowerCode_t::POWER_LEAVE_LOW_POWER)
     {
         auto ttgo = TTGOClass::getWatch();
         ttgo->bl->adjust(get_adjusted_display_brightness());
+        bar->dont_refresh();
         update_step_counter(ttgo->bma->getCounter());
         update_battery_level();
-        update_battery_icon(LV_ICON_CALCULATION);
         increment_wakeup_count();
+        bar->do_refresh();
+
         switch (arg)
         {
         case WAKEUP_BUTTON:
             clear_temporary_screen_timeout(); // waking up with a button press - if the last timeout was temporary, clear it
+            //hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, 1);
             break;
         case WAKEUP_ACCELEROMETER: // waking up with double tap or tilt
             set_temporary_screen_timeout(2);
@@ -481,11 +497,11 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
     }
     else if (code == PowerCode_t::POWER_CHARGING_ON)
     {
-        update_battery_icon(LV_ICON_CHARGE);
+        update_battery_level();
     }
     else if (code == PowerCode_t::POWER_CHARGING_OFF || code == PowerCode_t::POWER_CHARGING_DONE)
     {
-        update_battery_icon(LV_ICON_CALCULATION);
+        update_battery_level();
     }
     else if (code == PowerCode_t::WALK_STEP_COUNTER_UPDATED)
     {
@@ -505,19 +521,20 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
         set_display_brightness(twatchsk::dark_theme_enabled ? 1 : 5);
         auto ttgo = TTGOClass::getWatch();
         ttgo->bl->adjust(get_adjusted_display_brightness());
-        View::invoke_theme_changed();     // calls theme_changed() for every descendant of View class
-        this->theme_changed();            // updates theme for status bar icons (because StatusBar is not a descendant of View class)
+        View::invoke_theme_changed();            // calls theme_changed() for every descendant of View class
+        this->theme_changed();                   // updates theme for status bar icons (because StatusBar is not a descendant of View class)
         if (View::get_active_views_count() == 0) // we're on the home screen, so save the new theme to SPIFFS immediately
         {
-            twatchsk::run_async("GUI Settings save", [this]()
-            {
-                delay(100);
-                this->save();
-            });
+            //JD: commented out for now - causes crash :-/
+            /*twatchsk::run_async("GUI Settings save", [this]()
+                                {
+                                    delay(100);
+                                    this->save();
+                                });*/
         }
         else
         {
-            gui_needs_saved = true;  // flag to save the new theme to SPIFFS later, when NavigationView is closed
+            gui_needs_saved = true; // flag to save the new theme to SPIFFS later, when NavigationView is closed
         }
     }
 }
@@ -535,20 +552,31 @@ void Gui::update_gui()
     auto wifiStatus = wifiManager->get_status();
     if (wifiStatus == WifiState_t::Wifi_Connected || wifiStatus == WifiState_t::Wifi_Connecting)
     {
-        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, false);
+        WifiIcon_->set_status(StatusBarIconStatus::Visible);
+    }
+    else if (wifiStatus == WifiState_t::Wifi_Disconnected)
+    {
+        WifiIcon_->set_status(StatusBarIconStatus::Warning);
     }
     else
     {
-        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_WIFI, true);
+        WifiIcon_->set_status(StatusBarIconStatus::Hidden);
     }
 
     if (ws_socket->get_state() == WebsocketState_t::WS_Connected)
     {
-        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, false);
+        if (ws_socket->get_token_request_pending())
+        {
+            SKIcon_->set_status(StatusBarIconStatus::Warning);
+        }
+        else
+        {
+            SKIcon_->set_status(StatusBarIconStatus::Visible);
+        }
     }
     else
     {
-        hide_status_bar_icon(lv_icon_status_bar_t::LV_STATUS_BAR_SIGNALK, true);
+        SKIcon_->set_status(StatusBarIconStatus::Hidden);
     }
 
     GuiEvent_t event;
@@ -563,7 +591,7 @@ void Gui::update_gui()
             {
                 message = message_from_code(event.message_code);
             }
-            else // SK Server alarm/alert, or MDNS-related error message
+            else // SK Server alarm/alert/warn/emergency, or MDNS-related error message
             {
                 message = (char *)event.argument;
             }
@@ -575,7 +603,7 @@ void Gui::update_gui()
                 new_message.msg_text = message;
                 if (event.message_code == GUI_WARN_WIFI_CONNECTION_FAILED || event.message_code == GUI_WARN_WIFI_DISCONNECTED)
                 {
-                    new_message.msg_topic = "wifi_problem"; //   //BS: make this a typedef instead of just text?
+                    new_message.msg_topic = Wifi_Problem;
                 }
                 new_message.msg_time = current_time();
                 new_message.msg_count = 1;
@@ -583,7 +611,9 @@ void Gui::update_gui()
                 if (pending_messages_.size() == 0) // list is empty
                 {
                     pending_messages_.push_back(new_message); // add it to the list
-                    
+                    hardware_->vibrate(300); // just a very brief vibration for each added message
+                    //Run beep
+                    hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, 3);
                     ESP_LOGI(GUI_TAG, "pending_messages_ empty, so msg added: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
                 }
                 else
@@ -599,11 +629,12 @@ void Gui::update_gui()
                             it->msg_count++;
                             // update the text on the screen to show the latest time and the new count and the new size of pending_messages
                             it = pending_messages_.begin(); // get back to the first message in the list, which is the one currently being displayed
-                            String updated_text = 
-                                it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
-                            lv_msgbox_set_text(msgBox, updated_text.c_str()); 
+                            String updated_text =
+                                it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text;
+                            lv_msgbox_set_text(msgBox, updated_text.c_str());
                             message_found = true;
                             hardware_->vibrate(300); // just a very brief vibration for each added message
+                            hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, alert_sound_default_repeat);
                             break;
                         }
                     }
@@ -614,13 +645,15 @@ void Gui::update_gui()
                         ESP_LOGI(GUI_TAG, "Msg added to pending_messages_: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
                         // update the unread-messages count on any currently-displayed message
                         std::list<PendingMsg_t>::iterator it = pending_messages_.begin(); // get the first message - that's the one that's currently displayed
-                        String updated_text = // re-create the message text to reflect the new pending_messages_.size()
-                                it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
+                        String updated_text =                                             // re-create the message text to reflect the new pending_messages_.size()
+                            it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
                         lv_msgbox_set_text(msgBox, updated_text.c_str()); // display the updated text on the currently-displayed message
                         hardware_->vibrate(300); //vibrate for 300 ms (100 ms on, 100 ms off, 100 ms on)
                     }
                 }
                 ESP_LOGI(GUI_TAG, "There are %d messages in pending_messages", pending_messages_.size());
+
+                update_pending_messages();
 
                 if (display_next_pending_message_) // if there is not already a message displayed
                 {
@@ -788,18 +821,19 @@ String Gui::current_time()
     return current_time_string;
 }
 
-void Gui::msg_box_callback(lv_obj_t * obj, lv_event_t event)
+void Gui::msg_box_callback(lv_obj_t *obj, lv_event_t event)
 {
-    if(event == LV_EVENT_VALUE_CHANGED) 
+    if (event == LV_EVENT_VALUE_CHANGED)
     {
-        Gui *gui = (Gui *)obj->user_data; 
+        Gui *gui = (Gui *)obj->user_data;
         if (lv_msgbox_get_active_btn(obj) == 1) // 0 is the OK button, 1 is the Disable Wifi button
         {
             gui->wifiManager->off();
         }
         gui->set_display_next_pending_message(true); // now that this message is being closed, it's OK to display the next one
-        gui->display_next_message(true); // true means "delete the first message before displaying the next one"
+        gui->display_next_message(true);             // true means "delete the first message before displaying the next one"
         lv_msgbox_start_auto_close(obj, 0);
+        gui->update_pending_messages();
     }
 }
 
@@ -811,24 +845,24 @@ void Gui::display_next_message(bool delete_first_message)
         if (delete_first_message) // done only when a message was being displayed and has now been cleared from the screen by the user
         {
             ESP_LOGI(GUI_TAG, "Erasing the first message: %s", it->msg_text.c_str());
-            pending_messages_.erase(it); 
+            pending_messages_.erase(it);
         }
-        if (pending_messages_.size() == 0)    //it == pending_messages_.end() didn't work for some reason
+        if (pending_messages_.size() == 0) //it == pending_messages_.end() didn't work for some reason
         {
             ESP_LOGI(GUI_TAG, "Last message has been deleted");
         }
         else // there is at least one message in pending_messages, so display it
         {
-            it = pending_messages_.begin();    // doesn't work if "it" is not re-set to the first element like this
+            it = pending_messages_.begin(); // doesn't work if "it" is not re-set to the first element like this
             ESP_LOGI(GUI_TAG, "Displaying the first message in pending_messages: %s", it->msg_text.c_str());
             msgBox = lv_msgbox_create(lv_scr_act(), NULL);
             String full_text =
                 it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
             lv_msgbox_set_text(msgBox, full_text.c_str());
-            if (it->msg_topic == "wifi_problem")
+            if (it->msg_topic == Wifi_Problem)
             {
                 static const char *btns[] = {LOC_MESSAGEBOX_OK, LOC_MESSAGEBOX_DISABLE_WIFI, ""};
-                lv_msgbox_add_btns(msgBox, btns); //Jan: why does this have to be inside the if and the else? If I put it AFTER the else, compiler says btns is undefined.
+                lv_msgbox_add_btns(msgBox, btns);                                  //Jan: why does this have to be inside the if and the else? If I put it AFTER the else, compiler says btns is undefined.
                 lv_btnmatrix_set_btn_width(lv_msgbox_get_btnmatrix(msgBox), 1, 2); // make "Disable Wifi" button (button 1) twice as wide as "OK" button (button 0)
                 lv_obj_set_style_local_radius(msgBox, LV_MSGBOX_PART_BTN, LV_STATE_DEFAULT, 10);
             }
@@ -849,6 +883,24 @@ void Gui::display_next_message(bool delete_first_message)
     }
     else
     {
+        //hide pending messages icon
         ESP_LOGI(GUI_TAG, "No more pending messages to display");
+    }
+
+    update_pending_messages();
+}
+
+void Gui::update_pending_messages()
+{
+    if (pending_messages_.size() > 0)
+    {
+        char buff[10];
+        sprintf(buff, "%s %d", LV_SYMBOL_BELL, pending_messages_.size());
+        pendingMessagesIcon_->set_text(buff);
+        pendingMessagesIcon_->set_status(StatusBarIconStatus::Warning);
+    }
+    else
+    {
+        pendingMessagesIcon_->set_status(StatusBarIconStatus::Hidden);
     }
 }
