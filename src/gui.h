@@ -27,7 +27,6 @@ public:
     }
     void setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware);
     void update_step_counter(uint32_t counter);
-    void update_battery_icon(lv_icon_battery_t index);
     void update_battery_level();
     void hide_status_bar(bool hidden);
     void hide_main_bar(bool hidden);
@@ -38,7 +37,6 @@ public:
     Hardware *get_hardware() { return hardware_; }
     bool get_time_24hour_format() { return time_24hour_format; }
     void set_time_24hour_format(bool value) { time_24hour_format = value; }
-    void hide_status_bar_icon(lv_icon_status_bar_t icon, bool hidden);
     int get_screen_timeout() { return screen_timeout; }
     void set_screen_timeout(int value) { screen_timeout = value; }
     void set_temporary_screen_timeout(int value);
@@ -64,7 +62,7 @@ public:
     void set_gui_needs_saved(bool new_value) { gui_needs_saved = new_value; }
     void set_display_next_pending_message(bool value) { display_next_pending_message_ = value; }
     void display_next_message(bool delete_first_message);
-
+    void update_pending_messages();
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);
@@ -112,5 +110,12 @@ private:
     bool is_active_view_dynamic_ = false;
     bool gui_needs_saved = false;
     bool display_next_pending_message_ = true;
+
+    StatusBarIcon* batteryPercent_;
+    StatusBarIcon* stepCounterIcon_;
+    StatusBarIcon* stepCounterSteps_;
+    StatusBarIcon* WifiIcon_;
+    StatusBarIcon* SKIcon_;
+    StatusBarIcon* pendingMessagesIcon_;
 };
 #endif /*__GUI_H */
