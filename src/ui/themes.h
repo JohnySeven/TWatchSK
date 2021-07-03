@@ -11,6 +11,18 @@ namespace twatchsk
 
     static bool dark_theme_enabled = false;
 
+    static lv_color_t get_text_color()
+    {
+        if(dark_theme_enabled)
+        {
+            return LV_COLOR_WHITE;
+        }
+        else
+        {
+            return LV_COLOR_BLACK;
+        }
+    }
+
     static void update_imgbtn_color(lv_obj_t *button)
     {
         if (dark_theme_enabled)
