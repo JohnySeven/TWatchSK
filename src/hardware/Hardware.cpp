@@ -5,9 +5,9 @@ EventGroupHandle_t isr_group = NULL;
 
 #define WATCH_FLAG_SLEEP_MODE _BV(1) // in sleep mode
 #define WATCH_FLAG_SLEEP_EXIT _BV(2) // leaving sleep mode because of any kind of interrupt
-#define WATCH_FLAG_BMA_IRQ _BV(3) // leaving sleep mode because of double tap or tilt
-#define WATCH_FLAG_AXP_IRQ _BV(4) // leaving sleep mode because of external button press or any other power management interrupt
-#define WATCH_FLAG_TOUCH_IRQ _BV(5) // leaving sleep mode because of touch (not yet implemented)
+#define WATCH_FLAG_BMA_IRQ _BV(3)    // leaving sleep mode because of double tap or tilt
+#define WATCH_FLAG_AXP_IRQ _BV(4)    // leaving sleep mode because of external button press or any other power management interrupt
+#define WATCH_FLAG_TOUCH_IRQ _BV(5)  // leaving sleep mode because of touch (not yet implemented)
 
 #define MOTOR_CHANNEL 1
 #define MOTOR_FREQUENCY 12000
@@ -61,9 +61,9 @@ void Hardware::initialize(TTGOClass *watch)
     // Enable BMA423 interrupt ，
     // The default interrupt configuration,
     // you need to set the acceleration parameters, please refer to the BMA423_Accel example
-    watch->bma->attachInterrupt();    
+    watch->bma->attachInterrupt();
     watch_->bma->enableTiltInterrupt(this->tilt_wakeup_); // set according to the saved setting
-    watch_->bma->enableWakeupInterrupt(true); // needs to be on for double-tap theme switching whenever watch is awake
+    watch_->bma->enableWakeupInterrupt(true);             // needs to be on for double-tap theme switching whenever watch is awake
     //TODO: touch interrupt breaks touch as it uses the interrupt also
     /*pinMode(TOUCH_INT, INPUT);
     attachInterrupt(
@@ -85,7 +85,8 @@ void Hardware::initialize(TTGOClass *watch)
     //Accelerometer interupt
     pinMode(BMA423_INT1, INPUT);
     attachInterrupt(
-        BMA423_INT1, [] {
+        BMA423_INT1, []
+        {
             BaseType_t xHigherPriorityTaskWoken = pdFALSE;
             EventBits_t bits = xEventGroupGetBitsFromISR(isr_group);
             if (bits & WATCH_FLAG_SLEEP_MODE)
@@ -108,7 +109,8 @@ void Hardware::initialize(TTGOClass *watch)
     //Power management interupt, connection interrupted to the specified pin
     pinMode(AXP202_INT, INPUT);
     attachInterrupt(
-        AXP202_INT, [] {
+        AXP202_INT, []
+        {
             BaseType_t xHigherPriorityTaskWoken = pdFALSE;
             EventBits_t bits = xEventGroupGetBitsFromISR(isr_group);
             if (bits & WATCH_FLAG_SLEEP_MODE)
@@ -177,7 +179,7 @@ void Hardware::low_energy()
             isr_bits = xEventGroupGetBits(isr_group);
             app_bits = xEventGroupGetBits(g_app_state);
             //Signal every 5000 ms low actions
-            if(counter % 10 == 0)
+            if (counter % 10 == 0)
             {
                 invoke_power_callbacks(PowerCode_t::POWER_LOW_TICK, counter);
             }
@@ -273,11 +275,11 @@ void Hardware::loop()
             }
 
             // double tap
-            if (!lenergy_ &&  watch_->bma->isDoubleClick())
+            if (!lenergy_ && watch_->bma->isDoubleClick())
             {
                 invoke_power_callbacks(DOUBLE_TAP_DETECTED, 0);
             }
-            
+
             break;
 
         case ApplicationEvents_T::Q_EVENT_AXP_INT:
@@ -344,15 +346,15 @@ void Hardware::update_bma_wakeup()
 
 void Hardware::vibrate(bool status)
 {
-    if(status != is_vibrating_)
+    if (status != is_vibrating_)
     {
         is_vibrating_ = status;
 
-        if(status)
+        if (status)
         {
             //attach pin to PWM channel 1
-            ledcAttachPin(MOTOR_PIN, 1); 
-            //change channel 1 duty to 128 (50%)       
+            ledcAttachPin(MOTOR_PIN, 1);
+            //change channel 1 duty to 128 (50%)
             ledcWrite(MOTOR_CHANNEL, 128);
         }
         else
@@ -362,5 +364,60 @@ void Hardware::vibrate(bool status)
             //detach the PIN from PWM
             ledcDetachPin(MOTOR_PIN);
         }
+    }
+}
+
+void Hardware::vibrate(int duration)
+{
+    if (duration < 150)
+    {
+        duration = 150;
+    }
+
+    twatchsk::run_async("vibrate", [this, duration]()
+                        {
+                            int count = duration / 100;
+
+                            for (int i = 0; i < count; i++)
+                            {
+                                this->vibrate(true);
+                                delay(100);
+                                this->vibrate(false);
+                                delay(100);
+                            }
+
+                            this->vibrate(false);
+                        });
+}
+
+void Hardware::vibrate(int pattern[], int repeat)
+{
+    if (repeat > 0)
+    {
+        twatchsk::run_async("vibrate_pattern", [this, pattern, repeat]()
+                            {
+                                for (int i = 0; i < repeat; i++)
+                                {
+                                    int index = 0;
+                                    int value = pattern[i];
+
+                                    while (value != 0)
+                                    {
+                                        if (index % 2 == 0)
+                                        {
+                                            this->vibrate(true);
+                                        }
+                                        else
+                                        {
+                                            this->vibrate(false);
+                                        }
+                                        delay(value);
+                                        index++;
+                                        value = pattern[index];
+                                    }
+                                }
+
+                                this->vibrate(false);
+                            });
     }
 }

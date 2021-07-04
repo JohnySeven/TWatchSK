@@ -548,7 +548,7 @@ void Gui::lv_update_task(struct _lv_task_t *data)
 void Gui::update_gui()
 {
     update_time();
-    twatchsk::update_imgbtn_color(menuBtn); // make the four little squares be the correct color for the theme
+
     auto wifiStatus = wifiManager->get_status();
     if (wifiStatus == WifiState_t::Wifi_Connected || wifiStatus == WifiState_t::Wifi_Connecting)
     {
@@ -611,15 +611,7 @@ void Gui::update_gui()
                 if (pending_messages_.size() == 0) // list is empty
                 {
                     pending_messages_.push_back(new_message); // add it to the list
-                    twatchsk::run_async("vibrate", [this]() { // first message in the queue - give it a full vibration
-                        for (int i = 0; i < 5; i++)
-                        {
-                            this->hardware_->vibrate(true);
-                            delay(50);
-                            this->hardware_->vibrate(false);
-                            delay(100);
-                        }
-                    });
+                    hardware_->vibrate(300); // just a very brief vibration for each added message
                     //Run beep
                     hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, 3);
                     ESP_LOGI(GUI_TAG, "pending_messages_ empty, so msg added: %s, %s", new_message.msg_text.c_str(), new_message.msg_time.c_str());
@@ -641,15 +633,7 @@ void Gui::update_gui()
                                 it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text;
                             lv_msgbox_set_text(msgBox, updated_text.c_str());
                             message_found = true;
-                            twatchsk::run_async("vibrate", [this]() { // just a very brief vibration for each added message
-                                for (int i = 0; i < 3; i++)
-                                {
-                                    this->hardware_->vibrate(true);
-                                    delay(50);
-                                    this->hardware_->vibrate(false);
-                                    delay(100);
-                                }
-                            });
+                            hardware_->vibrate(300); // just a very brief vibration for each added message
                             hardware_->get_player()->play_raw_from_const("alert", beep_sound, beep_sound_len, alert_sound_default_repeat);
                             break;
                         }
@@ -664,15 +648,7 @@ void Gui::update_gui()
                         String updated_text =                                             // re-create the message text to reflect the new pending_messages_.size()
                             it->msg_time + "\n(" + it->msg_count + "x) " + it->msg_text + "\n\n(" + (String)(pending_messages_.size() - 1) + LOC_UNREAD_MSGS + ")";
                         lv_msgbox_set_text(msgBox, updated_text.c_str()); // display the updated text on the currently-displayed message
-                        twatchsk::run_async("vibrate", [this]() {         // just a very brief vibration for each added message
-                            for (int i = 0; i < 3; i++)
-                            {
-                                this->hardware_->vibrate(true);
-                                delay(50);
-                                this->hardware_->vibrate(false);
-                                delay(100);
-                            }
-                        });
+                        hardware_->vibrate(300); //vibrate for 300 ms (100 ms on, 100 ms off, 100 ms on)
                     }
                 }
                 ESP_LOGI(GUI_TAG, "There are %d messages in pending_messages", pending_messages_.size());
@@ -770,6 +746,7 @@ void Gui::save_config_to_file(JsonObject &json)
 
 void Gui::theme_changed()
 {
+    twatchsk::update_imgbtn_color(menuBtn); // make the four little squares be the correct color for the theme
     bar->theme_changed();
 }
 

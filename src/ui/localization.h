@@ -51,7 +51,7 @@
 #define LOC_SELECT_DATE "Select current date"
 #define LOC_MONTHS {"???","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
 #define LOC_WATCH_INFO "Watch info"
-#define LOC_WATCH_VERSION "Version 0.0.2"
+#define LOC_WATCH_VERSION "Version 0.0.3"
 #define LOC_AUTHOR "Author: Jan Dytrych,\nBrian Smith and contributors"
 #define LOC_UPTIME "Uptime: %d:%.2d:%.2d "
 #define LOC_WATCH_NAME "Watch\nname:"
