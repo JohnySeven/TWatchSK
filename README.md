@@ -83,7 +83,9 @@ is a program you run on your computer. The Editor allows you to create the Dynam
 them onto the watch.
 
 ### Wifi
-The first time you go to the "Wifi settings" screen, you'll see this (BS: show the screenshot), indicating that you need to configure the wifi settings
+The first time you go to the "Wifi settings" screen, you'll see this, indicating that you need to configure the wifi settings.
+
+![image](https://user-images.githubusercontent.com/15186790/125854000-453d08a7-3ca7-409f-8393-9acb38f5f380.png)
 - Tap the "Connect" button and the watch will scan and display any in-range wifi networks. The strongest signal will be at the top of the list, the weakest
 signal at the bottom. Tap on the network you want (this has to be the same network that your Signal K Server is on!), and then enter the password.
 - Save the password (tap the checkmark key), and the watch will attempt to connect. If it succeeds, you'll see the "Success!" message, and you should never
