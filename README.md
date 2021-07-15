@@ -6,7 +6,7 @@ where you are on the boat or what you're doing.
 
 It runs exclusively on the [LILYGO T-Watch-2020 watch](http://www.lilygo.cn/prod_view.aspx?TypeId=50053&Id=1290&FId=t3:50053:3), which is based on an ESP32 microcontroller.
 
-![image](https://user-images.githubusercontent.com/15186790/124196885-895f5380-da8a-11eb-9838-c23fe4748867.png)![image](https://user-images.githubusercontent.com/15186790/124197236-56698f80-da8b-11eb-9484-81c49a57b7c2.png) ![image](https://user-images.githubusercontent.com/15186790/125843442-12129d0a-ed88-4629-8ac6-68b9295cda64.png)
+![image](https://user-images.githubusercontent.com/15186790/125843967-e44c8015-d0a8-4099-8e00-b63a9b4c29cb.png) ![image](https://user-images.githubusercontent.com/15186790/125844616-d3264ca2-3667-4789-9cda-456e79ba2aa9.png) ![image](https://user-images.githubusercontent.com/15186790/125843442-12129d0a-ed88-4629-8ac6-68b9295cda64.png)
 
 
 The code is C++, built with PlatformIO and VS Code. The source code is open, under the (Jan: which open source license?).
