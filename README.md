@@ -104,9 +104,8 @@ is not connected.
 
 ### Signal K
 This screen shows the current status of the connection to the SK Server (shows the server address and the SK Server version number if connected), and
-provides buttons for managing the connection to the SK Server. Note that you can make the initial connection to the Server by specifically entering
-its IP address and port number, or by using the "Find SK Server w/ mDNS" button: both methods are described below.
-- "Set address": tap to enter the IP address, or the hostname, of your SK Server. NOTE: the watch and the SK Server must be on the same wifi network.
+provides buttons for managing the connection to the SK Server.
+- "Set address": tap to enter the IP address, or the hostname, of your SK Server. NOTE: the Watch and the SK Server must be on the same wifi network.
 - The field to the right of the address is the "Port" field - it's just not labeled. Tap it to enter the port of your SK Server: typically 80 or 3000. As long as you're connected to wifi already, the Watch will attempt to connect to the SK Server. If it's successful, you'll see the Server address and version, and above that, it will say "Pending authorization".
 - Go to your SK Server, click on "Security" on the left-side menu, then click on "Access requests", then click on Watch in the list of Access Requests, then enter `NEVER` in the "Authentication Timeout" field, then click the "Approve" button.
 
@@ -117,23 +116,23 @@ its IP address and port number, or by using the "Find SK Server w/ mDNS" button:
 - BS: say something about the `Reset token` button.
 
 ### Wake-up
-As described above, you can wake the watch up three different ways:
-- A press-and-release of the external button wakes the watch up and leaves the screen on for the normal "Screen timeout" number of seconds.
-- A double-tap or a "tilt" wake the watch up for just 2 seconds, so you can check the time.
-But neither the double-tap nor the tilt methods are enabled by default. Since they can happen accidentally, and you may not want the watch to ever
+As described above, you can wake the Watch up three different ways:
+- A press-and-release of the external button wakes the Watch up and leaves the screen on for the normal "Screen timeout" number of seconds.
+- A double-tap or a "tilt" wake the Watch up for just 2 seconds, so you can check the time.
+But neither the double-tap nor the tilt methods are enabled by default. Since they can happen accidentally, and you may not want the Watch to ever
 wake up accidentally, you must enable them or they won't work. You enable each of them from this screen.
 
 ### Watch info
-This screen mostly shows some basic info about the watch and the software, but it does have one editable field: "Watch name". Tap it to bring up a
-keyboard and enter the name you want for the watch. It will be displayed above the time on the main screen, and you'll see it in the SK Server, in the "path" of the data that is sent to the Server (watch battery status, etc.)
+This screen mostly shows some basic info about the Watch and the software, but it does have one editable field: "Watch name". Tap it to bring up a
+keyboard and enter the name you want for the Watch. It will be displayed above the time on the main screen, and you'll see it in the SK Server, in the "path" of the data that is sent to the Server (Watch battery status, etc.)
 
 ## Signal K Notifications
-Signal K broadcasts notifications for various things: some are enabled by default (such as when a new version is available), but most are user-defined (such as when the value of a particular path is outside of a defined range, like engine oil pressure being too low). The watch receives all SK notifications, and if they are categorized as "warn", "alert", "alarm", or "emergency", the watch will wake up, display the notification as a message, vibrate, and play a sound. (BS: address the issue of a sound being played.)
+Signal K broadcasts notifications for various things: some are enabled by default (such as when a new version is available), but most are user-defined (such as when the value of a particular path is outside of a defined range, like engine oil pressure being too low). The Watch receives all SK notifications, and if they are categorized as "warn", "alert", "alarm", or "emergency", the Watch will wake up, display the notification as a message, vibrate, and play a sound. (BS: address the issue of a sound being played.)
 
 ![image](https://user-images.githubusercontent.com/15186790/124197236-56698f80-da8b-11eb-9484-81c49a57b7c2.png)
 
-It's up to you to set up the notifications you want to see in Signal K, and give them the proper status: "warn", "alert", "alarm", or "emergency". The watch will take it from there. (The Simple Notifications plug-in is an easy way to set up notifications. There are other ways, too.)
+It's up to you to set up the notifications you want to see in Signal K, and give them the proper status: "warn", "alert", "alarm", or "emergency". The Watch will take it from there. (The Simple Notifications plug-in is an easy way to set up notifications. There are other ways, too.)
 
 BS: To Do
 - Add a section about the DynamicViews, and a link to the DynamicViews Editor documentation.
-- Get Jan to make a short video showing the main functions of the watch, including some DynamicViews and the display of an SK Notification.
+- Get Jan to make a short video showing the main functions of the Watch, including some DynamicViews and the display of an SK Notification.
