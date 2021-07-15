@@ -107,13 +107,14 @@ This screen shows the current status of the connection to the SK Server (shows t
 provides buttons for managing the connection to the SK Server. Note that you can make the initial connection to the Server by specifically entering
 its IP address and port number, or by using the "Find SK Server w/ mDNS" button: both methods are described below.
 - "Set address": tap to enter the IP address, or the hostname, of your SK Server. NOTE: the watch and the SK Server must be on the same wifi network.
-- The field to the right of the address is the "Port" field - it's just not labeled. Tap it to enter the port of your SK Server: typically 80 or 3000.
-BS: write the description of what happens after you set the address and port: does it automatically try to connect after you save either of those fields?
-- If you don't know the IP address of your SK Server, or if you just want to save some tapping, use this button to search the network for the Server.
-Jan: Does it work?
-- Once you're connected to the SK Server, you'll need to go to the Server from a browser and authorize access for the watch, so that they can communicate
-properly. (BS: provide more details here)
-- BS: write up the "Reset token" button - not sure when you would use it. Jan: when would you use it?
+- The field to the right of the address is the "Port" field - it's just not labeled. Tap it to enter the port of your SK Server: typically 80 or 3000. As long as you're connected to wifi already, the Watch will attempt to connect to the SK Server. If it's successful, you'll see the Server address and version, and above that, it will say "Pending authorization".
+- Go to your SK Server, click on "Security" on the left-side menu, then click on "Access requests", then click on Watch in the list of Access Requests, then enter `NEVER` in the "Authentication Timeout" field, then click the "Approve" button.
+
+![image](https://user-images.githubusercontent.com/15186790/125855553-ee8e067f-7ebe-42eb-a264-85a69129b066.png)
+- The Watch should now show "Connected" where it previously showed "Pending authorization".
+- When you return to the main Watch screen, you should see a Signal K icon in the upper right, and it should be black. If it's red, that means there is a problem with the connection to the Signal K Server (including the "Pending authorization" status, until you approve it).
+- The `Find SK Server w/ mDNS` button is a work-in-progress.
+- BS: say something about the `Reset token` button.
 
 ### Wake-up
 As described above, you can wake the watch up three different ways:
@@ -127,13 +128,12 @@ This screen mostly shows some basic info about the watch and the software, but i
 keyboard and enter the name you want for the watch. It will be displayed above the time on the main screen, and you'll see it in the SK Server, in the "path" of the data that is sent to the Server (watch battery status, etc.)
 
 ## Signal K Notifications
-Signal K broadcasts notifications for various things: some are enabled by default (such as when a new version is available), but most are user-defined (such as when the value of a particular path is outside of a defined range, like engine oil pressure being too low). The watch receives all SK notifications, and if they are categorized as "warn", "alert", "alarm", or "emergency", the watch will wake up, display the notification as a message, vibrate. (BS: address the issue of a sound being played.)
+Signal K broadcasts notifications for various things: some are enabled by default (such as when a new version is available), but most are user-defined (such as when the value of a particular path is outside of a defined range, like engine oil pressure being too low). The watch receives all SK notifications, and if they are categorized as "warn", "alert", "alarm", or "emergency", the watch will wake up, display the notification as a message, vibrate, and play a sound. (BS: address the issue of a sound being played.)
 
 ![image](https://user-images.githubusercontent.com/15186790/124197236-56698f80-da8b-11eb-9484-81c49a57b7c2.png)
 
 It's up to you to set up the notifications you want to see in Signal K, and give them the proper status: "warn", "alert", "alarm", or "emergency". The watch will take it from there. (The Simple Notifications plug-in is an easy way to set up notifications. There are other ways, too.)
 
 BS: To Do
-- Add images, and replace the ones that are there now with some good ones from Jan.
 - Add a section about the DynamicViews, and a link to the DynamicViews Editor documentation.
 - Get Jan to make a short video showing the main functions of the watch, including some DynamicViews and the display of an SK Notification.
