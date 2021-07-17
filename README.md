@@ -113,7 +113,7 @@ provides buttons for managing the connection to the SK Server.
 - The Watch should now show "Connected" where it previously showed "Pending authorization".
 - When you return to the main Watch screen, you should see a Signal K icon in the upper right, and it should be black. If it's red, that means there is a problem with the connection to the Signal K Server (including the "Pending authorization" status, until you approve it).
 - The `Find SK Server w/ mDNS` button is a work-in-progress.
-- BS: say something about the `Reset token` button.
+- The `Reset token` button is used if you ever change the IP address, hostname, or port of your SK Server. If you do that, first make the change to those fields on this screen, and then tap the `Reset token` button. The Watch should reconnect with the SK Server, and then you'll need to approve a new access request on the Server, as described above.
 
 ### Wake-up
 As described above, you can wake the Watch up three different ways:
