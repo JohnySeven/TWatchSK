@@ -156,8 +156,8 @@ public:
         _bar = lv_cont_create(_par, NULL);
         lv_obj_set_size(_bar, LV_HOR_RES, _barHeight);
         lv_obj_set_style_local_radius(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, 0);
-        lv_obj_set_style_local_border_width(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, 2);
-        lv_obj_set_style_local_border_side(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_BORDER_SIDE_BOTTOM);
+        lv_obj_set_style_local_border_width(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, 0);
+        //lv_obj_set_style_local_border_side(_bar, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_BORDER_SIDE_BOTTOM);
         
         refresh();
         theme_changed();

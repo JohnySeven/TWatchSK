@@ -149,7 +149,7 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
         DynamicHelpers::set_size(label, json);
         DynamicHelpers::set_layout(label, parent, json);
 
-        ESP_LOGI("LABEL", "Parent size %d;%d, Label %d;%d", lv_obj_get_width(parent), lv_obj_get_height(parent), lv_obj_get_width(label), lv_obj_get_height(label));
+        //ESP_LOGI("LABEL", "Parent size %d;%d, Label %d;%d", lv_obj_get_width(parent), lv_obj_get_height(parent), lv_obj_get_width(label), lv_obj_get_height(label));
 
         return label;
     });

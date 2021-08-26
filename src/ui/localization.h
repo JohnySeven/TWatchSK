@@ -88,3 +88,4 @@
 #define LOC_WATCH_INFO_MENU "Watch info"
 #define LOC_MSG_COUNT " of this msg"
 #define LOC_UNREAD_MSGS " unread msgs"
+#define LOC_POWER_BATTERY_CHARGED "Battery charging is now complete!"
