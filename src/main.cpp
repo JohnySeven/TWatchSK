@@ -125,6 +125,11 @@ void setup()
     {
         ESP_LOGI(TAG, "LVGL initialized!");
     }
+    else
+    {
+        ESP_LOGE(TAG, "Failed to initialize LVGL!");
+        return;
+    }
 
     hardware->intialize_touch();
     

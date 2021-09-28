@@ -1,7 +1,7 @@
 #include "Hardware/Touch.h"
 //Took from code by sharandac, uri: https://github.com/sharandac/My-TTGO-Watch/blob/master/src/hardware/touch.cpp
 #define TOUCH_TAG "TOUCH"
-static SemaphoreHandle_t xTouchSemapthore = NULL;
+static SemaphoreHandle_t xTouchSemaphore = NULL;
 lv_indev_t *touch_dev = NULL;
 
 static bool DRAM_ATTR low_power_mode = false;
@@ -13,13 +13,13 @@ EventGroupHandle_t watch_isr_group = NULL;
 
 #define WATCH_FLAG_SLEEP_MODE _BV(1) // in sleep mode
 #define WATCH_FLAG_SLEEP_EXIT _BV(2) // leaving sleep mode because of any kind of interrupt
-#define WATCH_FLAG_TOUCH_IRQ _BV(5)  // leaving sleep mode because of touch (not yet implemented)
+#define WATCH_FLAG_TOUCH_IRQ _BV(5)  // leaving sleep mode because of touch
 
 bool touch_lock_take( void ) {
-    return xSemaphoreTake( xTouchSemapthore, portMAX_DELAY ) == pdTRUE;
+    return xSemaphoreTake( xTouchSemaphore, portMAX_DELAY ) == pdTRUE;
 }
 void touch_lock_give( void ) {
-    xSemaphoreGive( xTouchSemapthore );
+    xSemaphoreGive( xTouchSemaphore );
 }
 
 static bool touch_getXY(int16_t &x, int16_t &y)
@@ -151,7 +151,7 @@ bool Touch::initialize(EventGroupHandle_t wakeupEvents)
     ttgo->touch->setMonitorTime(0x01);
     ttgo->touch->setMonitorPeriod(125);
     ESP_LOGI(TOUCH_TAG, "driver init");
-    xTouchSemapthore = xSemaphoreCreateMutex();
+    xTouchSemaphore = xSemaphoreCreateMutex();
     touch_dev = lv_indev_get_next(NULL);
     touch_dev->driver.read_cb = touch_read;
     ESP_LOGI(TOUCH_TAG, "interup attach");

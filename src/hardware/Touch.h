@@ -12,7 +12,7 @@ typedef struct {
 class Touch
 {
     public:
-        bool initialize(EventGroupHandle_t wakeupEventsc);
+        bool initialize(EventGroupHandle_t wakeupEvents);
         void set_low_power(bool low_power);
 
 };
