@@ -6,6 +6,7 @@ lv_indev_t *touch_dev = NULL;
 
 static bool DRAM_ATTR low_power_mode = false;
 static bool touch_down = false;
+volatile bool DRAM_ATTR wakeup_from_sleep_ = true;
 //Touch IRQ flags and Mutex
 volatile bool DRAM_ATTR touch_irq_flag = false;
 portMUX_TYPE DRAM_ATTR Touch_IRQ_Mux = portMUX_INITIALIZER_UNLOCKED;
@@ -122,7 +123,7 @@ void IRAM_ATTR touch_irq(void)
 
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     EventBits_t bits = xEventGroupGetBitsFromISR(watch_isr_group);
-    if (bits & WATCH_FLAG_SLEEP_MODE)
+    if (bits & WATCH_FLAG_SLEEP_MODE && wakeup_from_sleep_)
     {
         //! For quick wake up, use the group flag
         xEventGroupSetBitsFromISR(watch_isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAG_TOUCH_IRQ, &xHigherPriorityTaskWoken);
@@ -161,4 +162,9 @@ bool Touch::initialize(EventGroupHandle_t wakeupEvents)
     watch_isr_group = wakeupEvents;
 
     return true;
+}
+
+void Touch::allow_touch_wakeup(bool value)
+{
+    wakeup_from_sleep_ = value;
 }

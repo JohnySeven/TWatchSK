@@ -14,5 +14,6 @@ class Touch
     public:
         bool initialize(EventGroupHandle_t wakeupEvents);
         void set_low_power(bool low_power);
+        void allow_touch_wakeup(bool value);
 
 };

@@ -61,6 +61,17 @@ public:
         update_bma_wakeup();
     }
 
+    bool get_touch_wakeup()
+    {
+        return touch_wakeup_;
+    }
+
+    void set_touch_wakeup(bool value)
+    {
+        touch_wakeup_ = value;
+        touch_->allow_touch_wakeup(value);
+    }
+
     void initialize(TTGOClass *watch);
     void attach_power_callback(low_power_callback callback)
     {
@@ -85,6 +96,7 @@ private:
     std::function<uint32_t(void)> get_screen_timeout_;
     bool double_tap_wakeup_ = false;
     bool tilt_wakeup_ = false;
+    bool touch_wakeup_ = false;
     TTGOClass *watch_;
     bool lenergy_ = false;
     bool is_vibrating_ = false;

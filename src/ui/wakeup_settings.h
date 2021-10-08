@@ -27,7 +27,7 @@ protected:
         title_ = lv_label_create(parent, NULL);
         lv_obj_set_pos(title_, padding, padding);
         lv_label_set_text(title_, LOC_WAKEUP_TITLE);
-
+        //double tap switch + label + callback
         double_tap_switch_ = lv_switch_create(parent, NULL);
         double_tap_wakeup_ = hardware_->get_double_tap_wakeup();
         if (double_tap_wakeup_)
@@ -40,28 +40,44 @@ protected:
         lv_obj_align(double_tap_label_, double_tap_switch_, LV_ALIGN_OUT_RIGHT_MID, padding, 0);
         double_tap_switch_->user_data = this;
         lv_obj_set_event_cb(double_tap_switch_, WakeupSettings::double_tap_switch_callback);
-
+        //tilt switch + label + callback
         tilt_switch_ = lv_switch_create(parent, NULL);
         tilt_wakeup_ = hardware_->get_tilt_wakeup();
         if (tilt_wakeup_)
         {
             lv_switch_on(tilt_switch_, LV_ANIM_OFF);
         }
+
         lv_obj_align(tilt_switch_, double_tap_switch_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, padding);
         tilt_label_ = lv_label_create(parent, NULL);
         lv_label_set_text(tilt_label_, LOC_WAKEUP_TILT);
         lv_obj_align(tilt_label_, tilt_switch_, LV_ALIGN_OUT_RIGHT_MID, padding, 0);
         tilt_switch_->user_data = this;
         lv_obj_set_event_cb(tilt_switch_, WakeupSettings::tilt_switch_callback);
+        //touch switch + label + callback
+        touch_switch_ = lv_switch_create(parent, NULL);
+        touch_wakeup_ = hardware_->get_touch_wakeup();
+        if (touch_wakeup_)
+        {
+            lv_switch_on(touch_switch_, LV_ANIM_OFF);
+        }
+
+        lv_obj_align(touch_switch_, tilt_switch_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, padding);
+        touch_label_ = lv_label_create(parent, NULL);
+        lv_label_set_text(touch_label_, LOC_WAKEUP_TOUCH);
+        lv_obj_align(touch_label_, touch_switch_, LV_ALIGN_OUT_RIGHT_MID, padding, 0);
+        touch_switch_->user_data = this;
+        lv_obj_set_event_cb(touch_switch_, WakeupSettings::touch_switch_callback);
     }
 
     virtual bool hide_internal() override
     {
         if (update_hardware_)
         {
-            ESP_LOGI(SETTINGS_TAG, "Updating double tap=%d, tilt=%d", double_tap_wakeup_, tilt_wakeup_);
+            ESP_LOGI(SETTINGS_TAG, "Updating double tap=%d, tilt=%d, touch wakeup=%d", double_tap_wakeup_, tilt_wakeup_, touch_wakeup_);
             hardware_->set_double_tap_wakeup(double_tap_wakeup_);
             hardware_->set_tilt_wakeup(tilt_wakeup_);
+            hardware_->set_touch_wakeup(touch_wakeup_);
             hardware_->save();
         }
         return true;
@@ -72,12 +88,15 @@ private:
     Hardware *hardware_;
     bool double_tap_wakeup_;
     bool tilt_wakeup_;
+    bool touch_wakeup_;
     bool update_hardware_ = false;
     lv_obj_t *title_;
     lv_obj_t *double_tap_switch_;
     lv_obj_t *double_tap_label_;
     lv_obj_t *tilt_switch_;
     lv_obj_t *tilt_label_;
+    lv_obj_t *touch_switch_;
+    lv_obj_t *touch_label_;
 
     static void double_tap_switch_callback(lv_obj_t *obj, lv_event_t event)
     {
@@ -97,6 +116,17 @@ private:
             auto settings = (WakeupSettings *)obj->user_data;
             auto value = lv_switch_get_state(obj);
             settings->tilt_wakeup_ = value;
+            settings->update_hardware_ = true;
+        }
+    }
+
+    static void touch_switch_callback(lv_obj_t *obj, lv_event_t event)
+    {
+        if (event == LV_EVENT_VALUE_CHANGED)
+        {
+            auto settings = (WakeupSettings *)obj->user_data;
+            auto value = lv_switch_get_state(obj);
+            settings->touch_wakeup_ = value;
             settings->update_hardware_ = true;
         }
     }
