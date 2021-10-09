@@ -1,8 +1,8 @@
 #include "component_factory.h"
 
-lv_obj_t * ComponentFactory::create_component(JsonObject &componentJson, lv_obj_t *parent)
+Component * ComponentFactory::create_component(JsonObject &componentJson, lv_obj_t *parent)
 {
-    lv_obj_t *ret = NULL;
+    Component *ret = NULL;
     String type = componentJson["type"].as<String>();
 
     auto it = componentConstructors.find(type);
@@ -12,7 +12,7 @@ lv_obj_t * ComponentFactory::create_component(JsonObject &componentJson, lv_obj_
         ret = it->second(componentJson, parent);
         if (componentJson.containsKey("layout"))
         {
-            layout_component(componentJson["layout"].as<String>(), parent, ret);
+            layout_component(componentJson["layout"].as<String>(), parent, ret->get_obj());
         }
     }
     else
@@ -30,13 +30,7 @@ void ComponentFactory::layout_component(String layoutType, lv_obj_t *parent, lv_
     lv_obj_align(obj, parent, layout, 0, 0);
 }
 
-void ComponentFactory::register_constructor(String name, std::function<lv_obj_t *(JsonObject &, lv_obj_t *)> factoryFunc)
+void ComponentFactory::register_constructor(String name, std::function<Component *(JsonObject &, lv_obj_t*)> factoryFunc)
 {
     componentConstructors[name] = factoryFunc;
-}
-
-void ComponentFactory::add_data_adapter(String path, int subscription_period, Data_formating_t formating, adapter_callback_t callback)
-{
-    auto adapter = new DataAdapter(path, subscription_period, formating, callback);
-    adapters.push_back(adapter);
 }
