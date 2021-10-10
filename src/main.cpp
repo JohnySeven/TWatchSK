@@ -32,6 +32,8 @@ using std::placeholders::_2;
 #include "system/async_dispatcher.h"
 #include "sounds/sound_player.h"
 #include "sounds/beep.h"
+#include "ui/localization.h"
+#include "imgs/sk_image_low.h"
 
 const char *TAG = "APP";
 TTGOClass *ttgo;
@@ -64,6 +66,32 @@ void lv_log_cb(lv_log_level_t level, const char * file, uint32_t line, const cha
 }
 #endif
 
+void set_splash_screen_status(TTGOClass* watch, int percent)
+{
+    auto y = 160;
+    if(percent > 100)
+    {
+        percent = 100;
+    }
+    watch->tft->fillRect(21, y, percent * 2, 28, watch->tft->color565(0, 51, 153));
+    watch->tft->drawRect(19, y, 202, 30, TFT_WHITE);
+    ESP_LOGI(TAG, "Loader status=%d%%", percent);
+}
+
+void init_splash_screen(TTGOClass* watch)
+{
+    watch->tft->setTextColor(TFT_WHITE);
+    watch->tft->setTextFont(2);
+    watch->tft->setCursor(0, TFT_HEIGHT - 20);
+    watch->tft->println(LOC_WATCH_VERSION);
+    watch->tft->setCursor((TFT_WIDTH / 2) - 30, 130);
+    watch->tft->println("TWatchSK");
+    watch->tft->drawXBitmap((TFT_WIDTH / 2) - (skIcon_width / 2), 60, skIcon_bits, skIcon_width, skIcon_height, watch->tft->color565(0, 51, 153));
+
+    set_splash_screen_status(watch, 10);
+}
+
+
 void setup()
 {
 #if !CONFIG_PM_ENABLE
@@ -75,23 +103,41 @@ void setup()
 #if LV_USE_LOG
     lv_log_register_print_cb(lv_log_cb);
 #endif
+
     ttgo = TTGOClass::getWatch();
+
     if (!SPIFFS.begin(true))
     {
         ESP_LOGE(TAG, "Failed to initialize SPIFFS!");
     }
+
     initialize_events();
     twatchsk::initialize_async();
     //Initialize TWatch
     ttgo->begin();
+    ttgo->bl->on();
+    init_splash_screen(ttgo);
     //initalize Hardware (power management, sensors and interupts)
     hardware = new Hardware();
     hardware->initialize(ttgo);
     //Initialize lvgl
-    ttgo->lvgl_begin();
-    ESP_LOGI(TAG, "LVGL initialized!");
+     if(ttgo->lvgl_begin())
+    {
+        ESP_LOGI(TAG, "LVGL initialized!");
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Failed to initialize LVGL!");
+        return;
+    }
+
+    hardware->intialize_touch();
+    
+    ESP_LOGI(TAG, "Touch initialized!");
     //Synchronize time to system time
     ttgo->rtc->syncToSystem();
+    ESP_LOGI(TAG, "Time synced with RTC!");
+    set_splash_screen_status(ttgo, 30);
     //Setting up the network
     wifiManager = new WifiManager();
     //Setting up websocket
@@ -100,6 +146,7 @@ void setup()
     sk_socket->add_subscription("environment.mode", 5000, false);
     //Attach power management events to sk_socket
     hardware->attach_power_callback(std::bind(&SignalKSocket::handle_power_event, sk_socket, _1, _2));
+    set_splash_screen_status(ttgo, 60);
     //Intialize watch GUI
     gui = new Gui();
     //Setup GUI
@@ -109,9 +156,9 @@ void setup()
     //Clear lvgl counter
     lv_disp_trig_activity(NULL);
     //When the initialization is complete, turn on the backlight
-    ttgo->openBL(); 
     ttgo->bl->adjust(gui->get_adjusted_display_brightness());
     hardware->get_player()->play_raw_from_const("beep", beep_sound, beep_sound_len);
+    set_splash_screen_status(ttgo, 90);
 
 #if CONFIG_PM_ENABLE
     // Configure dynamic frequency scaling:

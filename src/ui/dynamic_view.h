@@ -3,6 +3,7 @@
 #include "component_factory.h"
 #include "vector"
 #include "dynamic_helpers.h"
+#include "component.h"
 
 enum ViewType_t
 {
@@ -79,12 +80,12 @@ public:
     {
         for (auto view : created_components)
         {
-            lv_obj_realign(view);
+            lv_obj_realign(view->get_obj());
         }
     }
 
 private:
     ViewType_t type;
     lv_obj_t *container;
-    std::vector<lv_obj_t *> created_components;
+    std::vector<Component *> created_components;
 };

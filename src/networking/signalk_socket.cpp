@@ -510,7 +510,7 @@ void SignalKSocket::handle_power_event(PowerCode_t code, uint32_t arg)
         {
             update_ws_timeout((esp_websocket_client_info *)websocket);
             //send status message every minute in low power mode
-            if (arg % 120 == 0)
+            if (arg % 60 == 0)
             {
                 send_status_message();
             }

@@ -5,6 +5,7 @@
 #include "json.h"
 #include "networking/signalk_socket.h"
 #include "networking/signalk_subscription.h"
+#include "data_adapter.h"
 
 const char *DGUI_TAG = "DGUI";
 
@@ -54,7 +55,7 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket,
         count = x;
         ESP_LOGI(DGUI_TAG, "Loaded %d views.", count);
 
-        for (auto adapter : factory->get_adapters())
+        for (auto adapter : DataAdapter::get_adapters())
         {
             socket->add_subscription(adapter->get_path(), adapter->get_subscription_period(), false);
         }
@@ -70,7 +71,7 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket,
 
 void DynamicGui::handle_signalk_update(const String& path, const JsonVariant &value)
 {
-    for (auto adapter : factory->get_adapters())
+    for (auto adapter : DataAdapter::get_adapters())
     {
         if (adapter->get_path() == path)
         {

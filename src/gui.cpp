@@ -347,11 +347,11 @@ void Gui::update_tiles_valid_points(int count)
     {
         tile_valid_points[i].x = i;
         tile_valid_points[i].y = 0;
-        ESP_LOGI(GUI_TAG, "Tile location (%d,%d)", tile_valid_points[i].x, tile_valid_points[i].y);
+        //ESP_LOGI(GUI_TAG, "Tile location (%d,%d)", tile_valid_points[i].x, tile_valid_points[i].y);
     }
     tile_valid_points_count = count;
 
-    ESP_LOGI(GUI_TAG, "Loaded %d valid tile points", count);
+    //ESP_LOGI(GUI_TAG, "Loaded %d valid tile points", count);
 }
 
 void Gui::update_step_counter(uint32_t counter)
@@ -380,7 +380,7 @@ void Gui::update_time()
         lv_obj_set_hidden(timeSuffixLabel, true);
         strftime(buf, sizeof(buf), "%H:%M", &info);                          // see http://www.cplusplus.com/reference/ctime/strftime/
         strftime(day_date_buf, sizeof(day_date_buf), "%a %e %b, %G", &info); // day/month format
-        lv_obj_set_hidden(timeSuffixLabel, true);                            //hide the suffix label as it's not needed
+        lv_obj_set_hidden(timeSuffixLabel, true);                            // hide the suffix label as it's not needed
     }
     else
     {
@@ -390,7 +390,6 @@ void Gui::update_time()
         if (info.tm_hour > 12)
         {
             lv_label_set_text(timeSuffixLabel, "pm");
-            ;
         }
         else
         {
@@ -412,29 +411,29 @@ void Gui::update_battery_level()
     TTGOClass *ttgo = TTGOClass::getWatch();
     int level = ttgo->power->getBattPercentage();
     char buff[10];
-    auto batterySymbol = LV_SYMBOL_BATTERY_FULL "\0";
+    auto batterySymbol = LV_SYMBOL_BATTERY_FULL;
 
     if (ttgo->power->isChargeing())
     {
-        batterySymbol = LV_SYMBOL_CHARGE "\0";
+        batterySymbol = LV_SYMBOL_CHARGE;
     }
     else
     {
         if (level > 80)
         {
-            batterySymbol = LV_SYMBOL_BATTERY_3 "\0";
+            batterySymbol = LV_SYMBOL_BATTERY_3;
         }
         else if (level > 45)
         {
-            batterySymbol = LV_SYMBOL_BATTERY_2 "\0";
+            batterySymbol = LV_SYMBOL_BATTERY_2;
         }
         else if (level > 20)
         {
-            batterySymbol = LV_SYMBOL_BATTERY_1 "\0";
+            batterySymbol = LV_SYMBOL_BATTERY_1;
         }
         else
         {
-            batterySymbol = LV_SYMBOL_BATTERY_EMPTY "\0";
+            batterySymbol = LV_SYMBOL_BATTERY_EMPTY;
         }
     }
 
@@ -454,6 +453,8 @@ char *Gui::message_from_code(GuiMessageCode_t code)
         return LOC_WIFI_ASSOC_FAIL;
     case GuiMessageCode_t::GUI_WARN_SK_LOST_CONNECTION:
         return LOC_SIGNALK_CONNECTION_LOST;
+    case GuiMessageCode_t::GUI_INFO_BATTERY_CHARGE_COMPLETE:
+        return LOC_POWER_BATTERY_CHARGED;
     default:
         return NULL;
     };
@@ -479,7 +480,6 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
             break;
         case WAKEUP_ACCELEROMETER: // waking up with double tap or tilt
             set_temporary_screen_timeout(2);
-
             break;
         //case WAKEUP_TOUCH:                   // not yet implemented
         //    set_temporary_screen_timeout(2); // change this when it is implemented
@@ -502,6 +502,10 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
     else if (code == PowerCode_t::POWER_CHARGING_OFF || code == PowerCode_t::POWER_CHARGING_DONE)
     {
         update_battery_level();
+        if(code == PowerCode_t::POWER_CHARGING_DONE) //notify user the watch is fully charged
+        {
+            post_gui_warning(GuiMessageCode_t::GUI_INFO_BATTERY_CHARGE_COMPLETE);
+        }
     }
     else if (code == PowerCode_t::WALK_STEP_COUNTER_UPDATED)
     {
@@ -776,7 +780,7 @@ void Gui::lv_mainbar_callback(lv_obj_t *obj, lv_event_t event)
         Gui *gui = (Gui *)obj->user_data;
         lv_coord_t x, y;
         lv_tileview_get_tile_act(obj, &x, &y);
-        ESP_LOGI(GUI_TAG, "Tile view is showing location %d,%d", x, y);
+        //ESP_LOGI(GUI_TAG, "Tile view is showing location %d,%d", x, y);
         gui->set_is_active_view_dynamic(x > 0);
     }
 }
@@ -785,7 +789,7 @@ void Gui::set_is_active_view_dynamic(bool new_value)
 {
     if (is_active_view_dynamic_ != new_value)
     {
-        ESP_LOGI(GUI_TAG, "Active view is dynamic=%d", new_value);
+        //ESP_LOGI(GUI_TAG, "Active view is dynamic=%d", new_value);
         is_active_view_dynamic_ = new_value;
         if (new_value)
         {

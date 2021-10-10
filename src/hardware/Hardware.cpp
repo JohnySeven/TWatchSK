@@ -25,14 +25,16 @@ void Hardware::load_config_from_file(const JsonObject &json)
 {
     double_tap_wakeup_ = json["doubletapwakeup"].as<bool>();
     tilt_wakeup_ = json["tiltwakeup"].as<bool>();
+    touch_wakeup_ = json["touchwakeup"].as<bool>();
 
-    ESP_LOGI(HW_TAG, "Loaded hardware settings: double tap wakeup=%d, tilt wakeup=%d", double_tap_wakeup_, tilt_wakeup_);
+    ESP_LOGI(HW_TAG, "Loaded hardware settings: double tap wakeup=%d, tilt wakeup=%d, touch wakeup=%d", double_tap_wakeup_, tilt_wakeup_, touch_wakeup_);
 }
 
 void Hardware::save_config_to_file(JsonObject &json)
 {
     json["doubletapwakeup"] = double_tap_wakeup_;
     json["tiltwakeup"] = tilt_wakeup_;
+    json["touchwakeup"] = touch_wakeup_;
 }
 
 /**
@@ -132,6 +134,9 @@ void Hardware::initialize(TTGOClass *watch)
 
     //initialize sound player
     player_ = new SoundPlayer();
+    /*touch_ = new Touch();
+
+    touch_->initialize();*/
 }
 
 ///Invokes power callback to all listeners
@@ -163,6 +168,7 @@ void Hardware::low_energy()
         watch_->bma->enableStepCountInterrupt(false);
         watch_->bma->enableWakeupInterrupt(double_tap_wakeup_); // enable or disable double_tap_wakeup depending on the switch setting
         watch_->displaySleep();
+        touch_->set_low_power(true);
         //set event bits in events.cpp
         xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_MODE);
         set_low_power(true);
@@ -178,10 +184,10 @@ void Hardware::low_energy()
             counter++;
             isr_bits = xEventGroupGetBits(isr_group);
             app_bits = xEventGroupGetBits(g_app_state);
-            //Signal every 5000 ms low actions
+            //Signal every 5000 ms low power actions
             if (counter % 10 == 0)
             {
-                invoke_power_callbacks(PowerCode_t::POWER_LOW_TICK, counter);
+                invoke_power_callbacks(PowerCode_t::POWER_LOW_TICK, counter / 2);
             }
         }
 
@@ -199,6 +205,7 @@ void Hardware::low_energy()
         //set events in events.cpp
         set_low_power(false);
         lenergy_ = false;
+        touch_->set_low_power(false);
         //start LVGL ticking
         watch_->startLvglTick();
         //wakeup display
@@ -420,4 +427,11 @@ void Hardware::vibrate(int pattern[], int repeat)
                                 this->vibrate(false);
                             });
     }
+}
+
+void Hardware::intialize_touch()
+{
+    touch_ = new Touch();
+    touch_->initialize(isr_group);
+    touch_->allow_touch_wakeup(touch_wakeup_);
 }

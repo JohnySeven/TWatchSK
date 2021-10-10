@@ -6,6 +6,7 @@
 #include <vector>
 #include "system/async_dispatcher.h"
 #include "sounds/sound_player.h"
+#include "Hardware/Touch.h"
 
 enum PowerCode_t
 {
@@ -25,6 +26,8 @@ enum WakeupSource_t
     WAKEUP_ACCELEROMETER,
     WAKEUP_TOUCH
 };
+
+extern void IRAM_ATTR wakeup_from_isr();
 
 typedef std::function<void(PowerCode_t, uint32_t)> low_power_callback;
 /**
@@ -58,6 +61,17 @@ public:
         update_bma_wakeup();
     }
 
+    bool get_touch_wakeup()
+    {
+        return touch_wakeup_;
+    }
+
+    void set_touch_wakeup(bool value)
+    {
+        touch_wakeup_ = value;
+        touch_->allow_touch_wakeup(value);
+    }
+
     void initialize(TTGOClass *watch);
     void attach_power_callback(low_power_callback callback)
     {
@@ -71,6 +85,7 @@ public:
     }
     void vibrate(int duration);
     void vibrate(int pattern[], int repeat = 1);
+    void intialize_touch();
     
     SoundPlayer*get_player()
     {
@@ -81,6 +96,7 @@ private:
     std::function<uint32_t(void)> get_screen_timeout_;
     bool double_tap_wakeup_ = false;
     bool tilt_wakeup_ = false;
+    bool touch_wakeup_ = false;
     TTGOClass *watch_;
     bool lenergy_ = false;
     bool is_vibrating_ = false;
@@ -89,4 +105,5 @@ private:
     void update_bma_wakeup();
     void vibrate(bool status);
     SoundPlayer*player_ = NULL;
+    Touch*touch_ = NULL;
 };

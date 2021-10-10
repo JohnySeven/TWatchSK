@@ -81,6 +81,7 @@
 #define LOC_WAKEUP_TITLE "Select wake-up options"
 #define LOC_WAKEUP_DOUBLE_TAP "Double tap"
 #define LOC_WAKEUP_TILT "Watch tilt"
+#define LOC_WAKEUP_TOUCH "Screen touch"
 #define LOC_CLOCK_SETTINGS_MENU "Clock"
 #define LOC_DISPLAY_SETTINGS_MENU "Display"
 #define LOC_WIFI_SETTINGS_MENU "Wifi"
@@ -88,3 +89,4 @@
 #define LOC_WATCH_INFO_MENU "Watch info"
 #define LOC_MSG_COUNT " of this msg"
 #define LOC_UNREAD_MSGS " unread msgs"
+#define LOC_POWER_BATTERY_CHARGED "Battery charging is now complete!"

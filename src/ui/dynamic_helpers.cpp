@@ -51,7 +51,7 @@ void DynamicHelpers::set_container_layout(lv_obj_t *obj, String &value)
     lv_cont_set_layout(obj, layout);
 }
 
-void DynamicHelpers::set_layout(lv_obj_t *obj, lv_obj_t *parent, JsonObject &json)
+void DynamicHelpers::set_layout(lv_obj_t *obj, lv_obj_t *parent, const JsonObject &json)
 {
     if (json.containsKey("layout"))
     {
@@ -62,7 +62,7 @@ void DynamicHelpers::set_layout(lv_obj_t *obj, lv_obj_t *parent, JsonObject &jso
     }
 }
 
-void DynamicHelpers::set_location(lv_obj_t *obj, JsonObject &json)
+void DynamicHelpers::set_location(lv_obj_t *obj, const JsonObject &json)
 {
     if (json.containsKey("location"))
     {
@@ -74,7 +74,7 @@ void DynamicHelpers::set_location(lv_obj_t *obj, JsonObject &json)
     }
 }
 
-void DynamicHelpers::set_size(lv_obj_t *obj, JsonObject &json)
+void DynamicHelpers::set_size(lv_obj_t *obj, const JsonObject &json)
 {
     if (json.containsKey("size"))
     {
