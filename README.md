@@ -19,7 +19,7 @@ The code is C++, built with PlatformIO and VS Code. The source code is open, und
 - User-defined screens to show current data from any SK Path(s), with multiple layout options.
 - Automatic display of any notifications sent by Signal K. Notifications "wake up" the watch, vibrate the watch, and (optionally) play a sound file.
 - Designed for long battery life - easily 24 hours between charges.
-- Watch can "wake up" with a double-tap to the screen, or simply by bringing your wrist into the "look at the watch" position.
+- Watch can "wake up" with a double-tap to the screen, a press-and-release on the screen, or simply by bringing your wrist into the "look at the watch" position.
 - When awake, a double-tap switches between day and night mode.
 - Easy to adapt to almost any language.
 - Step counter (steps since you last restarted the watch) displayed in the upper left corner of the main screen.
@@ -34,11 +34,11 @@ function other than keeping the date and time, so the battery life is greatly ex
 the number of seconds you specify in the "Screen timeout" field on the Display Settings screen. When the watch is asleep, it's still connected to
 wifi and your Signal K Server, and will automatically wake up if any SK notifications come in, or if you lose connection to wifi or the SK Server.
 - Wake up the watch: push and release the external button and the screen will come on, and will stay on for the number of seconds you specify in
-the "Screen timeout" field on the Display Settings screen. If you want the screen to wake up for only a couple of seconds, so you can check the time,
-you can double-tap the screen, or tilt the watch into a normal "look at the watch" position. Each of these methods works only if they are enabled
-on the "Wakeup Settings" screen, accessed from the main menu. The double-tap needs to be quick and firm. The "tilt" move is something you may need
+the "Screen timeout" field on the Display Settings screen. If you want the screen to wake up for only a couple of seconds so you can check the time,
+you can double-tap the screen, press-and-release on the screen, or tilt the watch into a normal "look at the watch" position. (Each of these methods works only if they are enabled
+on the "Wakeup Settings" screen, accessed from the main menu.) The double-tap needs to be quick and firm. The "tilt" move is something you may need
 to practice: start with your arm hanging at your side, and smoothly bring your hand up in front of you so that you're looking at the face of the watch.
-- Switch between day and night mode: double-tap the screen when the watch is awake. If you wake the watch up with a double-tap or a tilt, and you can't
+- Switch between day and night mode: double-tap the screen when the watch is awake. If you wake the watch up with a double-tap, press-and-release, or a tilt, and you can't
 read the screen because it's in the wrong mode (day vs. night) for your current lighting conditions, you can quickly double-tap it again, which will
 switch from day to night (or vice versa), and will begin the normal "Screen timeout" timer for leaving the screen on.
 - To see your Signal K "DynamicViews" screens: from the main screen (the screen that display the time and date), swipe left to see the first DynamicView
@@ -53,7 +53,7 @@ Those will almost certainly be wrong, so the first thing to do is set them corre
 ### Date and Time
 - Tap the "four squares" icon, which takes you into the menu system.
 - Tap the "Clock" menu item and you'll see the "Time settings" screen.
-- Select the proper setting for "Show 24 hour time".
+- Select the desired setting for "Show 24 hour time".
 - Tap the first field - the "hour" field - and the screen changes to a keyboard with numbers. 
 - Enter the current hour, then tap the checkmark key. (The "Del" key can be used to backspace over whatever you have already entered.)
 - The screen will change back to the "Time settings" screen, with the hour correctly set.
@@ -62,7 +62,7 @@ Those will almost certainly be wrong, so the first thing to do is set them corre
 - Tap the date field, and the screen changes to a calender. Tap on the date and the calendar will close.
 - You can set the timezone, but it is not currently used for anything.
 - Similarly, the "Sync time with SK Server" button is not currently used.
-- Tap the left arrow in the upper left corner of screen to return to the "Watch settings" menu.
+- Tap the left arrow in the upper left corner of the screen to return to the "Watch settings" menu.
 
 You can now tap the "Back" button (the arrow in the upper left corner) to return to the main screen, to make sure you have the date and time set correctly.
 Or you can continue with the setup process. Each of the menu items have at least one field for you to setup. Each is detailed below.
@@ -70,7 +70,7 @@ Or you can continue with the setup process. Each of the menu items have at least
 ### Display
 - "Screen timeout" is the number of seconds that the screen will stay on with no activity. A shorter screen timeout will use less battery than a long timeout,
 but unless you turn the watch on very frequently, it probably won't make much difference in overall battery life. The default value is 30 seconds, but you can
-make it whatever you like, up to 99 seconds. (Note: when you wake up the screen with a double-tap or a tilt, it is assumed you are only looking at the time, so
+make it whatever you like, up to 99 seconds. (Note: when you wake up the screen with a double-tap, press-and-release, or a tilt, it is assumed you are only looking at the time, so
 the screen timeout is temporarily set to 2 seconds. That has no effect on the normal screen timeout setting.)
 - "Display brightness" sets the brightness level of the screen. 1 is the least bright, and is the setting for the "Dark theme" (most commonly called "night mode").
 5 is the brightest, and is the setting the watch goes to if you double-tap to switch from night mode to day mode. So, while you can set the display brightness
@@ -118,8 +118,8 @@ provides buttons for managing the connection to the SK Server.
 ### Wake-up
 As described above, you can wake the Watch up three different ways:
 - A press-and-release of the external button wakes the Watch up and leaves the screen on for the normal "Screen timeout" number of seconds.
-- A double-tap or a "tilt" wake the Watch up for just 2 seconds, so you can check the time.
-But neither the double-tap nor the tilt methods are enabled by default. Since they can happen accidentally, and you may not want the Watch to ever
+- A double-tap, press-and-release, or a "tilt" wake the Watch up for just 2 seconds, so you can check the time.
+The double-tap, press-and-release (called "Screen touch" on this screen), nor the tilt methods are enabled by default. Since they can happen accidentally, and you may not want the Watch to ever
 wake up accidentally, you must enable them or they won't work. You enable each of them from this screen.
 
 ### Watch info
@@ -127,12 +127,13 @@ This screen mostly shows some basic info about the Watch and the software, but i
 keyboard and enter the name you want for the Watch. It will be displayed above the time on the main screen, and you'll see it in the SK Server, in the "path" of the data that is sent to the Server (Watch battery status, etc.)
 
 ## Signal K Notifications
-Signal K broadcasts notifications for various things: some are enabled by default (such as when a new version is available), but most are user-defined (such as when the value of a particular path is outside of a defined range, like engine oil pressure being too low). The Watch receives all SK notifications, and if they are categorized as "warn", "alert", "alarm", or "emergency", the Watch will wake up, display the notification as a message, vibrate, and play a sound. (BS: address the issue of a sound being played.)
+Signal K broadcasts notifications for various things: some are enabled by default (such as when a new version is available), but most are user-defined (such as when the value of a particular path is outside of a defined range, like engine oil pressure being too low). The Watch receives all SK notifications, and if they are categorized as "warn", "alert", "alarm", or "emergency", the Watch will wake up, display the notification as a message, vibrate, and play a sound.
 
 ![image](https://user-images.githubusercontent.com/15186790/124197236-56698f80-da8b-11eb-9484-81c49a57b7c2.png)
 
 It's up to you to set up the notifications you want to see in Signal K, and give them the proper status: "warn", "alert", "alarm", or "emergency". The Watch will take it from there. (The Simple Notifications plug-in is an easy way to set up notifications. There are other ways, too.)
 
 BS: To Do
+- Write a "How to Load the Software on the Watch", and then link to it in the Initial Setup section of this document.
 - Add a section about the DynamicViews, and a link to the DynamicViews Editor documentation.
 - Get Jan to make a short video showing the main functions of the Watch, including some DynamicViews and the display of an SK Notification.
