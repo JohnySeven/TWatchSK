@@ -1,4 +1,4 @@
-#include "Hardware.h"
+#include "hardware.h"
 #include "system/events.h"
 
 EventGroupHandle_t isr_group = NULL;

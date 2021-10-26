@@ -23,7 +23,7 @@
 #include "ui/watch_info.h"
 #include "ui/display_settings.h"
 #include "ui/wakeup_settings.h"
-#include "hardware/Hardware.h"
+#include "hardware/hardware.h"
 #include "system/async_dispatcher.h"
 #include <functional>
 #include "sounds/beep.h"
