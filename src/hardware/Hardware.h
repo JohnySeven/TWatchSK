@@ -6,7 +6,7 @@
 #include <vector>
 #include "system/async_dispatcher.h"
 #include "sounds/sound_player.h"
-#include "Hardware/Touch.h"
+#include "hardware/Touch.h"
 
 enum PowerCode_t
 {

@@ -1,4 +1,4 @@
-#include "Hardware/Touch.h"
+#include "hardware/Touch.h"
 //Took from code by sharandac, uri: https://github.com/sharandac/My-TTGO-Watch/blob/master/src/hardware/touch.cpp
 #define TOUCH_TAG "TOUCH"
 static SemaphoreHandle_t xTouchSemaphore = NULL;
