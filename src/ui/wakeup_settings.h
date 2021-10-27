@@ -2,7 +2,7 @@
 #include "gui.h"
 #include "settings_view.h"
 #include "localization.h"
-#include "hardware/Hardware.h"
+#include "hardware/hardware.h"
 
 /**
  * @brief Allows user to configure wake up sources (double tap, watch tilt).

@@ -9,7 +9,7 @@
 #include "system/observable.h"
 #include "hardware/Wifi.h"
 #include "networking/signalk_subscription.h"
-#include "hardware/Hardware.h"
+#include "hardware/hardware.h"
 
 enum WebsocketState_t
 {

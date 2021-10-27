@@ -25,7 +25,7 @@
 #include "esp_int_wdt.h"
 #include "esp_pm.h"
 #include "system/events.h"
-#include "hardware/Hardware.h"
+#include "hardware/hardware.h"
 #include <functional>
 using std::placeholders::_1;
 using std::placeholders::_2;

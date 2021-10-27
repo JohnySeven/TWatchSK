@@ -5,7 +5,7 @@
 #include "ui/statusbar.h"
 #include "ui/dynamic_gui.h"
 #include "ui/themes.h"
-#include "hardware/Hardware.h"
+#include "hardware/hardware.h"
 #include <list>
 
 #ifndef __GUI_H
