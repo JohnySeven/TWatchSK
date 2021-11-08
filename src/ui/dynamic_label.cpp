@@ -139,7 +139,7 @@ void DynamicLabel::update(const JsonVariant &value)
     }
     else if (value.is<float>())
     {
-        stringValue = String((value.as<float>() + formating.offset) * formating.multiply, formating.decimal_places);
+        stringValue = String((value.as<float>() * formating.multiply) + formating.offset, formating.decimal_places);
     }
     else if (value.is<bool>())
     {
