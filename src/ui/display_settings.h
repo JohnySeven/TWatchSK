@@ -10,7 +10,7 @@
 #include "ui_ticker.h"
 
 /**
- * @brief Used to set display brightness, auto screen timeout (sleep time), and
+ * @brief Used to set the screen timeout (sleep time) and
  * turn the Dark Theme on or off.
  **/
 
@@ -30,10 +30,9 @@ public:
         ESP_LOGI(SETTINGS_TAG, "User set screen timeout to %d", screen_timeout_);
     }
 
-    void update_brightness(uint8_t new_brightness_level) // for when user changes display brightness value
+    void update_brightness(uint8_t new_brightness_level) // for when the display brightness value changes
     {
         display_brightness_ = new_brightness_level;
-        lv_label_set_text_fmt(brightnessLabel_, "%d", display_brightness_);
         uint8_t adjusted_brightness = display_brightness_;
         if (adjusted_brightness == 1)
         {
@@ -93,19 +92,8 @@ protected:
         lv_obj_set_event_cb(timeoutButton_, timeout_button_callback);
         lv_obj_set_width(timeoutButton_, 50);
 
-        displayBrightnessLabel_ = lv_label_create(parent, NULL);
-        lv_obj_align(displayBrightnessLabel_, screenTimeoutLabel_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 15);
-        lv_label_set_text(displayBrightnessLabel_, LOC_DISPLAY_BRIGHTNESS);
-        brightnessButton_ = lv_btn_create(parent, NULL);
-        lv_obj_align(brightnessButton_, displayBrightnessLabel_, LV_ALIGN_OUT_RIGHT_MID, 10, 0);
-        lv_obj_add_style(brightnessButton_, LV_OBJ_PART_MAIN, &buttonStyle);
-        brightnessLabel_ = lv_label_create(brightnessButton_, NULL);
-        lv_label_set_text_fmt(brightnessLabel_, "%d", display_brightness_);
-        lv_obj_set_event_cb(brightnessButton_, brightness_button_callback);
-        lv_obj_set_width(brightnessButton_, 50);
-
         dark_switch_ = lv_switch_create(parent, NULL);
-        lv_obj_align(dark_switch_, displayBrightnessLabel_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 12);
+        lv_obj_align(dark_switch_, screenTimeoutLabel_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 12);
         if (lv_theme_get_flags() & LV_THEME_MATERIAL_FLAG_DARK) // is the theme's "dark" version currently on?
         {
             lv_switch_on(dark_switch_, LV_ANIM_OFF); // set the switch widget to "ON"
@@ -133,7 +121,6 @@ protected:
 
         download_ui_button_->user_data = this;
         timeoutButton_->user_data = this;
-        brightnessButton_->user_data = this;
         dark_switch_->user_data = this;
     }
 
@@ -149,9 +136,6 @@ private:
     lv_obj_t *timeoutButton_;
     lv_obj_t *timeoutLabel_;
     int screen_timeout_ = 10; // multiply by 1000 in main.cpp to make this "seconds"
-    lv_obj_t *displayBrightnessLabel_;
-    lv_obj_t *brightnessButton_;
-    lv_obj_t *brightnessLabel_;
     uint8_t display_brightness_;
     lv_obj_t *dark_switch_;
     lv_obj_t *dark_switch_label_;
@@ -173,25 +157,6 @@ private:
                     {
                         settings->update_timeout(timeout);
                     }
-                }
-                delete keyboard;
-            });
-            keyboard->show(lv_scr_act());
-        }
-    }
-
-    static void brightness_button_callback(lv_obj_t *obj, lv_event_t event)
-    {
-        if (event == LV_EVENT_CLICKED)
-        {
-            DisplaySettings *settings = (DisplaySettings *)obj->user_data;
-            uint8_t max_digits = 1;
-            auto keyboard = new Keyboard(LOC_INPUT_DISPLAY_BRIGHTNESS, KeyboardType_t::Brightness, max_digits);
-            keyboard->on_close([keyboard, settings]() {
-                if (keyboard->is_success())
-                {
-                    const char *text = keyboard->get_text();
-                    settings->update_brightness(atoi(text));
                 }
                 delete keyboard;
             });
