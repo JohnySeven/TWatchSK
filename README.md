@@ -116,7 +116,7 @@ The double-tap, screen touch", and the tilt methods are disabled by default. Sin
 
 ### Watch info
 This screen mostly shows some basic info about the watch and the software, but it does have one editable field: "Watch name". Tap it to bring up a
-keyboard and enter the name you want for the Watch. It will be displayed above the time on the home screen, and you'll see it in the SK Server, in the "path" of the data that is sent to the Server (watch battery status, etc.) (BAS: If you change the name, I think you have to re-do the security authorization.)
+keyboard and enter the name you want for the Watch. It will be displayed above the time on the home screen, and you'll see it in the SK Server, in the "path" of the data that is sent to the Server (watch battery status, etc.) NOTE: If you change the watch name, you'll have to re-authorize its access to the SK Server, per the instructions above in the [Signal K section](https://github.com/JohnySeven/TWatchSK/blob/master/README.md#signal-k).
 
 ## Signal K Notifications
 Signal K broadcasts notifications for various things: some are enabled by default (such as when a new version is available), but most are user-defined (such as when the value of a particular path is outside of a defined range, like engine oil pressure being too low). The watch receives all SK notifications, and if they are categorized as "warn", "alert", "alarm", or "emergency", the watch will wake up, display the notification as a message, vibrate, and play a sound.
