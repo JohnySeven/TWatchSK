@@ -33,17 +33,11 @@ function other than keeping the date and time, so the battery life is greatly ex
 - Put the watch to sleep: push and release the external button, and the screen will go blank. Alternatively, it will automatically go blank after
 the number of seconds you specify in the "Screen timeout" field on the Display Settings screen. When the watch is asleep, it's still connected to
 wifi and your Signal K Server, and will automatically wake up if any SK notifications come in, or if you lose connection to wifi or the SK Server.
-- Wake up the watch: push and release the external button and the screen will come on, and will stay on for the number of seconds you specify in
-the "Screen timeout" field on the Display Settings screen. If you want the screen to wake up for only a couple of seconds so you can check the time,
-you can double-tap the screen, press-and-release on the screen, or tilt the watch into a normal "look at the watch" position. (Each of these methods works only if they are enabled
-on the "Wakeup Settings" screen, accessed from the main menu.) The double-tap needs to be quick and firm. The "tilt" move is something you may need
-to practice: start with your arm hanging at your side, and smoothly bring your hand up in front of you so that you're looking at the face of the watch.
-- Switch between day and night mode: double-tap the screen when the watch is awake. If you wake the watch up with a double-tap, press-and-release, or a tilt, and you can't
-read the screen because it's in the wrong mode (day vs. night) for your current lighting conditions, you can quickly double-tap it again, which will
-switch from day to night (or vice versa), and will begin the normal "Screen timeout" timer for leaving the screen on.
+- Wake up the watch: push and release the external button, or just touch the screen, and the screen will come on, and will stay on for the number of seconds you specify in the "Screen timeout" field on the Display Settings screen. If you want the screen to wake up for only a couple of seconds so you can check the time,
+you can double-tap the screen or tilt the watch into a normal "look at the watch" position. (Except for the external button press, each of these methods works only if they are enabled on the "Wakeup Settings" screen, accessed from the main menu.) The double-tap needs to be quick and firm. The "tilt" move is something you may need to practice: start with your arm hanging at your side, and smoothly bring your hand up in front of you so that you're looking at the face of the watch.
+- Switch between day and night mode: double-tap the screen when the watch is awake. If you wake the watch up and you can't read the screen because it's in the wrong mode (day vs. night) for your current lighting conditions, you can quickly double-tap it again, which will switch between day and night modes, and will begin the normal "Screen timeout" timer for leaving the screen on.
 - To see your Signal K "DynamicViews" screens: from the home screen (the screen that display the time and date), swipe left to see the first DynamicView
-screen, and keep swiping left to see each of them in turn. From any DynamicView screen, swipe right until you're back on the home screen. NOTE: you won't have any SK
-DynamicView screens on your watch until you set them up - see below for details.
+screen, and keep swiping left to see each of them in turn. From any DynamicView screen, swipe right until you're back on the home screen. NOTE: you won't have any DynamicView screens on your watch until you set them up - see below for details.
 
 ## Inital Setup
 
@@ -70,7 +64,7 @@ Or you can continue with the setup process. Each of the menu items have at least
 ### Display
 - "Screen timeout" is the number of seconds that the screen will stay on with no activity. A shorter screen timeout will use less battery than a long timeout,
 but unless you turn the watch on very frequently, it probably won't make much difference in overall battery life. The default value is 30 seconds, but you can
-make it whatever you like, up to 99 seconds. (Note: when you wake up the screen with a double-tap, press-and-release, or a tilt, it is assumed you are only looking at the time, so
+make it whatever you like, up to 99 seconds. (Note: when you wake up the screen with a double-tap or a tilt, it is assumed you are only looking at the time, so
 the screen timeout is temporarily set to 2 seconds. That has no effect on the normal screen timeout setting.)
 - "Display brightness" sets the brightness level of the screen. 1 is the least bright, and is the setting for the "Dark theme" (called "night mode").
 5 is the brightest, and is the setting the watch goes to if you double-tap to switch from night mode to day mode. So, while you can set the display brightness
@@ -116,10 +110,9 @@ provides buttons for managing the connection to the SK Server.
 
 ### Wake-up
 As described above, you can wake the watch up three different ways:
-- A press-and-release of the external button wakes the watch up and leaves the screen on for the normal "Screen timeout" number of seconds.
-- A double-tap, press-and-release, or a "tilt" wake the watch up for just 2 seconds, so you can check the time.
-The double-tap, press-and-release (called "Screen touch" on this screen), nor the tilt methods are enabled by default. Since they can happen accidentally, and you may not want the watch to ever
-wake up accidentally, you must enable them or they won't work. You enable each of them from this screen.
+- A press-and-release of the external button, or a long touch of the screen, wakes the watch up and leaves the screen on for the normal "Screen timeout" number of seconds.
+- A double-tap or a "tilt" wake the watch up for just 2 seconds, so you can check the time.
+The double-tap, screen touch", and the tilt methods are disabled by default. Since they can happen accidentally, and you may not want the watch to ever wake up accidentally, you must enable them or they won't work. You enable each of them from this screen.
 
 ### Watch info
 This screen mostly shows some basic info about the watch and the software, but it does have one editable field: "Watch name". Tap it to bring up a
