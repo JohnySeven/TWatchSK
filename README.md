@@ -4,7 +4,7 @@ TWatchSK gives you a way to wear [Signal K](https://github.com/SignalK) on your 
 Perhaps more important, it receives SK Notifications so that you know immediately when something important is going on with your boat, no matter
 where you are on the boat or what you're doing.
 
-It runs exclusively on the [LILYGO T-Watch-2020 watch](http://www.lilygo.cn/prod_view.aspx?TypeId=50053&Id=1290&FId=t3:50053:3), which is based on an ESP32 microcontroller. (BAS: Any limits on which version of the T-Watch 2020 it runs on?)
+It runs exclusively on the [LILYGO T-Watch-2020 watch](http://www.lilygo.cn/prod_view.aspx?TypeId=50053&Id=1290&FId=t3:50053:3), which is based on an ESP32 microcontroller.
 
 ![image](https://user-images.githubusercontent.com/15186790/125843967-e44c8015-d0a8-4099-8e00-b63a9b4c29cb.png) ![image](https://user-images.githubusercontent.com/15186790/125844616-d3264ca2-3667-4789-9cda-456e79ba2aa9.png) ![image](https://user-images.githubusercontent.com/15186790/140789761-97ee13f6-3feb-4521-9606-0127ba0ffb9a.png)
 
@@ -69,9 +69,9 @@ the screen timeout is temporarily set to 2 seconds. That has no effect on the no
 - "Display brightness" sets the brightness level of the screen. 1 is the least bright, and is the setting for the "Dark theme" (called "night mode").
 5 is the brightest, and is the setting the watch goes to if you double-tap to switch from night mode to day mode. So, while you can set the display brightness
 to 2, 3, or 4, the setting will be lost if you ever use the double-tap to switch from night mode to day mode. In practice, there is probably no need for
-these "middle" settings, but they were added before night mode existed, and they have been left in place. (BAS: ask Jan if we should just remove them.)
+these "middle" settings, but they were added before night mode existed, and they have been left in place.
 - "Enable Dark theme" toggles between day mode and night mode. In practice, there is no need for this switch, but it was added before the double-tap that toggles
-between day mode and night mode, and it has been left in place. (BAS: Ask Jan if we should remove this switch.)
+between day mode and night mode, and it has been left in place.
 - "Download DynamicViews": this is how you install the DynamicViews (the screens that display Signal K data) that you define with [TWatchSKDesigner](https://github.com/JohnySeven/TWatchSKDesigner#twatchskdesigner), which
 is a program you run on your computer. It allows you to create DynamicViews and saves them on your Signal K Server, then this button installs
 them onto the watch.
