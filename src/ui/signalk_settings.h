@@ -24,10 +24,7 @@ protected:
         lv_cont_set_layout(parent, LV_LAYOUT_OFF);
         //show status label - connected/connecting/authorization pending/disconnected
         status_label_ = lv_label_create(parent, NULL);
-        lv_obj_set_pos(status_label_, 10, 10);
-        //shows server name and version (if connected)
-        server_label_ = lv_label_create(parent, NULL);
-        lv_obj_align(server_label_, status_label_, LV_ALIGN_OUT_BOTTOM_LEFT, 0, 10);
+        lv_obj_set_pos(status_label_, 10, 6);
 
         static lv_style_t buttonStyle;
         lv_style_init(&buttonStyle);
@@ -39,7 +36,7 @@ protected:
         lv_obj_set_event_cb(server_address_button_, change_server_address_event);
         lv_obj_add_style(server_address_button_, LV_OBJ_PART_MAIN, &buttonStyle);
         lv_obj_set_size(server_address_button_, 140, 38);
-        lv_obj_align(server_address_button_, server_label_, LV_ALIGN_OUT_BOTTOM_LEFT, 6, 8);
+        lv_obj_align(server_address_button_, status_label_, LV_ALIGN_OUT_BOTTOM_LEFT, 6, 27);
         server_address_label_ = lv_label_create(server_address_button_, NULL);
         
         //server port
@@ -130,7 +127,6 @@ protected:
 private:
     SignalKSocket *sk_socket_;
     lv_obj_t *status_label_;
-    lv_obj_t *server_label_;
     lv_obj_t *find_button_;
     lv_obj_t *find_button_label_;
     lv_obj_t *server_address_button_;
@@ -283,19 +279,16 @@ private:
                     lv_obj_set_hidden(token_reset_button_, true);
                 }
 
-                lv_label_set_text_fmt(server_label_, LOC_SIGNALK_SERVER_INFO, sk_socket_->get_server_name().c_str(), sk_socket_->get_server_version().c_str());
             }
             else if (socketStatus == WebsocketState_t::WS_Offline)
             {
                 lv_obj_set_hidden(find_button_, false);
                 lv_label_set_text(status_label_, LOC_SIGNALK_DISCONNECTED);
-                lv_label_set_text_fmt(server_label_, LOC_SIGNALK_SERVER_INFO, "--", "--");
                 lv_obj_set_hidden(token_reset_button_, false);
             }
             else if (socketStatus == WebsocketState_t::WS_Connecting)
             {
                 lv_label_set_text(status_label_, LOC_SIGNALK_CONNECTING);
-                lv_label_set_text_fmt(server_label_, LOC_SIGNALK_SERVER_INFO, "--", "--");
                 lv_obj_set_hidden(token_reset_button_, false);
             }
 

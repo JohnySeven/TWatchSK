@@ -34,8 +34,6 @@ public:
     }
     WebsocketState_t get_state() { return value; }
     void notify_change(const WifiState_t &wifi) override;
-    String get_server_name() { return serverName; }
-    String get_server_version() { return serverVersion; }
     String get_server_address() { return server; }
     int get_server_port() { return port; }
     bool get_token_request_pending() { return token_request_pending; }
@@ -77,8 +75,6 @@ private:
     bool sync_time_with_server = false;
     String token = "";
     String clientId = "";
-    String serverName = "";
-    String serverVersion = "";
     bool token_request_pending = false;
     String pending_token_request_id = "";
     esp_websocket_client_handle_t websocket;
