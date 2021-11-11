@@ -222,15 +222,7 @@ void SignalKSocket::parse_data(int length, const char *data)
         delta_counter++;
         String messageType = "Unknown";
 
-        if (doc.containsKey("name"))
-        {
-            messageType = "Welcome";
-            serverName = doc["name"].as<String>();
-            serverVersion = doc["version"].as<String>();
-
-            ESP_LOGI(WS_TAG, "Got welcome message token is available %s", token.isEmpty() ? "yes" : "no");
-        }
-        else if (doc.containsKey("requestId"))
+        if (doc.containsKey("requestId"))
         {
             String requestState = doc["state"];
 
