@@ -223,13 +223,6 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     //Hardware class needs to know what is the screen timeout, wire it to Gui::get_screen_timeout func
     hardware->set_screen_timeout_func(std::bind(&Gui::get_screen_timeout, this));
     lv_obj_t *scr = lv_scr_act();
-    //Create wallpaper
-    //JD: For now we don't use wallpaper will use it later
-    /*
-    lv_obj_t *img_bin = lv_img_create(scr, NULL);
-    lv_img_set_src(img_bin, &bg_default);
-    lv_obj_align(img_bin, NULL, LV_ALIGN_CENTER, 0, 0);*/
-
     // set the theme
     uint32_t flag = twatchsk::dark_theme_enabled ? LV_THEME_MATERIAL_FLAG_DARK : LV_THEME_MATERIAL_FLAG_LIGHT;
     LV_THEME_DEFAULT_INIT(lv_theme_get_color_primary(), lv_theme_get_color_secondary(), flag, // Initiate the theme
@@ -347,11 +340,8 @@ void Gui::update_tiles_valid_points(int count)
     {
         tile_valid_points[i].x = i;
         tile_valid_points[i].y = 0;
-        //ESP_LOGI(GUI_TAG, "Tile location (%d,%d)", tile_valid_points[i].x, tile_valid_points[i].y);
     }
     tile_valid_points_count = count;
-
-    //ESP_LOGI(GUI_TAG, "Loaded %d valid tile points", count);
 }
 
 void Gui::update_step_counter(uint32_t counter)
@@ -667,7 +657,6 @@ void Gui::update_gui()
         }
         else if (event.event_type == GuiEventType_t::GUI_SK_DV_UPDATE)
         {
-            //ESP_LOGI(GUI_TAG, "Update SK DynamicView %s", (char *)event.argument);
             StaticJsonDocument<512> update;
             auto result = deserializeJson(update, event.argument);
 
