@@ -7,6 +7,10 @@
 #include "networking/signalk_subscription.h"
 #include "data_adapter.h"
 
+#include "dynamic_label.h"
+#include "dynamic_gauge.h"
+#include "dynamic_switch.h"
+
 const char *DGUI_TAG = "DGUI";
 
 DynamicGui::DynamicGui()
@@ -14,9 +18,11 @@ DynamicGui::DynamicGui()
     factory = new ComponentFactory();
 }
 
-void DynamicGui::initialize_builders()
+void DynamicGui::initialize()
 {
     DynamicLabelBuilder::initialize(factory);
+    DynamicGaugeBuilder::initialize(factory);
+    DynamicSwitchBuilder::initialize(factory);
 }
 
 bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket, int &count)
@@ -57,8 +63,9 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket,
 
         for (auto adapter : DataAdapter::get_adapters())
         {
-            socket->add_subscription(adapter->get_path(), adapter->get_subscription_period(), false);
+            adapter->initialize(socket);
         }
+        
         ret = true;
     }
     else

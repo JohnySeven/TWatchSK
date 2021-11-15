@@ -99,3 +99,4 @@
 #define LOC_STARTUP_SPIFFS "SPIFFS init...please wait!"
 #define LOC_STARTUP_HW_GUI "Hardware & LVGL init..."
 #define LOC_STARTUP_NETWORKING "Wifi & networking init..."
+#define LOC_SK_PUT_SEND_FAIL "Unable to send SK put request!"

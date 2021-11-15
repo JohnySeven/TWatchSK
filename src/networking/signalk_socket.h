@@ -64,6 +64,8 @@ public:
     {
         return token;
     }
+    
+    bool send_put_request(JsonObject& request);
 private:
     const int reconnect_count_ = 3;
     static void ws_event_handler(void *arg, esp_event_base_t event_base,

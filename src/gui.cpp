@@ -318,7 +318,7 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
 
     dynamic_gui = new DynamicGui();
 
-    dynamic_gui->initialize_builders();
+    dynamic_gui->initialize();
     int dynamic_view_count = 0;
 
     if (!dynamic_gui->load_file("/sk_view.json", mainBar, socket, dynamic_view_count))
@@ -667,8 +667,8 @@ void Gui::update_gui()
         }
         else if (event.event_type == GuiEventType_t::GUI_SK_DV_UPDATE)
         {
-            ESP_LOGI(GUI_TAG, "Update SK DynamicView %s", (char *)event.argument);
-            StaticJsonDocument<256> update;
+            //ESP_LOGI(GUI_TAG, "Update SK DynamicView %s", (char *)event.argument);
+            StaticJsonDocument<512> update;
             auto result = deserializeJson(update, event.argument);
 
             if (result == DeserializationError::Ok)

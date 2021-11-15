@@ -3,7 +3,7 @@
 #include "system/events.h"
 #include "ui/localization.h"
 #include "esp_transport.h"
-
+#define LOG_WS_DATA 0
 static const char *WS_TAG = "WS";
 const char UnsubscribeMessage[] = "{\"context\":\"*\",\"unsubscribe\":[{\"path\":\"*\"}]}";
 
@@ -96,7 +96,9 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
                 if (data->data_len > 0)
                 {
                     socket->parse_data(data->data_len, data->data_ptr);
+#if LOG_WS_DATA==1
                     ESP_LOGW(WS_TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
+#endif
                 }
             }
             ESP_LOGW(WS_TAG, "Total payload length=%d, data_len=%d, current payload offset=%d\r\n", data->payload_len, data->data_len, data->payload_offset);
@@ -535,4 +537,20 @@ void SignalKSocket::clear_token()
 {
     token = "";
     save();
+}
+
+bool SignalKSocket::send_put_request(JsonObject& request)
+{
+    char buff[1024];
+
+    if (serializeJson(request, buff))
+    {
+        ESP_LOGI(WS_TAG, "Sending put json(len=%d): %s", strlen(buff), buff);
+        esp_websocket_client_send_text(websocket, buff, strlen(buff), portMAX_DELAY);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
