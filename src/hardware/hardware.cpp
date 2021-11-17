@@ -2,6 +2,7 @@
 #include "system/events.h"
 
 EventGroupHandle_t isr_group = NULL;
+volatile bool vibrate_task_running = false;
 
 #define WATCH_FLAG_SLEEP_MODE _BV(1) // in sleep mode
 #define WATCH_FLAG_SLEEP_EXIT _BV(2) // leaving sleep mode because of any kind of interrupt
@@ -38,7 +39,7 @@ void Hardware::save_config_to_file(JsonObject &json)
 }
 
 /**
- * Initializes hardware required for power managements operation and configures wake up source
+ * Initializes hardware required for power management operation and configures wake up sources
  * 
  */
 void Hardware::initialize(TTGOClass *watch)
@@ -46,7 +47,7 @@ void Hardware::initialize(TTGOClass *watch)
     isr_group = xEventGroupCreate();
     watch_ = watch;
 
-    // Turn on the IRQ used
+    // Turn on the used IRQ
     watch->power->adc1Enable(AXP202_BATT_VOL_ADC1 | AXP202_BATT_CUR_ADC1 | AXP202_VBUS_VOL_ADC1 | AXP202_VBUS_CUR_ADC1, AXP202_ON);
     watch->power->enableIRQ(AXP202_VBUS_REMOVED_IRQ | AXP202_VBUS_CONNECT_IRQ | AXP202_CHARGING_FINISHED_IRQ, AXP202_ON);
     watch->power->clearIRQ();
@@ -66,24 +67,6 @@ void Hardware::initialize(TTGOClass *watch)
     watch->bma->attachInterrupt();
     watch_->bma->enableTiltInterrupt(this->tilt_wakeup_); // set according to the saved setting
     watch_->bma->enableWakeupInterrupt(true);             // needs to be on for double-tap theme switching whenever watch is awake
-    //TODO: touch interrupt breaks touch as it uses the interrupt also
-    /*pinMode(TOUCH_INT, INPUT);
-    attachInterrupt(
-        TOUCH_INT, [] {
-            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            EventBits_t bits = xEventGroupGetBitsFromISR(isr_group);
-            if (bits & WATCH_FLAG_SLEEP_MODE)
-            {
-                //! For quick wake up, use the group flag
-                xEventGroupSetBitsFromISR(isr_group, WATCH_FLAG_SLEEP_EXIT | WATCH_FLAG_TOUCH_IRQ, &xHigherPriorityTaskWoken);
-            }
-
-            if (xHigherPriorityTaskWoken)
-            {
-                portYIELD_FROM_ISR();
-            }
-        },
-        RISING);*/
     //Accelerometer interupt
     pinMode(BMA423_INT1, INPUT);
     attachInterrupt(
@@ -134,9 +117,6 @@ void Hardware::initialize(TTGOClass *watch)
 
     //initialize sound player
     player_ = new SoundPlayer();
-    /*touch_ = new Touch();
-
-    touch_->initialize();*/
 }
 
 ///Invokes power callback to all listeners
@@ -284,7 +264,10 @@ void Hardware::loop()
             // double tap
             if (!lenergy_ && watch_->bma->isDoubleClick())
             {
-                invoke_power_callbacks(DOUBLE_TAP_DETECTED, 0);
+                if(!vibrate_task_running)
+                {
+                    invoke_power_callbacks(DOUBLE_TAP_DETECTED, 0);
+                }
             }
 
             break;
@@ -383,6 +366,7 @@ void Hardware::vibrate(int duration)
 
     twatchsk::run_async("vibrate", [this, duration]()
                         {
+                            vibrate_task_running = true;
                             int count = duration / 100;
 
                             for (int i = 0; i < count; i++)
@@ -394,6 +378,8 @@ void Hardware::vibrate(int duration)
                             }
 
                             this->vibrate(false);
+
+                            vibrate_task_running = false;
                         });
 }
 
@@ -403,6 +389,8 @@ void Hardware::vibrate(int pattern[], int repeat)
     {
         twatchsk::run_async("vibrate_pattern", [this, pattern, repeat]()
                             {
+                                vibrate_task_running = true;
+
                                 for (int i = 0; i < repeat; i++)
                                 {
                                     int index = 0;
@@ -425,6 +413,7 @@ void Hardware::vibrate(int pattern[], int repeat)
                                 }
 
                                 this->vibrate(false);
+                                vibrate_task_running = false;
                             });
     }
 }
