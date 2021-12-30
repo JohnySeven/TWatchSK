@@ -39,8 +39,7 @@ screen, and keep swiping left to see each of them in turn. From any DynamicView 
 
 ## Inital Setup
 
-Once you have the software loaded - [click here for instructions](https://github.com/JohnySeven/TWatchSKDesigner/blob/master/README.md#installing-twatchsk) - and the watch boots up, you'll see the home screen, showing the time and date.
-Those will almost certainly be wrong, so the first thing to do is set them correctly.
+You will load TWatchSK onto your watch from another program - [TWatchSKDesigner](https://github.com/JohnySeven/TWatchSKDesigner#twatchskdesigner). It's quick and easy to [install that program](https://github.com/JohnySeven/TWatchSKDesigner#installing-designer), and once it's installed, you use it to [load TWatchSK onto your watch](https://github.com/JohnySeven/TWatchSKDesigner/blob/master/README.md#installing-twatchsk). Immediately after the installation, the watch will boot and you'll see the home screen, showing the time and date. Those will almost certainly be wrong, so the first thing to do is set them correctly.
 
 ### Date and Time
 - Tap the "four squares" icon, which takes you into the menu system.
