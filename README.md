@@ -130,5 +130,3 @@ The whole point of creating TWatchSK was to allow it to keep you informed of wha
 
 DynamicViews are defined with JSON, and it would not be practical to create and edit JSON files on the watch itself, so TWatchSKDesigner was created. [Click here](https://github.com/JohnySeven/TWatchSKDesigner#twatchskdesigner) to read all about that program: how to install it, how to use it to design DynamicViews, and how to get those DynamicViews onto TWatchSK.
 
-BAS: To Do
-- Make a video showing the main functions of the Watch, including some DynamicViews and the display of an SK Notification.
