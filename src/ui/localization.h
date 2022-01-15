@@ -50,7 +50,7 @@
 #define LOC_SELECT_DATE "Select current date"
 #define LOC_MONTHS {"???","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
 #define LOC_WATCH_INFO "Watch info"
-#define LOC_WATCH_VERSION "Version 0.0.3"
+#define LOC_WATCH_VERSION "Version 0.0.4"
 #define LOC_AUTHOR "Author: Jan Dytrych,\nBrian Smith and contributors"
 #define LOC_UPTIME "Uptime: %d:%.2d:%.2d "
 #define LOC_WATCH_NAME "Watch\nname:"
@@ -89,3 +89,6 @@
 #define LOC_MSG_COUNT " of this msg"
 #define LOC_UNREAD_MSGS " unread msgs"
 #define LOC_POWER_BATTERY_CHARGED "Battery charging is now complete!"
+#define LOC_STARTUP_SPIFFS "SPIFFS init...please wait!"
+#define LOC_STARTUP_HW_GUI "Hardware & LVGL init..."
+#define LOC_STARTUP_NETWORKING "Wifi & networking init..."
