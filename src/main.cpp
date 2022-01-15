@@ -66,7 +66,7 @@ void lv_log_cb(lv_log_level_t level, const char * file, uint32_t line, const cha
 }
 #endif
 
-void set_splash_screen_status(TTGOClass* watch, int percent)
+void set_splash_screen_status(TTGOClass* watch, int percent, char*message = NULL)
 {
     auto y = 160;
     if(percent > 100)
@@ -75,6 +75,15 @@ void set_splash_screen_status(TTGOClass* watch, int percent)
     }
     watch->tft->fillRect(21, y, percent * 2, 28, watch->tft->color565(0, 51, 153));
     watch->tft->drawRect(19, y, 202, 30, TFT_WHITE);
+    if(message != NULL)
+    {
+        watch->tft->fillRect(0, TFT_HEIGHT - 20, TFT_WIDTH, 20, TFT_BLACK);
+        watch->tft->setTextColor(TFT_WHITE);
+        watch->tft->setTextFont(2);
+        watch->tft->setCursor(0, TFT_HEIGHT - 20);
+        watch->tft->println(message);
+    }
+
     ESP_LOGI(TAG, "Loader status=%d%%", percent);
 }
 
@@ -83,9 +92,11 @@ void init_splash_screen(TTGOClass* watch)
     watch->tft->setTextColor(TFT_WHITE);
     watch->tft->setTextFont(2);
     watch->tft->setCursor(0, TFT_HEIGHT - 20);
-    watch->tft->println(LOC_WATCH_VERSION);
+    watch->tft->println("Initializing...");
     watch->tft->setCursor((TFT_WIDTH / 2) - 30, 130);
     watch->tft->println("TWatchSK");
+    watch->tft->setCursor(0, 0);
+    watch->tft->print(LOC_WATCH_VERSION);
     watch->tft->drawXBitmap((TFT_WIDTH / 2) - (skIcon_width / 2), 60, skIcon_bits, skIcon_width, skIcon_height, watch->tft->color565(0, 51, 153));
 
     set_splash_screen_status(watch, 10);
@@ -106,17 +117,20 @@ void setup()
 
     ttgo = TTGOClass::getWatch();
 
-    if (!SPIFFS.begin(true))
-    {
-        ESP_LOGE(TAG, "Failed to initialize SPIFFS!");
-    }
-
     initialize_events();
     twatchsk::initialize_async();
     //Initialize TWatch
     ttgo->begin();
     ttgo->bl->on();
     init_splash_screen(ttgo);
+    ESP_LOGI(TAG, "Initializing SPIFFS...");
+    set_splash_screen_status(ttgo, 10, LOC_STARTUP_SPIFFS);
+    if (!SPIFFS.begin(true))
+    {
+        ESP_LOGE(TAG, "Failed to initialize SPIFFS!");
+    }
+    set_splash_screen_status(ttgo, 30, LOC_STARTUP_HW_GUI);
+
     //initalize Hardware (power management, sensors and interupts)
     hardware = new Hardware();
     hardware->initialize(ttgo);
@@ -137,7 +151,7 @@ void setup()
     //Synchronize time to system time
     ttgo->rtc->syncToSystem();
     ESP_LOGI(TAG, "Time synced with RTC!");
-    set_splash_screen_status(ttgo, 30);
+    set_splash_screen_status(ttgo, 40, LOC_STARTUP_NETWORKING);
     //Setting up the network
     wifiManager = new WifiManager();
     //Setting up websocket
