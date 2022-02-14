@@ -100,3 +100,4 @@
 #define LOC_STARTUP_HW_GUI "Hardware & LVGL init..."
 #define LOC_STARTUP_NETWORKING "Wifi & networking init..."
 #define LOC_SK_PUT_SEND_FAIL "Unable to send SK put request!"
+#define LOC_SK_PUT_SEND_FAIL "Unable to send Signal K put request!"
