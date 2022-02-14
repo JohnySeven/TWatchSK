@@ -41,13 +41,16 @@ void DynamicButton::load(const JsonObject &json)
         JsonObject push = json["push"].as<JsonObject>();
 
         sk_put_path_ = push["path"].as<String>();
+        //value can be structured object or simple value (String, float, int, bool, etc...)
         if(push["value"].is<JsonObject>())
         {
-            serializeJson(sk_put_value_, push["value"].as<JsonObject>());
+            JsonObject push = push["value"].as<JsonObject>();
+            serializeJson(sk_put_value_, push);
         }
         else
         {
-            serializeJson(sk_put_value_, push["value"].as<JsonVariant>());
+            JsonVariant value = push["value"].as<JsonVariant>();
+            serializeJson(sk_put_value_, value);
         }
     }
 
