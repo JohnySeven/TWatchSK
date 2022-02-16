@@ -63,10 +63,6 @@ Or you can continue with the setup process. Each of the menu items have at least
 but unless you turn the watch on very frequently, it probably won't make much difference in overall battery life. The default value is 30 seconds, but you can
 make it whatever you like, up to 99 seconds. (Note: when you wake up the screen with a double-tap or a tilt, it is assumed you are only looking at the time, so
 the screen timeout is temporarily set to 2 seconds. That has no effect on the normal screen timeout setting.)
-- "Display brightness" sets the brightness level of the screen. 1 is the least bright, and is the setting for the "Dark theme" (called "night mode").
-5 is the brightest, and is the setting the watch goes to if you double-tap to switch from night mode to day mode. So, while you can set the display brightness
-to 2, 3, or 4, the setting will be lost if you ever use the double-tap to switch from night mode to day mode. In practice, there is probably no need for
-these "middle" settings, but they were added before night mode existed, and they have been left in place.
 - "Enable Dark theme" toggles between day mode and night mode. In practice, there is no need for this switch, but it was added before the double-tap that toggles
 between day mode and night mode, and it has been left in place.
 - "Download DynamicViews": this is how you install the DynamicViews (the screens that display Signal K data) that you define with [TWatchSKDesigner](https://github.com/JohnySeven/TWatchSKDesigner#twatchskdesigner), which
