@@ -339,7 +339,7 @@ void Hardware::vibrate(bool status)
     if (status != is_vibrating_)
     {
         is_vibrating_ = status;
-
+#ifdef LILYGO_WATCH_2020_V1
         if (status)
         {
             //attach pin to PWM channel 1
@@ -354,6 +354,9 @@ void Hardware::vibrate(bool status)
             //detach the PIN from PWM
             ledcDetachPin(MOTOR_PIN);
         }
+#else
+    
+#endif
     }
 }
 
