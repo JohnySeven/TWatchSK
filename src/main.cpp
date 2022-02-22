@@ -188,7 +188,7 @@ void setup()
     ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
 #endif // CONFIG_PM_ENABLE
 
-    ESP_LOGI(TAG, "TWatch SK app initialized, Build date " __DATE__ ", GIT revision " GIT_REV);
+    ESP_LOGI(TAG, "TWatch SK app initialized, Build date " __DATE__ ", GIT revision ");
 }
 void loop()
 {

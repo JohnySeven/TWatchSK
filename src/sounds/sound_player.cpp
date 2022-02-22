@@ -13,7 +13,7 @@ struct SoundTask_t
   int repeat;
 };
 
-#ifdef LILYGO_WATCH_2020_V1
+#ifdef LILYGO_WATCH_2020_V1 || LILYGO_WATCH_2020_V3
 
 SoundPlayer::SoundPlayer()
 {
