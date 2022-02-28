@@ -18,8 +18,12 @@ const char *HW_TAG = "HW";
 Hardware::Hardware() : Configurable("/config/hardware")
 {
     load();
+#ifdef LILYGO_WATCH_2020_V2
+
+#else
     //setup vibrating motor configuration
     ledcSetup(MOTOR_CHANNEL, MOTOR_FREQUENCY, 8);
+#endif
 }
 
 void Hardware::load_config_from_file(const JsonObject &json)
@@ -56,9 +60,16 @@ void Hardware::initialize(TTGOClass *watch)
     // Turn off unused power
     watch->power->setPowerOutPut(AXP202_EXTEN, AXP202_OFF);
     watch->power->setPowerOutPut(AXP202_DCDC2, AXP202_OFF);
+#ifdef LILYGO_WATCH_2020_V2
+    watch->enableDrv2650(true);
+    watch->drv->setMode(DRV2605_MODE_INTTRIG);
+    watch->drv->selectLibrary(1);
+    watch->drv->setWaveform(0, 80);
+    watch->drv->setWaveform(2, 0);
+#else
     watch->power->setPowerOutPut(AXP202_LDO3, AXP202_OFF);
     watch->power->setPowerOutPut(AXP202_LDO4, AXP202_OFF);
-
+#endif
     ESP_LOGI(HW_TAG, "Watch power initialized!");
 
     // Enable BMA423 interrupt ，
@@ -149,6 +160,12 @@ void Hardware::low_energy()
         watch_->bma->enableWakeupInterrupt(double_tap_wakeup_); // enable or disable double_tap_wakeup depending on the switch setting
         watch_->displaySleep();
         touch_->set_low_power(true);
+#ifdef LILYGO_WATCH_2020_V2
+        watch_->power->setLDO2Voltage(3300);
+        watch_->power->setLDO3Voltage(3300);
+        watch_->power->setPowerOutPut(AXP202_LDO2, true);
+        watch_->power->setPowerOutPut(AXP202_LDO3, true);
+#endif
         //set event bits in events.cpp
         xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_MODE);
         set_low_power(true);
@@ -188,6 +205,12 @@ void Hardware::low_energy()
         touch_->set_low_power(false);
         //start LVGL ticking
         watch_->startLvglTick();
+#ifdef LILYGO_WATCH_2020_V2
+        watch_->power->setLDO2Voltage(3300);
+        watch_->power->setLDO3Voltage(3300);
+        watch_->power->setPowerOutPut(AXP202_LDO2, true);
+        watch_->power->setPowerOutPut(AXP202_LDO3, true);
+#endif
         //wakeup display
         watch_->displayWakeup();
         watch_->touch->setPowerMode(PowerMode_t::FOCALTECH_PMODE_ACTIVE);
@@ -354,8 +377,8 @@ void Hardware::vibrate(bool status)
             //detach the PIN from PWM
             ledcDetachPin(MOTOR_PIN);
         }
-#else
-    
+#elif LILYGO_WATCH_2020_V2
+        watch_->drv->go();
 #endif
     }
 }
@@ -421,7 +444,7 @@ void Hardware::vibrate(int pattern[], int repeat)
     }
 }
 
-void Hardware::intialize_touch()
+void Hardware::initialize_touch()
 {
     touch_ = new Touch();
     touch_->initialize(isr_group);
