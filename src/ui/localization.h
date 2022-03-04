@@ -1,4 +1,11 @@
 #pragma once
+#ifdef LILYGO_WATCH_2020_V1
+#define LOC_WATCH_MODEL "V1"
+#elif LILYGO_WATCH_2020_V2
+#define LOC_WATCH_MODEL "V2"
+#elif LILYGO_WATCH_2020_V3
+#define LOC_WATCH_MODEL "V3"
+#endif
 #define LOC_LANGUAGE "English"
 #define LOC_WIFI "Wifi"
 #define LOC_WIFI_SETTINGS "Wifi settings"
@@ -50,7 +57,7 @@
 #define LOC_SELECT_DATE "Select current date"
 #define LOC_MONTHS {"???","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
 #define LOC_WATCH_INFO "Watch info"
-#define LOC_WATCH_VERSION "Version 0.9"
+#define LOC_WATCH_VERSION "Version 0.9 " LOC_WATCH_MODEL
 #define LOC_AUTHOR "Author: Jan Dytrych,\nBrian Smith and contributors"
 #define LOC_UPTIME "Uptime: %d:%.2d:%.2d "
 #define LOC_WATCH_NAME "Watch\nname:"

@@ -13,6 +13,8 @@ struct SoundTask_t
   int repeat;
 };
 
+#ifdef LILYGO_WATCH_2020_V1 || LILYGO_WATCH_2020_V3
+
 SoundPlayer::SoundPlayer()
 {
   player_queue_handle_ = xQueueCreate(32, sizeof(SoundTask_t));
@@ -116,6 +118,19 @@ void SoundPlayer::player_task_func(void *pvParameter)
     }
   }
 }
+#else
+
+SoundPlayer::SoundPlayer()
+{
+
+}
+
+void SoundPlayer::play_raw_from_const(const char *name, const unsigned char *raw, int size, int repeat)
+{
+  log_w("TWatch 2020 V2 doesn't support playing sounds.");
+}
+
+#endif
 
 SoundPlayer::~SoundPlayer()
 {

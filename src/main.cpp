@@ -116,11 +116,16 @@ void setup()
 #endif
 
     ttgo = TTGOClass::getWatch();
-
     initialize_events();
     twatchsk::initialize_async();
     //Initialize TWatch
     ttgo->begin();
+#ifdef LILYGO_WATCH_2020_V2
+    ttgo->power->setLDO2Voltage(3300);
+    ttgo->power->setLDO3Voltage(3300);
+    ttgo->power->setPowerOutPut(AXP202_LDO2, true);
+    ttgo->power->setPowerOutPut(AXP202_LDO3, true);
+#endif
     ttgo->bl->on();
     init_splash_screen(ttgo);
     ESP_LOGI(TAG, "Initializing SPIFFS...");
@@ -145,7 +150,7 @@ void setup()
         return;
     }
 
-    hardware->intialize_touch();
+    hardware->initialize_touch();
     
     ESP_LOGI(TAG, "Touch initialized!");
     //Synchronize time to system time
@@ -188,7 +193,7 @@ void setup()
     ESP_ERROR_CHECK(esp_pm_configure(&pm_config));
 #endif // CONFIG_PM_ENABLE
 
-    ESP_LOGI(TAG, "TWatch SK app initialized, Build date " __DATE__ ", GIT revision " GIT_REV);
+    ESP_LOGI(TAG, "TWatch SK app initialized, Build date " __DATE__ ", GIT revision ");
 }
 void loop()
 {
