@@ -85,7 +85,7 @@ public:
     }
     void vibrate(int duration);
     void vibrate(int pattern[], int repeat = 1);
-    void intialize_touch();
+    void initialize_touch();
     
     SoundPlayer*get_player()
     {

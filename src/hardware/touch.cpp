@@ -1,13 +1,14 @@
 #include "hardware/touch.h"
-//Took from code by sharandac, uri: https://github.com/sharandac/My-TTGO-Watch/blob/master/src/hardware/touch.cpp
+// Took from code by sharandac, uri: https://github.com/sharandac/My-TTGO-Watch/blob/master/src/hardware/touch.cpp
 #define TOUCH_TAG "TOUCH"
 static SemaphoreHandle_t xTouchSemaphore = NULL;
 lv_indev_t *touch_dev = NULL;
 
+static bool touch_initialized_ = false;
 static bool DRAM_ATTR low_power_mode = false;
 static bool touch_down = false;
 volatile bool DRAM_ATTR wakeup_from_sleep_ = true;
-//Touch IRQ flags and Mutex
+// Touch IRQ flags and Mutex
 volatile bool DRAM_ATTR touch_irq_flag = false;
 portMUX_TYPE DRAM_ATTR Touch_IRQ_Mux = portMUX_INITIALIZER_UNLOCKED;
 EventGroupHandle_t watch_isr_group = NULL;
@@ -16,25 +17,27 @@ EventGroupHandle_t watch_isr_group = NULL;
 #define WATCH_FLAG_SLEEP_EXIT _BV(2) // leaving sleep mode because of any kind of interrupt
 #define WATCH_FLAG_TOUCH_IRQ _BV(5)  // leaving sleep mode because of touch
 
-bool touch_lock_take( void ) {
-    return xSemaphoreTake( xTouchSemaphore, portMAX_DELAY ) == pdTRUE;
+bool touch_lock_take(void)
+{
+    return xSemaphoreTake(xTouchSemaphore, portMAX_DELAY) == pdTRUE;
 }
-void touch_lock_give( void ) {
-    xSemaphoreGive( xTouchSemaphore );
+
+void touch_lock_give(void)
+{
+    xSemaphoreGive(xTouchSemaphore);
 }
 
 static bool touch_getXY(int16_t &x, int16_t &y)
 {
-
     TTGOClass *ttgo = TTGOClass::getWatch();
-    static bool touch_press = false;
+    
 
     if (!low_power_mode)
     {
         /*
-     * get touchstate from touchcontroller if not taken
-     * by other task/thread
-     */
+         * get touchstate from touchcontroller if not taken
+         * by other task/thread
+         */
         bool getTouchResult = false;
         if (touch_lock_take())
         {
@@ -42,21 +45,25 @@ static bool touch_getXY(int16_t &x, int16_t &y)
             touch_lock_give();
         }
         /*
-     * if touched?
-     */
+         * if touched?
+         */
         if (!getTouchResult)
         {
-            touch_press = false;
-            return (false);
+            return false;
         }
 
         /*
-     * issue https://github.com/sharandac/My-TTGO-Watch/issues/18 fix
-     */
+         * issue https://github.com/sharandac/My-TTGO-Watch/issues/18 fix
+         */
         float temp_x = (x - (lv_disp_get_hor_res(NULL) / 2)) * 1.15;
         float temp_y = (y - (lv_disp_get_ver_res(NULL) / 2)) * 1.0;
         x = temp_x + (lv_disp_get_hor_res(NULL) / 2);
         y = temp_y + (lv_disp_get_ver_res(NULL) / 2);
+
+        x = min(LV_HOR_RES, max((int16_t)0, x));
+        y = min(LV_VER_RES, max((int16_t)0, y));
+
+        ESP_LOGI(TOUCH_TAG, "Touch=(%d,%d)", x,y);
 
         return true;
     }
@@ -97,10 +104,6 @@ static bool touch_read(lv_indev_drv_t *drv, lv_indev_data_t *data)
                 touch_lock_give();
             }
         }
-        else
-        {
-            ESP_LOGI(TOUCH_TAG, "Touch=%d,%d", data->point.x, data->point.y);
-        }
     }
     else
     {
@@ -133,6 +136,25 @@ void IRAM_ATTR touch_irq(void)
 void Touch::set_low_power(bool low_power)
 {
     low_power_mode = low_power;
+#if defined(LILYGO_WATCH_2020_V2) || defined(LILYGO_WATCH_2020_V3)
+    if (!low_power)
+    {
+        TTGOClass *ttgo = TTGOClass::getWatch();
+        ttgo->touchWakup();
+        ESP_LOGI(TOUCH_TAG, "irq disable");
+        // we will handle TOUCH interupts on our own
+        ttgo->touch->disableINT();
+        ttgo->disableTouchIRQ();
+        ESP_LOGI(TOUCH_TAG, "touch monitoring config");
+        // configure touch monitoring time
+        ttgo->touch->setMonitorTime(0x01);
+        ttgo->touch->setMonitorPeriod(125);
+        ESP_LOGI(TOUCH_TAG, "driver init");
+        xTouchSemaphore = xSemaphoreCreateMutex();
+        ESP_LOGI(TOUCH_TAG, "interrup attach");
+        attachInterrupt(TOUCH_INT, &touch_irq, FALLING);
+    }
+#endif
 }
 
 bool Touch::initialize(EventGroupHandle_t wakeupEvents)
@@ -144,11 +166,11 @@ bool Touch::initialize(EventGroupHandle_t wakeupEvents)
 #endif
     ESP_LOGI(TOUCH_TAG, "irq disable");
 
-    //we will handle TOUCH interupts on our own
+    // we will handle TOUCH interupts on our own
     ttgo->touch->disableINT();
     ttgo->disableTouchIRQ();
     ESP_LOGI(TOUCH_TAG, "touch monitoring config");
-    //configure touch monitoring time
+    // configure touch monitoring time
     ttgo->touch->setMonitorTime(0x01);
     ttgo->touch->setMonitorPeriod(125);
     ESP_LOGI(TOUCH_TAG, "driver init");
@@ -157,8 +179,6 @@ bool Touch::initialize(EventGroupHandle_t wakeupEvents)
     touch_dev->driver.read_cb = touch_read;
     ESP_LOGI(TOUCH_TAG, "interup attach");
     attachInterrupt(TOUCH_INT, &touch_irq, FALLING);
-    ESP_LOGI(TOUCH_TAG, "ok");
-
     watch_isr_group = wakeupEvents;
 
     return true;

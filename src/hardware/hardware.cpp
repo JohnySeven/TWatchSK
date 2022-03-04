@@ -163,8 +163,8 @@ void Hardware::low_energy()
 #ifdef LILYGO_WATCH_2020_V2
         watch_->power->setLDO2Voltage(3300);
         watch_->power->setLDO3Voltage(3300);
-        watch_->power->setPowerOutPut(AXP202_LDO2, true);
-        watch_->power->setPowerOutPut(AXP202_LDO3, true);
+        watch_->power->setPowerOutPut(AXP202_LDO2, false);
+        watch_->power->setPowerOutPut(AXP202_LDO3, false);
 #endif
         //set event bits in events.cpp
         xEventGroupSetBits(isr_group, WATCH_FLAG_SLEEP_MODE);
