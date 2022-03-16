@@ -214,6 +214,57 @@ void SignalKSocket::save_config_to_file(JsonObject &json)
     json["synctime"] = sync_time_with_server;
 }
 
+bool updateSystemTime(String time)
+{
+       bool ret = false;
+       char timeCh[30];
+       const char pattern[] = ":T-.";
+       time.toCharArray(timeCh, 30);
+
+       //2020-09-15T07:56:44.225Z
+       auto *ptr = strtok(timeCh, pattern);
+       if (ptr != NULL)
+       {
+              auto year = atoi(ptr);
+              ptr = strtok(NULL, pattern);
+              if (ptr != NULL)
+              {
+                     auto month = atoi(ptr);
+                     ptr = strtok(NULL, pattern);
+
+                     if (ptr != NULL)
+                     {
+                            auto day = atoi(ptr);
+                            ptr = strtok(NULL, pattern);
+
+                            if (ptr != NULL)
+                            {
+                                   auto hour = atoi(ptr);
+                                   ptr = strtok(NULL, pattern);
+
+                                   if (ptr != NULL)
+                                   {
+                                          auto minute = atoi(ptr);
+                                          ptr = strtok(NULL, pattern);
+                                          if (ptr != NULL)
+                                          {
+                                                 auto second = atoi(ptr);
+
+                                                 if (year > 2000 && month > 0 && month < 13 && day > 1 && day < 32 && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 && second >= 0 && second <= 59)
+                                                 {
+                                                        ESP_LOGI(WS_TAG, "Parsed time from server: %d-%d-%d %d:%d:%d", year, month, day, hour, minute, second);
+                                                        ret = true;
+                                                 }
+                                          }
+                                   }
+                            }
+                     }
+              }
+       }
+
+       return ret;
+}
+
 void SignalKSocket::parse_data(int length, const char *data)
 {
     DynamicJsonDocument doc(4096);
@@ -297,6 +348,11 @@ void SignalKSocket::parse_data(int length, const char *data)
                     }
                 }
             }
+        }
+        else if(doc.containsKey("timestamp"))
+        {
+            String timestamp = doc["timestamp"];
+            updateSystemTime(timestamp);
         }
 
         ESP_LOGI(WS_TAG, "Got message %s from websocket with len=%d", messageType.c_str(), length);
