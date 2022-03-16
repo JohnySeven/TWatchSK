@@ -16,6 +16,9 @@ class DynamicGauge : public Component
         void destroy() override;
     private:
         Data_formating_t formating;
+        float minimum_ = 0.0f;
+        float maximum_ = 100.0f;
+        lv_obj_t* label_ = NULL;
 };
 
 class DynamicGaugeBuilder

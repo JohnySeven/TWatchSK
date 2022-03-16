@@ -2,15 +2,6 @@
 #include "localization.h"
 #include "data_adapter.h"
 
-LV_FONT_DECLARE(Geometr);
-LV_FONT_DECLARE(Ubuntu);
-LV_FONT_DECLARE(roboto80);
-LV_FONT_DECLARE(roboto60);
-LV_FONT_DECLARE(roboto40);
-LV_FONT_DECLARE(lv_font_montserrat_14)
-LV_FONT_DECLARE(lv_font_montserrat_28)
-LV_FONT_DECLARE(lv_font_montserrat_32)
-
 void DynamicGaugeBuilder::initialize(ComponentFactory *factory)
 {
     factory->register_constructor("gauge", [factory](JsonObject &json, lv_obj_t *parent) -> Component *
@@ -23,9 +14,15 @@ void DynamicGaugeBuilder::initialize(ComponentFactory *factory)
 
 void DynamicGauge::load(const JsonObject &json)
 {
-    lv_obj_t *gauge = lv_gauge_create(parent_, NULL);
+    lv_obj_t *arc = lv_arc_create(parent_, NULL);
 
-    this->obj_ = gauge;
+    this->obj_ = arc;
+    
+    lv_arc_set_range(arc, 0, 300);
+    lv_arc_set_bg_angles(arc, 0, 300);
+    lv_arc_set_angles(arc, 0, 300);
+    lv_arc_set_rotation(arc, 120);
+    lv_arc_set_value(arc, 0);
 
     lv_color_t colors[1];
     colors[0] = lv_theme_get_color_primary();
@@ -35,7 +32,7 @@ void DynamicGauge::load(const JsonObject &json)
         colors[0] = DynamicHelpers::get_color(json["color"]);
     }
 
-    lv_gauge_set_needle_count(gauge, 1, colors);
+    lv_obj_set_style_local_line_color(arc, LV_ARC_PART_INDIC, LV_STATE_DEFAULT, colors[0]);
 
     if (json.containsKey("binding"))
     {
@@ -63,53 +60,70 @@ void DynamicGauge::load(const JsonObject &json)
             formating.decimal_places = binding["decimals"].as<int>();
         }
 
-        if(binding.containsKey("minimum") && binding.containsKey("maximum"))
+        if (binding.containsKey("format"))
         {
-            lv_gauge_set_range(gauge, binding["minimum"].as<int>(), binding["maximum"].as<int>());
+            auto jsonFormating = binding["format"].as<char *>();
+            //allocate memory for format string + 1 for \0 char at the end
+            formating.string_format = (char *)malloc(strlen(jsonFormating) + 1);
+            strcpy(formating.string_format, jsonFormating);
         }
 
-        if(binding.containsKey("critical"))
-        {
-            lv_gauge_set_critical_value(gauge, binding["critical"].as<int>());
-        }
-
-        //register dataadapter that will connect SK receiver and this label
+        //register dataadapter that will connect SK receiver and this arc
         new DataAdapter(binding["path"].as<String>(), period, this);
     }
 
-    lv_obj_set_click(gauge, false);
+    DynamicHelpers::set_location(arc, json);
+    DynamicHelpers::set_size(arc, json);
+    DynamicHelpers::set_layout(arc, parent_, json);
 
-    DynamicHelpers::set_location(gauge, json);
-    DynamicHelpers::set_size(gauge, json);
-    DynamicHelpers::set_layout(gauge, parent_, json);
+    label_ = lv_label_create(arc, NULL);
+    lv_label_set_text(label_, "--");
+    lv_obj_align(label_, arc, LV_ALIGN_CENTER, 0, 0);
 }
 
 void DynamicGauge::update(const JsonVariant &json)
 {
-    int value = 0;
+    float value = 0.0f;
 
     if (json.is<int>())
     {
-        value = json.as<int>();
+        value = ((json.as<int>() + formating.offset) * formating.multiply);
     }
     else if (json.is<float>())
     {
-        value = (int)((json.as<float>() + formating.offset) * formating.multiply);
+        value = ((json.as<float>() + formating.offset) * formating.multiply);
     }
     else if (json.is<bool>())
     {
-        value = json.as<bool>() ? 0 : 1;
+        value = json.as<bool>() ? 0 : 100.0f;
     }
     else
     {
-        value = 0;
+        value = 0.0f;
     }
 
-    lv_gauge_set_value(obj_, 0, value);
+    lv_arc_set_value(obj_, (int)(300.0f * (value / 100.0f)));
+    if (formating.string_format != NULL)
+    {
+        String labelText = String(formating.string_format);
+        labelText.replace("$$", String(value));
+        lv_label_set_text(label_, labelText.c_str());
+    }
+    else
+    {
+        String labelText = String(value,1);
+        lv_label_set_text(obj_, labelText.c_str());
+    }
 }
 
 void DynamicGauge::destroy()
 {
+    if (label_ != NULL)
+    {
+        lv_obj_del(label_);
+        label_ = NULL;
+    }
+
     if (obj_ != NULL)
     {
         lv_obj_del(obj_);
