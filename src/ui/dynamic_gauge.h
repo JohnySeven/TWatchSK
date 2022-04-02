@@ -13,6 +13,7 @@ class DynamicGauge : public Component
         };
         void load(const JsonObject &json) override;
         void update(const JsonVariant &update) override;
+        void on_offline() override;
         void destroy() override;
     private:
         Data_formating_t formating;

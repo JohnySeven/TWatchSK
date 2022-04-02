@@ -17,8 +17,7 @@ void DynamicLabelBuilder::initialize(ComponentFactory *factory)
                                   {
                                       auto label = new DynamicLabel(parent);
                                       label->load(json);
-                                      return label;
-                                  });
+                                      return label; });
 }
 
 void DynamicLabel::load(const JsonObject &json)
@@ -43,6 +42,7 @@ void DynamicLabel::load(const JsonObject &json)
 
     if (json.containsKey("binding"))
     {
+        has_binding_ = true;
         JsonObject binding = json["binding"].as<JsonObject>();
         int period = 1000;
         formating.multiply = 1.0f;
@@ -70,11 +70,11 @@ void DynamicLabel::load(const JsonObject &json)
         if (binding.containsKey("format"))
         {
             auto jsonFormating = binding["format"].as<char *>();
-            //allocate memory for format string + 1 for \0 char at the end
+            // allocate memory for format string + 1 for \0 char at the end
             formating.string_format = (char *)malloc(strlen(jsonFormating) + 1);
             strcpy(formating.string_format, jsonFormating);
         }
-        //register dataadapter that will connect SK receiver and this label
+        // register dataadapter that will connect SK receiver and this label
         new DataAdapter(binding["path"].as<String>(), period, this);
 
         if (!textSet)
@@ -161,6 +161,25 @@ void DynamicLabel::update(const JsonVariant &value)
     else
     {
         lv_label_set_text(obj_, stringValue.c_str());
+    }
+}
+
+void DynamicLabel::on_offline()
+{
+    if (has_binding_)
+    {
+        String stringValue = "--";
+
+        if (formating.string_format != NULL)
+        {
+            String text = String(formating.string_format);
+            text.replace("$$", stringValue.c_str());
+            lv_label_set_text(obj_, text.c_str());
+        }
+        else
+        {
+            lv_label_set_text(obj_, stringValue.c_str());
+        }
     }
 }
 

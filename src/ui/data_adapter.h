@@ -25,6 +25,12 @@ public:
     {
         targetObject_->update(value);
     }
+
+    void on_offline()
+    {
+        targetObject_->on_offline();
+    }
+
     bool put_request(bool value)
     {
         ESP_LOGI("DataAdapter", "Put request %s with bool value %s", path.c_str(), value ? "true" : "false");
@@ -55,6 +61,7 @@ public:
         ws_socket_ = socket;
         socket->add_subscription(get_path(), get_subscription_period(), false);
     }
+
     static std::vector<DataAdapter *> &get_adapters();
 
 protected:

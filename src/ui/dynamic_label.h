@@ -13,9 +13,11 @@ class DynamicLabel : public Component
         };
         void load(const JsonObject &json) override;
         void update(const JsonVariant &update) override;
+        void on_offline() override;
         void destroy() override;
     private:
         Data_formating_t formating;
+        bool has_binding_ = false;
 };
 
 class DynamicLabelBuilder

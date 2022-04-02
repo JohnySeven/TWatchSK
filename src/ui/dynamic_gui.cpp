@@ -29,7 +29,7 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket,
 {
     bool ret = false;
 
-    SpiRamJsonDocument uiJson(20240); //allocate 20 kB in SPI RAM for JSON parsing
+    SpiRamJsonDocument uiJson(20240); // allocate 20 kB in SPI RAM for JSON parsing
     DeserializationError result;
 
     if (SPIFFS.exists(path))
@@ -65,7 +65,7 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket,
         {
             adapter->initialize(socket);
         }
-        
+
         ret = true;
     }
     else
@@ -76,13 +76,29 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket,
     return ret;
 }
 
-void DynamicGui::handle_signalk_update(const String& path, const JsonVariant &value)
+void DynamicGui::handle_signalk_update(const String &path, const JsonVariant &value)
 {
     for (auto adapter : DataAdapter::get_adapters())
     {
         if (adapter->get_path() == path)
         {
             adapter->on_updated(value);
+        }
+    }
+}
+
+void DynamicGui::update_online(bool online)
+{
+    if (online_ != online)
+    {
+        online_ = online;
+    }
+
+    if (!online)
+    {
+        for (auto adapter : DataAdapter::get_adapters())
+        {
+            adapter->on_offline();
         }
     }
 }

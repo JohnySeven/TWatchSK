@@ -567,10 +567,13 @@ void Gui::update_gui()
         {
             SKIcon_->set_status(StatusBarIconStatus::Visible);
         }
+
+        dynamic_gui->update_online(true);
     }
     else
     {
         SKIcon_->set_status(StatusBarIconStatus::Hidden);
+        dynamic_gui->update_online(false);
     }
 
     GuiEvent_t event;

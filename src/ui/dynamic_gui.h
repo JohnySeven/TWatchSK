@@ -12,7 +12,9 @@ public:
     void initialize();
     bool load_file(String path, lv_obj_t*parent, SignalKSocket*socket, int& count);
     void handle_signalk_update(const String& path, const JsonVariant&value);
+    void update_online(bool online);
 private:
     ComponentFactory *factory;
     std::vector<DynamicView*> views;
+    bool online_ = false;
 };
