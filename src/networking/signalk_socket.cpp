@@ -44,17 +44,17 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
         else if (event_id == WEBSOCKET_EVENT_CONNECTED)
         {
             ESP_LOGI(WS_TAG, "Web socket connected to server!");
-            socket->reconnect_counter_ = socket->reconnect_count_; //restore reconnect counter to 3
-            socket->delta_counter = 0;                             //clear the socket delta counter
+            socket->reconnect_counter_ = socket->reconnect_count_; // restore reconnect counter to 3
+            socket->delta_counter = 0;                             // clear the socket delta counter
 
             socket->update_status(WebsocketState_t::WS_Connected);
 
-            //if token is empty, request access
+            // if token is empty, request access
             if (socket->token.isEmpty())
             {
                 socket->send_token_permission();
             }
-            else //token isn't empty send subscription requests
+            else // token isn't empty send subscription requests
             {
                 socket->update_subscriptions(true);
             }
@@ -96,7 +96,7 @@ void SignalKSocket::ws_event_handler(void *arg, esp_event_base_t event_base,
                 if (data->data_len > 0)
                 {
                     socket->parse_data(data->data_len, data->data_ptr);
-#if LOG_WS_DATA==1
+#if LOG_WS_DATA == 1
                     ESP_LOGW(WS_TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
 #endif
                 }
@@ -137,7 +137,7 @@ bool SignalKSocket::connect()
             .host = server.c_str(),
             .path = url};
         ws_cfg.port = port;
-        reconnect_counter_ = reconnect_count_; //restore reconnect counter
+        reconnect_counter_ = reconnect_count_; // restore reconnect counter
 
         ESP_LOGI(WS_TAG, "Initializing websocket ws://%s:%d%s...", ws_cfg.host, ws_cfg.port, url);
 
@@ -214,55 +214,66 @@ void SignalKSocket::save_config_to_file(JsonObject &json)
     json["synctime"] = sync_time_with_server;
 }
 
-bool updateSystemTime(String time)
+bool updateSystemTime(String time, SignalKSocket *socket)
 {
-       bool ret = false;
-       char timeCh[30];
-       const char pattern[] = ":T-.";
-       time.toCharArray(timeCh, 30);
+    bool ret = false;
+    char timeCh[30];
+    const char pattern[] = ":T-.";
+    time.toCharArray(timeCh, 30);
 
-       //2020-09-15T07:56:44.225Z
-       auto *ptr = strtok(timeCh, pattern);
-       if (ptr != NULL)
-       {
-              auto year = atoi(ptr);
-              ptr = strtok(NULL, pattern);
-              if (ptr != NULL)
-              {
-                     auto month = atoi(ptr);
-                     ptr = strtok(NULL, pattern);
+    // 2020-09-15T07:56:44.225Z
+    auto *ptr = strtok(timeCh, pattern);
+    if (ptr != NULL)
+    {
+        auto year = atoi(ptr);
+        ptr = strtok(NULL, pattern);
+        if (ptr != NULL)
+        {
+            auto month = atoi(ptr);
+            ptr = strtok(NULL, pattern);
 
-                     if (ptr != NULL)
-                     {
-                            auto day = atoi(ptr);
-                            ptr = strtok(NULL, pattern);
+            if (ptr != NULL)
+            {
+                auto day = atoi(ptr);
+                ptr = strtok(NULL, pattern);
 
-                            if (ptr != NULL)
+                if (ptr != NULL)
+                {
+                    auto hour = atoi(ptr);
+                    ptr = strtok(NULL, pattern);
+
+                    if (ptr != NULL)
+                    {
+                        auto minute = atoi(ptr);
+                        ptr = strtok(NULL, pattern);
+                        if (ptr != NULL)
+                        {
+                            auto second = atoi(ptr);
+
+                            if (year > 2000 && month > 0 && month < 13 && day > 1 && day < 32 && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 && second >= 0 && second <= 59)
                             {
-                                   auto hour = atoi(ptr);
-                                   ptr = strtok(NULL, pattern);
+                                auto rtc = TTGOClass::getWatch()->rtc;
+                                auto currentTime = rtc->getDateTime();
 
-                                   if (ptr != NULL)
-                                   {
-                                          auto minute = atoi(ptr);
-                                          ptr = strtok(NULL, pattern);
-                                          if (ptr != NULL)
-                                          {
-                                                 auto second = atoi(ptr);
-
-                                                 if (year > 2000 && month > 0 && month < 13 && day > 1 && day < 32 && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 && second >= 0 && second <= 59)
-                                                 {
-                                                        ESP_LOGI(WS_TAG, "Parsed time from server: %d-%d-%d %d:%d:%d", year, month, day, hour, minute, second);
-                                                        ret = true;
-                                                 }
-                                          }
-                                   }
+                                currentTime.hour = hour;
+                                currentTime.minute = minute;
+                                currentTime.second = second;
+                                currentTime.year = year;
+                                currentTime.month = month;
+                                currentTime.day = day;
+                                rtc->setDateTime(currentTime);
+                                rtc->syncToSystem();
+                                ESP_LOGI(WS_TAG, "Parsed time from server: %d-%d-%d %d:%d:%d", year, month, day, hour, minute, second);
+                                ret = true;
                             }
-                     }
-              }
-       }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-       return ret;
+    return ret;
 }
 
 void SignalKSocket::parse_data(int length, const char *data)
@@ -292,7 +303,7 @@ void SignalKSocket::parse_data(int length, const char *data)
                     token = accessRequest["token"].as<String>();
                     token_request_pending = false;
                     pending_token_request_id = "";
-                    update_subscriptions(); //update subscriptions
+                    update_subscriptions(); // update subscriptions
                     save();
                 }
                 else
@@ -325,7 +336,7 @@ void SignalKSocket::parse_data(int length, const char *data)
                         String state = notification["state"].as<String>();
                         ESP_LOGI(WS_TAG, "Got SK notification %s with state %s, active=%d", path.c_str(), state.c_str(), active);
 
-                        if (state == "alarm" || state == "alert" || state == "warn" || state == "emergency") //alarm is active we need to wake up the watch and show alert text on the display
+                        if (state == "alarm" || state == "alert" || state == "warn" || state == "emergency") // alarm is active we need to wake up the watch and show alert text on the display
                         {
                             if (!active)
                             {
@@ -349,10 +360,13 @@ void SignalKSocket::parse_data(int length, const char *data)
                 }
             }
         }
-        else if(doc.containsKey("timestamp"))
+        else if (doc.containsKey("timestamp"))
         {
-            String timestamp = doc["timestamp"];
-            updateSystemTime(timestamp);
+            if (sync_time_with_server)
+            {
+                String timestamp = doc["timestamp"];
+                updateSystemTime(timestamp, this);
+            }
         }
 
         ESP_LOGI(WS_TAG, "Got message %s from websocket with len=%d", messageType.c_str(), length);
@@ -381,7 +395,7 @@ void SignalKSocket::notify_change(const WifiState_t &wifiState)
     }
     else if (wifiState == WifiState_t::Wifi_Disconnected || wifiState == WifiState_t::Wifi_Off)
     {
-        //just make reconnect counter = 0
+        // just make reconnect counter = 0
         reconnect_counter_ = 0;
     }
 }
@@ -465,7 +479,7 @@ void SignalKSocket::update_subscriptions(bool force)
             {
                 String subscriptionMessage;
                 serializeJson(subscriptionsJson, subscriptionMessage);
-                //ESP_LOGI(WS_TAG, "Subscription: %s", subscriptionMessage.c_str());
+                // ESP_LOGI(WS_TAG, "Subscription: %s", subscriptionMessage.c_str());
                 esp_websocket_client_send_text(websocket, subscriptionMessage.c_str(), subscriptionMessage.length(), portMAX_DELAY);
             }
         }
@@ -498,10 +512,10 @@ void SignalKSocket::remove_active_notification(String path)
     }
 }
 
-///This is kind of HACK to control period 10 seconds ping of websocket - we need to avoid it to save some battery
+/// This is kind of HACK to control period 10 seconds ping of websocket - we need to avoid it to save some battery
 void update_ws_timeout(esp_websocket_client_info *client)
 {
-    //ESP_LOGI(WS_TAG, "Ping timeout %d ms", (int)((esp_timer_get_time() / 1000) - client->ping_tick_ms));
+    // ESP_LOGI(WS_TAG, "Ping timeout %d ms", (int)((esp_timer_get_time() / 1000) - client->ping_tick_ms));
     client->ping_tick_ms = esp_timer_get_time() / 1000;
 }
 
@@ -526,11 +540,11 @@ void SignalKSocket::send_status_message()
     uptime["path"] = buff;
 
     int32_t elapsed_seconds = esp_timer_get_time() / 1000000;
-    int hours = elapsed_seconds/3600;
-	elapsed_seconds = elapsed_seconds%3600;
-	int minutes = elapsed_seconds/60;
-	elapsed_seconds = elapsed_seconds%60;
-	int seconds = elapsed_seconds;
+    int hours = elapsed_seconds / 3600;
+    elapsed_seconds = elapsed_seconds % 3600;
+    int minutes = elapsed_seconds / 60;
+    elapsed_seconds = elapsed_seconds % 60;
+    int seconds = elapsed_seconds;
 
     sprintf(buff, "%d:%.2d:%.2d", hours, minutes, seconds);
     uptime["value"] = buff;
@@ -538,7 +552,7 @@ void SignalKSocket::send_status_message()
     JsonObject temp = values.createNestedObject();
     sprintf(buff, "%s.temperature", device_name_);
     temp["path"] = buff;
-    temp["value"] =  (273.15f + TTGOClass::getWatch()->power->getTemp());
+    temp["value"] = (273.15f + TTGOClass::getWatch()->power->getTemp());
 
     if (serializeJson(statusJson, buff))
     {
@@ -555,11 +569,11 @@ void SignalKSocket::handle_power_event(PowerCode_t code, uint32_t arg)
     }
     else if (code == PowerCode_t::POWER_LOW_TICK)
     {
-        //we need to avoid client ping for now
+        // we need to avoid client ping for now
         if (value == WebsocketState_t::WS_Connected)
         {
             update_ws_timeout((esp_websocket_client_info *)websocket);
-            //send status message every minute in low power mode
+            // send status message every minute in low power mode
             if (arg % 60 == 0)
             {
                 send_status_message();
@@ -595,7 +609,7 @@ void SignalKSocket::clear_token()
     save();
 }
 
-bool SignalKSocket::send_put_request(JsonObject& request)
+bool SignalKSocket::send_put_request(JsonObject &request)
 {
     char buff[1024];
 
