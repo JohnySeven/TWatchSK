@@ -34,13 +34,10 @@
 using std::placeholders::_1;
 using std::placeholders::_2;
 
-#define RTC_TIME_ZONE "CET-1CEST,M3.5.0,M10.5.0/3" // this doesn't do anything yet. Will it ever be used?
-
 LV_FONT_DECLARE(Geometr);
 LV_FONT_DECLARE(Ubuntu);
 LV_FONT_DECLARE(roboto70);
 LV_FONT_DECLARE(roboto30);
-//LV_IMG_DECLARE(bg_default);
 LV_FONT_DECLARE(lv_font_montserrat_16);
 LV_FONT_DECLARE(lv_font_montserrat_22);
 LV_IMG_DECLARE(sk_status);
@@ -324,6 +321,7 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     update_tiles_valid_points(dynamic_view_count);
     lv_tileview_set_valid_positions(mainBar, tile_valid_points, tile_valid_points_count);
     lv_tileview_set_edge_flash(mainBar, true);
+    ws_socket->set_time_zone(timezone_id);
 }
 
 void Gui::update_tiles_valid_points(int count)
