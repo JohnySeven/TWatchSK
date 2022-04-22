@@ -1,4 +1,12 @@
 #include "dynamic_helpers.h"
+LV_FONT_DECLARE(Geometr);
+LV_FONT_DECLARE(Ubuntu);
+LV_FONT_DECLARE(roboto80);
+LV_FONT_DECLARE(roboto60);
+LV_FONT_DECLARE(roboto40);
+LV_FONT_DECLARE(lv_font_montserrat_14)
+LV_FONT_DECLARE(lv_font_montserrat_28)
+LV_FONT_DECLARE(lv_font_montserrat_32)
 
 static String alignments[9] = {
     "center",
@@ -98,7 +106,7 @@ lv_color_t DynamicHelpers::get_color(const String &value)
     {
         ret = LV_COLOR_WHITE;
     }
-    else if(value == "black")
+    else if (value == "black")
     {
         ret = LV_COLOR_BLACK;
     }
@@ -118,11 +126,11 @@ lv_color_t DynamicHelpers::get_color(const String &value)
     {
         ret = LV_COLOR_GRAY;
     }
-    else if(value == "primary")
+    else if (value == "primary")
     {
         ret = LV_THEME_DEFAULT_COLOR_PRIMARY;
     }
-    else if(value == "secondary")
+    else if (value == "secondary")
     {
         ret = LV_THEME_DEFAULT_COLOR_SECONDARY;
     }
@@ -132,4 +140,40 @@ lv_color_t DynamicHelpers::get_color(const String &value)
     }
 
     return ret;
+}
+
+void DynamicHelpers::set_font(lv_obj_t *obj, String &styleName)
+{
+    if (styleName == "montserrat14")
+    {
+        lv_obj_set_style_local_text_font(obj, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_14);
+    }
+    else if (styleName == "montserrat28")
+    {
+        lv_obj_set_style_local_text_font(obj, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_28);
+    }
+    else if (styleName == "montserrat32")
+    {
+        lv_obj_set_style_local_text_font(obj, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_32);
+    }
+    else if (styleName == "ubuntu50")
+    {
+        lv_obj_set_style_local_text_font(obj, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &Ubuntu);
+    }
+    else if (styleName == "roboto40")
+    {
+        lv_obj_set_style_local_text_font(obj, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &roboto40);
+    }
+    else if (styleName == "roboto60")
+    {
+        lv_obj_set_style_local_text_font(obj, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &roboto60);
+    }
+    else if (styleName == "roboto80")
+    {
+        lv_obj_set_style_local_text_font(obj, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &roboto80);
+    }
+    else
+    {
+        ESP_LOGW("LABEL", "Font %s not found!", styleName.c_str());
+    }
 }

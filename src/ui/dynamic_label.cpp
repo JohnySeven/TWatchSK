@@ -2,15 +2,6 @@
 #include "localization.h"
 #include "data_adapter.h"
 
-LV_FONT_DECLARE(Geometr);
-LV_FONT_DECLARE(Ubuntu);
-LV_FONT_DECLARE(roboto80);
-LV_FONT_DECLARE(roboto60);
-LV_FONT_DECLARE(roboto40);
-LV_FONT_DECLARE(lv_font_montserrat_14)
-LV_FONT_DECLARE(lv_font_montserrat_28)
-LV_FONT_DECLARE(lv_font_montserrat_32)
-
 void DynamicLabelBuilder::initialize(ComponentFactory *factory)
 {
     factory->register_constructor("label", [factory](JsonObject &json, lv_obj_t *parent) -> Component *
@@ -86,38 +77,7 @@ void DynamicLabel::load(const JsonObject &json)
     if (json.containsKey("font"))
     {
         auto styleName = json["font"].as<String>();
-        if (styleName == "montserrat14")
-        {
-            lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_14);
-        }
-        else if (styleName == "montserrat28")
-        {
-            lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_28);
-        }
-        else if (styleName == "montserrat32")
-        {
-            lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_32);
-        }
-        else if (styleName == "ubuntu50")
-        {
-            lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &Ubuntu);
-        }
-        else if (styleName == "roboto40")
-        {
-            lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &roboto40);
-        }
-        else if (styleName == "roboto60")
-        {
-            lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &roboto60);
-        }
-        else if (styleName == "roboto80")
-        {
-            lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &roboto80);
-        }
-        else
-        {
-            ESP_LOGW("LABEL", "Font %s not found!", styleName.c_str());
-        }
+        DynamicHelpers::set_font(label, styleName);        
     }
 
     DynamicHelpers::set_location(label, json);
