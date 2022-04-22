@@ -10,6 +10,7 @@
 #include "dynamic_label.h"
 #include "dynamic_gauge.h"
 #include "dynamic_switch.h"
+#include "dynamic_button.h"
 
 const char *DGUI_TAG = "DGUI";
 
@@ -23,13 +24,14 @@ void DynamicGui::initialize()
     DynamicLabelBuilder::initialize(factory);
     DynamicGaugeBuilder::initialize(factory);
     DynamicSwitchBuilder::initialize(factory);
+    DynamicButtonBuilder::initialize(factory);
 }
 
 bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket, int &count)
 {
     bool ret = false;
-
-    SpiRamJsonDocument uiJson(20240); // allocate 20 kB in SPI RAM for JSON parsing
+    tile_view_ = parent;
+    SpiRamJsonDocument uiJson(20480); // allocate 20 kB in SPI RAM for JSON parsing
     DeserializationError result;
 
     if (SPIFFS.exists(path))

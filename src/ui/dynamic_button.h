@@ -4,9 +4,12 @@
 #include "component.h"
 #include "data_adapter.h"
 
-enum ButtonOperation
+enum ButtonAction
 {
-    TapSKPut
+    SKPut,
+    Settings,
+    ToggleWifi,
+    HomeTile
 };
 
 class DynamicButton : public Component
@@ -19,13 +22,14 @@ class DynamicButton : public Component
         void load(const JsonObject &json) override;
         void update(const JsonVariant &update) override;
         void destroy() override;
-        bool send_put_request(bool value);
+        bool send_put_request();
         void on_clicked();
-        ButtonOperation get_operation();
+        ButtonAction get_action();
     private:
-        ButtonOperation button_operation_; 
-        String sk_put_path_;
-        String sk_put_value_;
+        ButtonAction button_action_; 
+        lv_obj_t * label_;
+        String sk_put_json_;
+        DataAdapter* adapter_;
 };
 
 class DynamicButtonBuilder
