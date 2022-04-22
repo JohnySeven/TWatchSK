@@ -15,3 +15,11 @@ DataAdapter::DataAdapter(String sk_path, int sk_subscription_period, Component*t
     subscription_period = sk_subscription_period;
     adapters.push_back(this);
 }
+
+DataAdapter::DataAdapter(Component*target)
+{
+    path = "";
+    targetObject_ = target;
+    sk_put_only_ = true;
+    adapters.push_back(this);
+}

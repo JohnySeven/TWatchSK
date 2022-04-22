@@ -19,6 +19,7 @@ class DataAdapter
 {
 public:
     DataAdapter(String sk_path, int sk_subscription_period, Component *target);
+    DataAdapter(Component *target);
     const String &get_path() { return path; }
     int get_subscription_period() { return subscription_period; }
     void on_updated(const JsonVariant &value)
@@ -45,6 +46,22 @@ public:
         return put_request(root);
     }
 
+    bool put_request(String value)
+    {
+        ESP_LOGI("DataAdapter", "Put request %s with json value %s", path.c_str(), value.c_str());
+        DynamicJsonDocument putObj(512);
+        deserializeJson(putObj, value);
+
+        DynamicJsonDocument request(1024);
+        JsonObject root = request.to<JsonObject>();
+        root["requestId"] = UUID::new_id();
+        JsonObject put_data = root.createNestedObject("put");
+        put_data["path"] = putObj["path"];
+        put_data["value"] = putObj["value"];
+        
+        return put_request(root);
+    }
+
     bool put_request(JsonObject &obj)
     {
         if (ws_socket_->get_state() == WebsocketState_t::WS_Connected)
@@ -56,10 +73,14 @@ public:
             return false;
         }
     }
+
     void initialize(SignalKSocket *socket)
     {
         ws_socket_ = socket;
-        socket->add_subscription(get_path(), get_subscription_period(), false);
+        if(!sk_put_only_)
+        {
+            socket->add_subscription(get_path(), get_subscription_period(), false);
+        }
     }
 
     static std::vector<DataAdapter *> &get_adapters();
@@ -70,4 +91,5 @@ protected:
     String path = "";
     Component *targetObject_ = NULL;
     SignalKSocket *ws_socket_ = NULL;
+    bool sk_put_only_ = false;
 };
