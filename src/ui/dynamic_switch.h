@@ -16,6 +16,7 @@ class DynamicSwitch : public Component
         void destroy() override;
         bool IsChangeHandlerLocked() { return change_handler_locked_; }
         bool send_put_request(bool value);
+        void on_offline() override;
     private:
         String path_;
         bool change_handler_locked_ = false;

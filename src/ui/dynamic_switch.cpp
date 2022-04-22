@@ -53,7 +53,7 @@ void DynamicSwitch::load(const JsonObject &json)
 
         path_ = binding["path"].as<String>();
 
-        //register dataadapter that will connect SK receiver and this label
+        //register dataadapter that will connect SK receiver and this switch
         adapter_ = new DataAdapter(path_, period, this);
     }
 
@@ -64,6 +64,8 @@ void DynamicSwitch::load(const JsonObject &json)
 
 void DynamicSwitch::update(const JsonVariant &json)
 {
+    auto value = false;
+    
     if (json.is<bool>())
     {
         change_handler_locked_ = true;
@@ -78,11 +80,27 @@ void DynamicSwitch::update(const JsonVariant &json)
         }
         change_handler_locked_ = false;
     }
+    else
+    {
+        log_i("Switch: value %s is invalid, switch accepts only bool values!", json.to<char*>());
+    }
 }
 
 bool DynamicSwitch::send_put_request(bool value)
 {
-    return adapter_->put_request(value);
+    if(adapter_ != NULL)
+    {
+        return adapter_->put_request(value);
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void DynamicSwitch::on_offline()
+{
+    lv_switch_off(obj_, LV_ANIM_OFF);
 }
 
 void DynamicSwitch::destroy()
