@@ -217,6 +217,7 @@ void SignalKSocket::save_config_to_file(JsonObject &json)
 bool updateSystemTime(String time, SignalKSocket *socket)
 {
     bool ret = false;
+    /* TODO: currently our time settings are not ideal and it will need more work to be done to make Time sync with SK working properly
     char timeCh[30];
     const char pattern[] = ":T-.";
     time.toCharArray(timeCh, 30);
@@ -250,7 +251,7 @@ bool updateSystemTime(String time, SignalKSocket *socket)
                         {
                             auto second = atoi(ptr);
 
-                            if (year > 2000 && month > 0 && month < 13 && day > 1 && day < 32 && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 && second >= 0 && second <= 59)
+                            if (year > 2000 && month > 0 && month < 13 && day > 0 && day < 32 && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 && second >= 0 && second <= 59)
                             {
                                 auto rtc = TTGOClass::getWatch()->rtc;
                                 auto currentTime = rtc->getDateTime();
@@ -271,7 +272,7 @@ bool updateSystemTime(String time, SignalKSocket *socket)
                 }
             }
         }
-    }
+    }*/
 
     return ret;
 }
@@ -616,8 +617,7 @@ bool SignalKSocket::send_put_request(JsonObject &request)
     if (serializeJson(request, buff))
     {
         ESP_LOGI(WS_TAG, "Sending put json(len=%d): %s", strlen(buff), buff);
-        esp_websocket_client_send_text(websocket, buff, strlen(buff), portMAX_DELAY);
-        return true;
+        return esp_websocket_client_send_text(websocket, buff, strlen(buff), portMAX_DELAY) > 0;
     }
     else
     {
