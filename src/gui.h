@@ -63,6 +63,9 @@ public:
     void set_display_next_pending_message(bool value) { display_next_pending_message_ = value; }
     void display_next_message(bool delete_first_message);
     void update_pending_messages();
+    void show_home();
+    void show_settings();
+    void toggle_wifi();
 private:
     static void lv_update_task(struct _lv_task_t *);
     static void lv_battery_task(struct _lv_task_t *);

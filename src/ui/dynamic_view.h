@@ -31,6 +31,7 @@ public:
         lv_obj_add_style(container, LV_CONT_PART_MAIN, &mainStyle);
         lv_obj_set_size(container, LV_HOR_RES, LV_VER_RES - 30);
 
+        name_ = viewObject["name"].as<String>();
         String viewType = viewObject["type"].as<String>();
         if (viewType == "watchface")
         {
@@ -62,6 +63,11 @@ public:
             {
                 created_components.push_back(obj);
             }
+            else
+            {
+                String unknownType = component["type"].as<String>();
+                ESP_LOGW("DYNAMIC_VIEW", "View %s component type %s isn't supported!", name_.c_str(),  unknownType.c_str());
+            }
         }
 
         if (viewObject.containsKey("layout"))
@@ -88,4 +94,5 @@ private:
     ViewType_t type;
     lv_obj_t *container;
     std::vector<Component *> created_components;
+    String name_;
 };

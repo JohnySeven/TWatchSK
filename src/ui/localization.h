@@ -57,7 +57,7 @@
 #define LOC_SELECT_DATE "Select current date"
 #define LOC_MONTHS {"???","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
 #define LOC_WATCH_INFO "Watch info"
-#define LOC_WATCH_VERSION "Version 0.9 " LOC_WATCH_MODEL
+#define LOC_WATCH_VERSION "Version 1.0 " LOC_WATCH_MODEL
 #define LOC_AUTHOR "Author: Jan Dytrych,\nBrian Smith and contributors"
 #define LOC_UPTIME "Uptime: %d:%.2d:%.2d "
 #define LOC_WATCH_NAME "Watch\nname:"
@@ -99,3 +99,5 @@
 #define LOC_STARTUP_SPIFFS "SPIFFS init...please wait!"
 #define LOC_STARTUP_HW_GUI "Hardware & LVGL init..."
 #define LOC_STARTUP_NETWORKING "Wifi & networking init..."
+#define LOC_SK_PUT_SEND_FAIL "Unable to send SK put request!"
+#define LOC_SK_PUT_SEND_FAIL "Unable to send Signal K put request!"

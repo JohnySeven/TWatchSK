@@ -7,6 +7,7 @@ class Component
     public:
         void virtual load(const JsonObject &json);
         void virtual update(const JsonVariant &update);
+        void virtual on_offline() { }
         void virtual destroy();
         lv_obj_t* get_obj()
         {

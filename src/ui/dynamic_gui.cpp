@@ -7,6 +7,11 @@
 #include "networking/signalk_subscription.h"
 #include "data_adapter.h"
 
+#include "dynamic_label.h"
+#include "dynamic_gauge.h"
+#include "dynamic_switch.h"
+#include "dynamic_button.h"
+
 const char *DGUI_TAG = "DGUI";
 
 DynamicGui::DynamicGui()
@@ -14,16 +19,19 @@ DynamicGui::DynamicGui()
     factory = new ComponentFactory();
 }
 
-void DynamicGui::initialize_builders()
+void DynamicGui::initialize()
 {
     DynamicLabelBuilder::initialize(factory);
+    DynamicGaugeBuilder::initialize(factory);
+    DynamicSwitchBuilder::initialize(factory);
+    DynamicButtonBuilder::initialize(factory);
 }
 
 bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket, int &count)
 {
     bool ret = false;
-
-    SpiRamJsonDocument uiJson(20240); //allocate 20 kB in SPI RAM for JSON parsing
+    tile_view_ = parent;
+    SpiRamJsonDocument uiJson(20480); // allocate 20 kB in SPI RAM for JSON parsing
     DeserializationError result;
 
     if (SPIFFS.exists(path))
@@ -57,8 +65,9 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket,
 
         for (auto adapter : DataAdapter::get_adapters())
         {
-            socket->add_subscription(adapter->get_path(), adapter->get_subscription_period(), false);
+            adapter->initialize(socket);
         }
+
         ret = true;
     }
     else
@@ -69,13 +78,29 @@ bool DynamicGui::load_file(String path, lv_obj_t *parent, SignalKSocket *socket,
     return ret;
 }
 
-void DynamicGui::handle_signalk_update(const String& path, const JsonVariant &value)
+void DynamicGui::handle_signalk_update(const String &path, const JsonVariant &value)
 {
     for (auto adapter : DataAdapter::get_adapters())
     {
         if (adapter->get_path() == path)
         {
             adapter->on_updated(value);
+        }
+    }
+}
+
+void DynamicGui::update_online(bool online)
+{
+    if (online_ != online)
+    {
+        online_ = online;
+    }
+
+    if (!online)
+    {
+        for (auto adapter : DataAdapter::get_adapters())
+        {
+            adapter->on_offline();
         }
     }
 }
