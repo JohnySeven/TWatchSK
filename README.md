@@ -5,7 +5,7 @@ where you are on the boat or what you're doing.
 
 It runs exclusively on the [LILYGO T-Watch-2020 watch](http://www.lilygo.cn/prod_view.aspx?TypeId=50053&Id=1290&FId=t3:50053:3), which is based on an ESP32 microcontroller.
 
-![image](https://user-images.githubusercontent.com/15186790/125843967-e44c8015-d0a8-4099-8e00-b63a9b4c29cb.png) ![image](https://user-images.githubusercontent.com/15186790/125844616-d3264ca2-3667-4789-9cda-456e79ba2aa9.png) ![image](https://user-images.githubusercontent.com/15186790/140789761-97ee13f6-3feb-4521-9606-0127ba0ffb9a.png)
+![image](https://user-images.githubusercontent.com/15186790/125843967-e44c8015-d0a8-4099-8e00-b63a9b4c29cb.png) ![image](https://user-images.githubusercontent.com/15186790/125844616-d3264ca2-3667-4789-9cda-456e79ba2aa9.png) ![image](https://user-images.githubusercontent.com/15186790/140789761-97ee13f6-3feb-4521-9606-0127ba0ffb9a.png) ![image](https://user-images.githubusercontent.com/15186790/165354299-66805154-7958-427c-8b29-6d7b3a68bddc.png)
 
 The code is C++, built with PlatformIO and VS Code. The source code is open, licensed under the **MIT License**.
 
@@ -14,7 +14,7 @@ The code is C++, built with PlatformIO and VS Code. The source code is open, lic
 - Main watch screen (called the home screen) shows hours, minutes, and seconds in 12-hour or 24-hour format. Also shows the day of the week and the date.
 - Icons on the status bar indicate the status of the wifi and Signal K Server connections, and the battery status, and the count of unread messages.
 - Easy setup screens to set date and time, wifi credentials, Signal K connection details, display options, and "wake-up" options.
-- User-defined screens (called DynamicViews) to show current data from any SK Path(s), with multiple layout options.
+- User-defined screens (called DynamicViews) to show current data from any SK Path(s), with multiple layout options, and to send various types of commands to Signal K.
 - Automatic display of any notifications sent by Signal K. Notifications "wake up" the watch, vibrate the watch, and play a sound file.
 - Designed for long battery life - you can easily go 24 hours between charges.
 - Watch can "wake up" with a double-tap to the screen, a press-and-release on the screen, or simply by bringing your wrist into the "look at the watch" position.
@@ -65,7 +65,7 @@ make it whatever you like, up to 99 seconds. (Note: when you wake up the screen 
 the screen timeout is temporarily set to 2 seconds. That has no effect on the normal screen timeout setting.)
 - "Enable Dark theme" toggles between day mode and night mode. In practice, there is no need for this switch, but it was added before the double-tap that toggles
 between day mode and night mode, and it has been left in place.
-- "Download DynamicViews": this is how you install the DynamicViews (the screens that display Signal K data) that you define with [TWatchSKDesigner](https://github.com/JohnySeven/TWatchSKDesigner#twatchskdesigner), which
+- "Download DynamicViews": this is how you install the DynamicViews (the screens that display Signal K data and let you send various commands to the Server) that you define with [TWatchSKDesigner](https://github.com/JohnySeven/TWatchSKDesigner#twatchskdesigner), which
 is a program you run on your computer. It allows you to create DynamicViews and saves them on your Signal K Server, then this button installs
 them onto the watch.
 
@@ -119,7 +119,7 @@ Signal K broadcasts notifications for various things: some are enabled by defaul
 It's up to you to set up the notifications you want to see in Signal K, and give them the proper status: "warn", "alert", "alarm", or "emergency". The watch will take it from there. (The Simple Notifications plug-in is an easy way to set up notifications. There are other ways, too.)
 
 ## DynamicViews
-The whole point of creating TWatchSK was to allow it to keep you informed of what's going on with your boat, by monitoring and displaying what's happening in Signal K. That's done with Notifications (described above) and DynamicViews. A DynamicView is a user-defined screen that can display data from any Signal K Path. In fact, each DynamicView screen can show data from one to six Paths, and there is no limit to the number of DynamicViews you can create. So theoretically, you could have data from dozens of Paths available on your watch! Practically, you'll probably want only the most important Paths to be on your DynamicView screens, but that's entirely up to you.
+The whole point of creating TWatchSK was to allow it to interact with Signal K, by monitoring and displaying what's happening there, and by sending commands to it. That's done with Notifications (described above) and DynamicViews. A DynamicView is a user-defined screen that can display data from any Signal K Path, and can send certain types of commands to Signal K. Each DynamicView screen can show data from one or more Paths, and/or have one or more switches and buttons to send commands to Signal K. There is no limit to the number of DynamicViews you can create.
 
 ![image](https://user-images.githubusercontent.com/15186790/140789761-97ee13f6-3feb-4521-9606-0127ba0ffb9a.png)
 *An example of a DynamicView screen - this one shows data about the watch itself, but yours will probably show engine data, or wind data, or environmental data, etc.*
