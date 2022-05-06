@@ -208,8 +208,8 @@ private:
             server_search_running_ = true;
             search_loader_ = new Loader(LOC_SIGNALK_FINDING_SERVER);
             twatchsk::run_async("mDNS search", [this]() {
-                const char *service_name = "signalk-ws";
-                const char *service_proto = "tcp";
+                const char *service_name = "_signalk-ws";
+                const char *service_proto = "_tcp";
                 mdns_result_t *results = NULL;
                 if (mdns_init() == ESP_OK)
                 {
