@@ -99,7 +99,6 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     // messages counter
     pendingMessagesIcon_ = bar->create_text_icon(LV_SYMBOL_BELL " 0", StatusBarLocation::Left, StatusBarIconStatus::Hidden);
 
-    TTGOClass *ttgo = TTGOClass::getWatch();
     //! main
     static lv_style_t mainStyle;
     lv_style_init(&mainStyle);
