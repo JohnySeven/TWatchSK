@@ -177,6 +177,16 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     update_tiles_valid_points(dynamic_view_count);
     lv_tileview_set_valid_positions(mainBar, tile_valid_points, tile_valid_points_count);
     lv_tileview_set_edge_flash(mainBar, true);
+
+    //setup guide arrows (left/right) to indicate swype direction
+    arrow_left = lv_label_create(scr, NULL);
+    lv_label_set_text(arrow_left, LV_SYMBOL_LEFT);
+    lv_obj_set_pos(arrow_left, 4, bar->height());
+    arrow_right = lv_label_create(scr, NULL);
+    lv_obj_set_pos(arrow_right, LV_HOR_RES - 10, bar->height());
+    lv_label_set_text(arrow_right, LV_SYMBOL_RIGHT);
+    //show arrows after booting
+    update_arrows_visibility(false, tile_valid_points_count > 1);
 }
 
 void Gui::update_tiles_valid_points(int count)
@@ -429,6 +439,17 @@ void Gui::update_gui()
         dynamic_gui->update_online(false);
     }
 
+    handle_gui_queue();
+
+    if(arrows_hide_at_time < millis())
+    {
+        lv_obj_set_hidden(arrow_left, true);
+        lv_obj_set_hidden(arrow_right, true);
+    }
+}
+
+void Gui::handle_gui_queue()
+{
     GuiEvent_t event;
 
     while (read_gui_update(event))
@@ -625,8 +646,10 @@ void Gui::lv_mainbar_callback(lv_obj_t *obj, lv_event_t event)
         Gui *gui = (Gui *)obj->user_data;
         lv_coord_t x, y;
         lv_tileview_get_tile_act(obj, &x, &y);
-        // ESP_LOGI(GUI_TAG, "Tile view is showing location %d,%d", x, y);
+        ESP_LOGI(GUI_TAG, "Tile view is showing location %d,%d", x, y);
         gui->set_is_active_view_dynamic(x > 0);
+
+        gui->update_arrows_visibility(x > 0, y < (gui->tile_valid_points_count-1));
     }
 }
 
@@ -908,4 +931,22 @@ void Gui::show_home()
 void Gui::toggle_wifi()
 {
     
+}
+
+void Gui::update_arrows_visibility(bool left, bool right)
+{
+    ESP_LOGI(GUI_TAG, "Arrows update left=%d, right=%d", left, right);
+
+    lv_obj_set_hidden(arrow_left, !left);
+    lv_obj_set_hidden(arrow_right, !right);
+    arrows_hide_at_time = millis() + ARROWS_DISAPPEAR_TIME;
+}
+
+void Gui::hide_arrows_task_cb(lv_task_t*task)
+{
+    auto gui = (Gui*)task->user_data;
+    lv_obj_set_hidden(gui->arrow_left, true);
+    lv_obj_set_hidden(gui->arrow_right, true);
+    lv_task_del(task);
+    ESP_LOGI(GUI_TAG, "Arrows are hidden.");
 }

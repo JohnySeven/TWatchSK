@@ -11,6 +11,8 @@
 #ifndef __GUI_H
 #define __GUI_H
 
+#define ARROWS_DISAPPEAR_TIME 4000
+
 enum MsgTopic_t
 {
     Wifi_Problem
@@ -63,6 +65,7 @@ public:
     void set_display_next_pending_message(bool value) { display_next_pending_message_ = value; }
     void display_next_message(bool delete_first_message);
     void update_pending_messages();
+    void handle_gui_queue();
     void show_home();
     void show_settings();
     void toggle_wifi();
@@ -75,7 +78,9 @@ private:
     char *message_from_code(GuiMessageCode_t code);
     void update_gui();
     String current_time();
+    void update_arrows_visibility(bool left, bool right);
     static void msg_box_callback(lv_obj_t * obj, lv_event_t event);
+    static void hide_arrows_task_cb(lv_task_t * task);
 
     WifiManager *wifiManager = NULL;
     SignalKSocket *ws_socket = NULL;
@@ -89,8 +94,11 @@ private:
     lv_obj_t *dayDateLabel = NULL;
     lv_obj_t *watchNameLabel = NULL;
     lv_obj_t *msgBox = NULL;
+    lv_obj_t *arrow_left = NULL;
+    lv_obj_t *arrow_right = NULL;
     StatusBar *bar = NULL;
     DynamicGui*dynamic_gui = NULL;
+
     struct PendingMsg_t
     {
         String msg_text;
@@ -98,6 +106,7 @@ private:
         String msg_time;;
         int msg_count = 0;
     };
+
     std::list<PendingMsg_t> pending_messages_;
 
     bool time_24hour_format = false;
@@ -113,6 +122,7 @@ private:
     bool is_active_view_dynamic_ = false;
     bool gui_needs_saved = false;
     bool display_next_pending_message_ = true;
+    long arrows_hide_at_time = -1;
 
     StatusBarIcon* batteryPercent_;
     StatusBarIcon* stepCounterIcon_;
