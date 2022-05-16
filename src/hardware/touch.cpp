@@ -3,8 +3,6 @@
 #define TOUCH_TAG "TOUCH"
 static SemaphoreHandle_t xTouchSemaphore = NULL;
 lv_indev_t *touch_dev = NULL;
-
-static bool touch_initialized_ = false;
 static bool DRAM_ATTR low_power_mode = false;
 static bool touch_down = false;
 volatile bool DRAM_ATTR wakeup_from_sleep_ = true;
@@ -60,8 +58,8 @@ static bool touch_getXY(int16_t &x, int16_t &y)
         x = temp_x + (lv_disp_get_hor_res(NULL) / 2);
         y = temp_y + (lv_disp_get_ver_res(NULL) / 2);
 
-        x = min(LV_HOR_RES, max((int16_t)0, x));
-        y = min(LV_VER_RES, max((int16_t)0, y));
+        x = min((int16_t)(LV_HOR_RES-5), max((int16_t)0, x));
+        y = min((int16_t)(LV_VER_RES-5), max((int16_t)0, y));
 
         ESP_LOGI(TOUCH_TAG, "Touch=(%d,%d)", x,y);
 
