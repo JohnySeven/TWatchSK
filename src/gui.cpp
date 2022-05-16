@@ -181,9 +181,9 @@ void Gui::setup_gui(WifiManager *wifi, SignalKSocket *socket, Hardware *hardware
     //setup guide arrows (left/right) to indicate swype direction
     arrow_left = lv_label_create(scr, NULL);
     lv_label_set_text(arrow_left, LV_SYMBOL_LEFT);
-    lv_obj_set_pos(arrow_left, 4, bar->height());
+    lv_obj_set_pos(arrow_left, 9, bar->height() + 5);
     arrow_right = lv_label_create(scr, NULL);
-    lv_obj_set_pos(arrow_right, LV_HOR_RES - 10, bar->height());
+    lv_obj_set_pos(arrow_right, LV_HOR_RES - 15, bar->height() + 5);
     lv_label_set_text(arrow_right, LV_SYMBOL_RIGHT);
     //show arrows after booting
     update_arrows_visibility(false, tile_valid_points_count > 1);
@@ -347,6 +347,8 @@ void Gui::on_power_event(PowerCode_t code, uint32_t arg)
         {
             ws_socket->update_subscriptions();
         }
+
+        update_arrows_visibility();        
     }
     else if (code == PowerCode_t::POWER_CHARGING_ON)
     {
@@ -648,8 +650,7 @@ void Gui::lv_mainbar_callback(lv_obj_t *obj, lv_event_t event)
         lv_tileview_get_tile_act(obj, &x, &y);
         ESP_LOGI(GUI_TAG, "Tile view is showing location %d,%d", x, y);
         gui->set_is_active_view_dynamic(x > 0);
-
-        gui->update_arrows_visibility(x > 0, y < (gui->tile_valid_points_count-1));
+        gui->update_arrows_visibility();
     }
 }
 
@@ -930,7 +931,23 @@ void Gui::show_home()
 
 void Gui::toggle_wifi()
 {
-    
+    auto wifiStatus = wifiManager->get_status();
+
+    if(wifiStatus == WifiState_t::Wifi_Connected)
+    {
+        wifiManager->off(true);
+    }
+    else if(wifiStatus == WifiState_t::Wifi_Off)
+    {
+        wifiManager->on();
+    }
+}
+
+void Gui::update_arrows_visibility()
+{
+    lv_coord_t x,y;
+    lv_tileview_get_tile_act(mainBar, &x, &y);
+    update_arrows_visibility(x > 0, x < (tile_valid_points_count-1));
 }
 
 void Gui::update_arrows_visibility(bool left, bool right)

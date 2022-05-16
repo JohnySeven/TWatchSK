@@ -78,6 +78,7 @@ private:
     char *message_from_code(GuiMessageCode_t code);
     void update_gui();
     String current_time();
+    void update_arrows_visibility();
     void update_arrows_visibility(bool left, bool right);
     static void msg_box_callback(lv_obj_t * obj, lv_event_t event);
     static void hide_arrows_task_cb(lv_task_t * task);
