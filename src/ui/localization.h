@@ -54,8 +54,11 @@
 #define LOC_DATE_FORMAT "%d. %s %d"
 #define LOC_INPUT_HOUR "Enter current hour"
 #define LOC_INPUT_MINUTE "Enter current minute"
-#define LOC_SELECT_DATE "Select current date"
+#define LOC_SELECT_YEAR "Select year"
+#define LOC_SELECT_DAY "Select day"
+#define LOC_SELECT_MONTH "Select month"
 #define LOC_MONTHS {"???","Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+#define LOC_MONTHS_FULL "January\n" "February\n" "March\n" "April\n" "May\n" "June\n" "July\n" "August\n" "September\n" "October\n" "November\n" "December\n"
 #define LOC_WATCH_INFO "Watch info"
 #define LOC_WATCH_VERSION "Version 1.0 " LOC_WATCH_MODEL
 #define LOC_AUTHOR "Author: Jan Dytrych,\nBrian Smith and contributors"

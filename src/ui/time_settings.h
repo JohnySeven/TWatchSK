@@ -64,16 +64,16 @@ public:
     bool get_24hour_format() { return time_24hour_format; }
     void set_24hour_format(bool value)
     {
-        time_24hour_format = value; 
+        time_24hour_format = value;
     }
 
     int8_t get_timezone_id() { return timezone_id; }
     void set_timezone_id(int8_t new_timezone_id)
     {
-        timezone_id = new_timezone_id; 
+        timezone_id = new_timezone_id;
     }
 
-    String get_timezone_string(int8_t id) 
+    String get_timezone_string(int8_t id)
     {
         return timezone_strings[id];
     }
@@ -92,7 +92,7 @@ protected:
         {
             hours = (hours % 12);
         }
-        else if(!time_24hour_format && is_time_am && hours == 0)
+        else if (!time_24hour_format && is_time_am && hours == 0)
         {
             hours = 12;
         }
@@ -166,6 +166,10 @@ protected:
         lv_obj_align(sk_sync_label, sk_sync_check, LV_ALIGN_OUT_RIGHT_MID, 4, 0);
         lv_obj_set_event_cb(sk_sync_check, TimeSettings::sync_with_sk_callback);
 
+        //TODO: make SK time sync working, for now let's hide it
+        lv_obj_set_hidden(sk_sync_check, true);
+        lv_obj_set_hidden(sk_sync_label, true);
+        
         if (ws_socket->get_sync_time_with_server())
         {
             lv_switch_on(sk_sync_check, LV_ANIM_OFF);
@@ -224,10 +228,10 @@ private:
     char *months[13] = LOC_MONTHS;
     int8_t timezone_id = 12; // only until it's changed the first time
     std::array<String, 25> timezone_strings = {"GMT-12:00", "GMT-11:00", "GMT-10:00",
-        "GMT-9:00", "GMT-8:00", "GMT-7:00", "GMT-6:00", "GMT-5:00", "GMT-4:00",
-        "GMT-3:00", "GMT-2:00", "GMT-1:00","GMT0", "GMT+1:00", "GMT+2:00", "GMT+3:00",
-        "GMT+4:00", "GMT+5:00", "GMT+6:00", "GMT+7:00", "GMT+8:00", "GMT+9:00",
-        "GMT+10:00", "GMT11:00", "GMT+12:00"};
+                                               "GMT-9:00", "GMT-8:00", "GMT-7:00", "GMT-6:00", "GMT-5:00", "GMT-4:00",
+                                               "GMT-3:00", "GMT-2:00", "GMT-1:00", "GMT0", "GMT+1:00", "GMT+2:00", "GMT+3:00",
+                                               "GMT+4:00", "GMT+5:00", "GMT+6:00", "GMT+7:00", "GMT+8:00", "GMT+9:00",
+                                               "GMT+10:00", "GMT11:00", "GMT+12:00"};
     bool time_changed = false;
     bool date_changed = false;
     bool sk_settings_changed = false;
@@ -238,30 +242,20 @@ private:
         if (event == LV_EVENT_CLICKED)
         {
             TimeSettings *settings = (TimeSettings *)obj->user_data;
-            auto keyboard = new Keyboard(LOC_INPUT_HOUR, KeyboardType_t::Number, 2);
-            keyboard->on_close([keyboard, settings]() {
-                if (keyboard->is_success())
-                {
-                    const char *text = keyboard->get_text();
-                    int hour = atoi(text);
-                    if (settings->get_24hour_format())
-                    {
-                        if (hour >= 0 && hour <= 23)
-                        {
-                            settings->update_hours(hour);
-                        }
-                    }
-                    else
-                    {
-                        if (hour >= 1 && hour <= 12)
-                        {
-                            settings->update_hours(hour);
-                        }
-                    }
-                }
-                delete keyboard;
-            });
-            keyboard->show(lv_scr_act());
+            auto is24hours = settings->get_24hour_format();
+            auto hourPicker = new Roller(LOC_INPUT_HOUR, is24hours ? RollerType_t::Hours24 : RollerType_t::Hours12,
+                                         is24hours ? settings->hours : (settings->hours - 1));
+
+            hourPicker->on_close([hourPicker, settings, is24hours]()
+                                 {
+                                    if (hourPicker->is_success())
+                                    {
+                                        int hour = hourPicker->get_selected_id();
+                                        settings->update_hours(is24hours ? hour : hour + 1);
+                                    }
+                                    delete hourPicker;
+                                 });
+            hourPicker->show(lv_scr_act());
         }
     }
 
@@ -270,21 +264,19 @@ private:
         if (event == LV_EVENT_CLICKED)
         {
             TimeSettings *settings = (TimeSettings *)obj->user_data;
-            auto keyboard = new Keyboard(LOC_INPUT_MINUTE, KeyboardType_t::Number, 2);
-            keyboard->on_close([keyboard, settings]() {
-                if (keyboard->is_success())
+            auto minutePicker = new Roller(LOC_INPUT_MINUTE, RollerType_t::Minutes, settings->minutes);
+            minutePicker->on_close([minutePicker, settings]()
+                                   {
+                if (minutePicker->is_success())
                 {
-                    const char *text = keyboard->get_text();
-
-                    int minutes = atoi(text);
+                    int minutes = minutePicker->get_selected_id();
                     if (minutes >= 0 && minutes <= 59)
                     {
                         settings->update_minutes(minutes);
                     }
                 }
-                delete keyboard;
-            });
-            keyboard->show(lv_scr_act());
+                delete minutePicker; });
+            minutePicker->show(lv_scr_act());
         }
     }
 
@@ -297,22 +289,75 @@ private:
         }
     }
 
+    static RollerType_t get_day_roller_type(int month)
+    {
+        RollerType_t ret = RollerType_t::Day31;
+
+        switch (month)
+        {
+        case 2:
+            ret = RollerType_t::Day28;
+            break;
+        case 4:
+        case 6:
+        case 9:
+        case 11:
+            ret = RollerType_t::Day30;
+            break;
+        }
+
+        return ret;
+    }
+
     static void date_button_callback(lv_obj_t *obj, lv_event_t event)
     {
         if (event == LV_EVENT_CLICKED)
         {
             auto timeSettings = (TimeSettings *)obj->user_data;
-            auto datePicker = new DatePicker(LOC_SELECT_DATE);
-            datePicker->on_close([datePicker, timeSettings]() {
-                if (datePicker->is_success())
-                {
-                    auto date = datePicker->get_date();
-                    timeSettings->update_date(date.year, date.month, date.day);
-                }
-                delete datePicker;
-            });
+            auto yearPicker = new Roller(LOC_SELECT_YEAR, RollerType_t::Year, 3);
 
-            datePicker->show(lv_scr_act());
+            yearPicker->on_close([yearPicker, timeSettings]()
+                                 {
+               if(yearPicker->is_success())
+               {
+                   int year = yearPicker->get_selected_id() + 2022;
+
+                   ESP_LOGI("TIME", "User selected %d year from Roller.", year);
+
+                   auto monthPicker = new Roller(LOC_SELECT_MONTH, RollerType_t::Month, 6);
+
+                   monthPicker->on_close([monthPicker, timeSettings, year]()
+                   {
+                       if(monthPicker->is_success())
+                       {
+                           int month = monthPicker->get_selected_id() + 1;
+                           ESP_LOGI("TIME", "User selected %d month from Roller.", month);
+
+                           auto dayPicker = new Roller(LOC_SELECT_DAY, get_day_roller_type(month), 15);
+
+                           dayPicker->on_close([dayPicker, timeSettings, year, month]()
+                           {
+                               if(dayPicker->is_success())
+                               {
+                                   int day = dayPicker->get_selected_id() + 1;
+                                    ESP_LOGI("TIME", "User selected date %d/%d/%d.", year, month, day);
+                                   timeSettings->update_date(year, month, day);
+                               }
+                               delete dayPicker;
+                           });
+
+                           dayPicker->show(lv_scr_act());                   
+                       }
+
+                       delete monthPicker;
+                   });
+
+                   monthPicker->show(lv_scr_act());
+               }
+
+               delete yearPicker; });
+
+            yearPicker->show(lv_scr_act());
         }
     }
 
@@ -320,17 +365,16 @@ private:
     {
         if (event == LV_EVENT_CLICKED)
         {
-            auto timeSettings = (TimeSettings*)obj->user_data;
+            auto timeSettings = (TimeSettings *)obj->user_data;
             auto roller = new Roller(LOC_INPUT_TIMEZONE, RollerType_t::Timezone, timeSettings->timezone_id);
-            roller->on_close([roller, timeSettings]() 
-            {
+            roller->on_close([roller, timeSettings]()
+                             {
                 if (roller->is_success())
                 {
                     auto selected_id = roller->get_selected_id();
                     timeSettings->update_timezone_id(selected_id);
                 }
-                delete roller;
-            });
+                delete roller; });
             roller->show(lv_scr_act());
         }
     }
@@ -353,16 +397,16 @@ private:
             TimeSettings *settings = (TimeSettings *)obj->user_data;
             bool state = lv_switch_get_state(obj);
             ESP_LOGI(SETTINGS_TAG, "User changed 24 hour format to %s", state ? "on" : "off");
-            if(!state) // state of the switch has changed
+            if (!state) // state of the switch has changed
             {
-                if(settings->hours > 12)
+                if (settings->hours > 12)
                 {
                     settings->hours = (settings->hours % 12);
                     settings->is_time_am = false;
                 }
                 else
                 {
-                    if(settings->hours == 0)
+                    if (settings->hours == 0)
                     {
                         settings->hours = 12;
                     }
@@ -371,11 +415,11 @@ private:
             }
             else
             {
-                if(!settings->is_time_am)
+                if (!settings->is_time_am)
                 {
                     settings->hours = (settings->hours + 12) % 24;
                 }
-                else if(settings->hours == 12)
+                else if (settings->hours == 12)
                 {
                     settings->hours = 0;
                 }
